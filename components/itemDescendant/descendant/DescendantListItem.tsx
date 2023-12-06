@@ -7,13 +7,14 @@ import { IdSchemaType } from "@/schemas/id";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { usePathname } from "next/navigation";
 import { useForm } from "react-hook-form";
 
 import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { ItemClientStateType, ItemDataUntypedType, ItemDisposition } from "@/types/item";
 import { ItemDescendantModelNameType } from "@/types/itemDescendant";
-import { ResumeItemClientStateType } from "@/types/resume";
+import { ResumeActionType, ResumeItemClientStateType } from "@/types/resume";
 import { Edit, Grip } from "lucide-react";
 import Link from "next/link";
 import { InputProps } from "react-editext";
@@ -37,7 +38,7 @@ export default function DescendantListItem({
   index,
   rootItemModel,
   itemModel,
-  item: item,
+  item,
   setItemData,
   markItemAsDeleted,
 }: DescendantListItemProps) {
@@ -62,6 +63,11 @@ export default function DescendantListItem({
   const settingsStore = useSettingsStore();
   const { showItemDescendantInternals } = settingsStore;
   const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
+
+  // Construct the relative URL
+  const pathname = usePathname();
+  const getItemActionURL = (action: ResumeActionType) =>
+    `${pathname.replace(rootItemModel, itemModel)}/${item.id}/${action}`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSave = (val: any, inputProps?: InputProps) => {
@@ -96,7 +102,7 @@ export default function DescendantListItem({
         <div className="h-full">
           <Link
             title={`Edit resume ${(item as unknown as ResumeItemClientStateType).name}`}
-            href={`/resume/${item.id}/edit`}
+            href={getItemActionURL("edit")}
           >
             <Button variant={"ghost"} className="h-full">
               {<Edit />}
@@ -182,25 +188,23 @@ export default function DescendantListItem({
         </div>
       )}
       {canEdit && itemModel !== "user" ? (
-        <div className="flex items-center h-full group">
-          {/* /Delete Button */}
-          <button
-            className="h-full basis-1/12 px-4 flex place-name-center items-center text-light-txt-2 dark:text-light-txt-1 opacity-100 md:group-hover:opacity-100 transition-all duration-150"
-            title={`Delete ${itemModel}`}
-            onClick={() => markItemAsDeleted(item.clientId)}
+        <button
+          /* /Delete Button */
+          className="px-4 self-stretch text-light-txt-2 dark:text-light-txt-1 opacity-100 md:group-hover:opacity-100 transition-all duration-150"
+          title={`Delete ${itemModel}`}
+          onClick={() => markItemAsDeleted(item.clientId)}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="w-6 h-6"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-6 h-6"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       ) : null}
     </div>
   );

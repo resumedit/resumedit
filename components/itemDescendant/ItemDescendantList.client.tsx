@@ -12,7 +12,7 @@ import {
 } from "@/stores/itemDescendantStore/createItemDescendantStore";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { ItemClientStateType, ItemDataType, ItemDataUntypedType, ItemServerToClientType } from "@/types/item";
-import { ItemDescendantModelNameType, getParentModel } from "@/types/itemDescendant";
+import { ItemDescendantModelNameType, getDescendantModel, getParentModel } from "@/types/itemDescendant";
 import { ResumeActionType } from "@/types/resume";
 import { Dispatch, ReactNode, SetStateAction, useEffect, useState } from "react";
 import DescendantInput from "./descendant/DescendantInput";
@@ -20,6 +20,7 @@ import { ItemDescendantListSynchronization } from "./utils/ItemDescendantListSyn
 import DescendantList from "./descendant/DescendantList";
 import Item from "./Item";
 import Descendant from "./descendant/Descendant";
+import RestoreItemDialog from "./RestoreItemDialog";
 
 export interface ItemDescendantRenderProps {
   index: number;
@@ -40,18 +41,22 @@ export interface ItemDescendantRenderProps {
   showSynchronization: boolean;
 }
 function ItemDescendantListRender(props: ItemDescendantRenderProps): ReactNode {
-  const { item, rootItemModel, leafItemModel, resumeAction } = props;
+  const { item, rootItemModel, leafItemModel, editingInput } = props;
   const { itemModel, descendantModel, descendants } = item;
 
   // console.log(`ItemDescendantRender: ${JSON.stringify(item, undefined, 2)}`);
 
   const atRootLevel = itemModel === rootItemModel;
+  if (!descendantModel) return;
 
-  return !descendantModel || item.deletedAt ? null : (
+  const descendantDescendantModel = getDescendantModel(descendantModel);
+
+  return (
     <>
-      {atRootLevel && resumeAction === "edit" ? <ItemDescendantListSynchronization /> : null}
+      {item.deletedAt ? <RestoreItemDialog {...props} /> : null}
+      {atRootLevel && editingInput ? <ItemDescendantListSynchronization /> : null}
       {atRootLevel ? <Item {...props} /> : <Descendant {...props} />}
-      {item.itemModel === leafItemModel ? (
+      {item.descendantModel === leafItemModel ? (
         <DescendantList {...{ ...props, itemModel: descendantModel }} />
       ) : descendants?.filter((descendant) => !descendant.deletedAt)?.length > 0 ? (
         <ul key={item.clientId}>
@@ -65,8 +70,8 @@ function ItemDescendantListRender(props: ItemDescendantRenderProps): ReactNode {
                   item={descendant}
                   itemModel={descendantModel}
                 />
-                {item.itemModel === leafItemModel ? null : (
-                  <DescendantInput {...{ ...props, itemModel: descendantModel }} />
+                {!editingInput || item.descendantModel === leafItemModel || !descendantDescendantModel ? null : (
+                  <DescendantInput {...{ ...props, itemModel: descendantDescendantModel }} />
                 )}
               </li>
             ))}

@@ -134,25 +134,23 @@ export default function Item(props: ItemProps) {
         </div>
       )}
       {canEdit && itemModel !== "user" ? (
-        <div className="flex items-center h-full group">
-          {/* /Delete Button */}
-          <button
-            className="h-full basis-1/12 px-4 flex place-name-center items-center text-light-txt-2 dark:text-light-txt-1 opacity-100 md:group-hover:opacity-100 transition-all duration-150"
-            title={`Delete ${itemModel}`}
-            onClick={() => markItemAsDeleted(item.clientId)}
+        <button
+          /* /Delete Button */
+          className="px-4 self-stretch text-light-txt-2 dark:text-light-txt-1 opacity-100 md:group-hover:opacity-100 transition-all duration-150"
+          title={`Delete ${itemModel}`}
+          onClick={() => markItemAsDeleted(item.clientId)}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="w-6 h-6"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-6 h-6"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       ) : null}
     </div>
   );

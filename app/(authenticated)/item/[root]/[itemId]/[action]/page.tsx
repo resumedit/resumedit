@@ -11,21 +11,21 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 export interface ItemDescendantActionPageProps {
-  params: { root: ItemDescendantModelNameType; id: IdSchemaType; action: ResumeActionType };
+  params: { root: ItemDescendantModelNameType; itemId: IdSchemaType; action: ResumeActionType };
 }
 
 export default async function ItemDescendantActionPage({
-  params: { root, id, action },
+  params: { root, itemId, action },
 }: ItemDescendantActionPageProps) {
   const itemModel = root;
   const resumeAction = action;
 
-  const validId = isValidItemId(id);
-  return !id || !validId ? (
+  const validId = isValidItemId(itemId);
+  return !itemId || !validId ? (
     notFound()
   ) : (
     <Suspense fallback={<ItemDescendantActionSkeleton />}>
-      <ItemDescendantList itemModel={itemModel} itemId={id} resumeAction={resumeAction} />
+      <ItemDescendantList itemModel={itemModel} itemId={itemId} resumeAction={resumeAction} />
     </Suspense>
   );
 }

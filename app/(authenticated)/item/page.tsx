@@ -4,21 +4,13 @@
 
 import ItemDescendantList from "@/components/itemDescendant/ItemDescendantList.server";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ItemDescendantModelNameType } from "@/types/itemDescendant";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-export interface ItemDescendantActionPageProps {
-  params: { root: ItemDescendantModelNameType };
-}
-
-export default async function ItemDescendantActionPage({ params: { root } }: ItemDescendantActionPageProps) {
-  const itemModel = root;
+export default async function ItemDescendantActionPage() {
+  const itemModel = "user";
   const resumeAction = "edit";
 
-  return !itemModel ? (
-    notFound()
-  ) : (
+  return (
     <Suspense fallback={<ItemDescendantActionSkeleton />}>
       <ItemDescendantList itemModel={itemModel} resumeAction={resumeAction} />
     </Suspense>

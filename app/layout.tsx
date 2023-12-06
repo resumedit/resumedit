@@ -9,6 +9,7 @@ import { Inter } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 import Navbar from "./(layout)/(navigation)/Navbar";
+import Breadcrumb from "./(layout)/(navigation)/Breadcrumbs";
 
 const font = Inter({ subsets: ["latin"] });
 
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <ClerkAuthProvider>
                 <header className="container">
                   <Navbar />
+                  <Breadcrumb />
                 </header>
                 <main className="container min-h-screen my-auto">{children}</main>
               </ClerkAuthProvider>

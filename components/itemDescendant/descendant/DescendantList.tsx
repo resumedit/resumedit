@@ -6,7 +6,6 @@ import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/crea
 import { findItemIndexByClientId } from "@/stores/itemDescendantStore/utils/descendantOrderValues";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { ItemClientStateType } from "@/types/item";
-import { getDescendantModel } from "@/types/itemDescendant";
 import {
   DndContext,
   DragEndEvent,
@@ -18,23 +17,22 @@ import {
 } from "@dnd-kit/core";
 import { restrictToParentElement } from "@dnd-kit/modifiers";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { useState } from "react";
 import { ItemDescendantRenderProps } from "../ItemDescendantList.client";
-import DescendantListItem from "./DescendantListItem";
-import DescendantListItemInput from "./DescendantListItemInput";
 import ItemDescendantSortableWrapper from "../utils/ItemDescendantSortableWrapper";
+import DescendantInput from "./DescendantInput";
+import DescendantListItem from "./DescendantListItem";
 
 interface ItemDescendantListProps extends ItemDescendantRenderProps {}
-export default function DescendantList({ rootItemModel, item, resumeAction }: ItemDescendantListProps) {
+export default function DescendantList(props: ItemDescendantListProps) {
+  const { rootItemModel, item, resumeAction } = props;
   const canEdit = resumeAction === "edit";
-  const [editingInput, setEditingInput] = useState(canEdit);
+  // const [editingInput, setEditingInput] = useState(canEdit);
   const settingsStore = useSettingsStore();
   const { showItemDescendantInternals } = settingsStore;
   const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
 
-  const itemModel = item.itemModel;
-  const descendantModel = getDescendantModel(itemModel);
-  const descendantsAreDragable = itemModel === "achievement" ? true : false;
+  const descendantModel = item.descendantModel;
+  const descendantsAreDragable = descendantModel === "achievement" ? true : false;
 
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);
@@ -42,9 +40,9 @@ export default function DescendantList({ rootItemModel, item, resumeAction }: It
   const reArrangeDescendants = store((state) => state.reArrangeDescendants);
   const resetDescendantsOrderValues = store((state) => state.resetDescendantsOrderValues);
 
-  const descendantDraft = store((state) => state.descendantDraft);
-  const updateDescendantDraft = store((state) => state.updateDescendantDraft);
-  const commitDescendantDraft = store((state) => state.commitDescendantDraft);
+  // const descendantDraft = store((state) => state.descendantDraft);
+  // const updateDescendantDraft = store((state) => state.updateDescendantDraft);
+  // const commitDescendantDraft = store((state) => state.commitDescendantDraft);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -74,7 +72,7 @@ export default function DescendantList({ rootItemModel, item, resumeAction }: It
     }
   };
 
-  return (
+  return !descendantModel ? null : (
     <>
       {canEdit && showListItemInternals ? (
         <button
@@ -88,7 +86,7 @@ export default function DescendantList({ rootItemModel, item, resumeAction }: It
           Reset order
         </button>
       ) : null}
-
+      {canEdit && descendantModel === "resume" ? <DescendantInput {...props} itemModel={descendantModel} /> : null}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -96,7 +94,7 @@ export default function DescendantList({ rootItemModel, item, resumeAction }: It
         onDragEnd={handleDragEnd}
       >
         <ul className="flex flex-col bg-elem-light dark:bg-elem-dark-1 overflow-auto">
-          {descendantModel && canEdit ? (
+          {/* {canEdit ? (
             <DescendantListItemInput
               itemModel={descendantModel}
               itemDraft={descendantDraft}
@@ -106,30 +104,28 @@ export default function DescendantList({ rootItemModel, item, resumeAction }: It
               setEditingInput={setEditingInput}
               canEdit={canEdit}
             />
-          ) : null}
-          {!descendantModel ? null : (
-            <ItemDescendantSortableWrapper items={descendants} disabled={!descendantsAreDragable}>
-              {descendants.map(
-                (item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>, index: number) => {
-                  const setDescendantData = store((state) => state.setDescendantData);
-                  const markDescendantAsDeleted = store((state) => state.markDescendantAsDeleted);
-                  return (
-                    <DescendantListItem
-                      key={item.clientId}
-                      index={index}
-                      rootItemModel={rootItemModel}
-                      itemModel={descendantModel}
-                      item={item as ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>}
-                      setItemData={setDescendantData}
-                      markItemAsDeleted={markDescendantAsDeleted}
-                      itemIsDragable={descendantsAreDragable}
-                      canEdit={canEdit}
-                    />
-                  );
-                },
-              )}
-            </ItemDescendantSortableWrapper>
-          )}
+          ) : null} */}
+          <ItemDescendantSortableWrapper items={descendants} disabled={!descendantsAreDragable}>
+            {descendants.map(
+              (item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>, index: number) => {
+                const setDescendantData = store((state) => state.setDescendantData);
+                const markDescendantAsDeleted = store((state) => state.markDescendantAsDeleted);
+                return (
+                  <DescendantListItem
+                    key={item.clientId}
+                    index={index}
+                    rootItemModel={rootItemModel}
+                    itemModel={descendantModel}
+                    item={item as ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>}
+                    setItemData={setDescendantData}
+                    markItemAsDeleted={markDescendantAsDeleted}
+                    itemIsDragable={descendantsAreDragable}
+                    canEdit={canEdit}
+                  />
+                );
+              },
+            )}
+          </ItemDescendantSortableWrapper>
         </ul>
       </DndContext>
     </>

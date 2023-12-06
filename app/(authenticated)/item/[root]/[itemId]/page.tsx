@@ -10,19 +10,19 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 export interface ItemDescendantActionPageProps {
-  params: { root: ItemDescendantModelNameType; id: IdSchemaType };
+  params: { root: ItemDescendantModelNameType; itemId: IdSchemaType };
 }
 
-export default async function ItemDescendantActionPage({ params: { root, id } }: ItemDescendantActionPageProps) {
+export default async function ItemDescendantActionPage({ params: { root, itemId } }: ItemDescendantActionPageProps) {
   const itemModel = root;
   const resumeAction = "view";
 
-  const validId = isValidItemId(id);
-  return !id || !validId ? (
+  const validId = isValidItemId(itemId);
+  return !itemId || !validId ? (
     notFound()
   ) : (
     <Suspense fallback={<ItemDescendantActionSkeleton />}>
-      <ItemDescendantList itemModel={itemModel} itemId={id} resumeAction={resumeAction} />
+      <ItemDescendantList itemModel={itemModel} itemId={itemId} resumeAction={resumeAction} />
     </Suspense>
   );
 }
