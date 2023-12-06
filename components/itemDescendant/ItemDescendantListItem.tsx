@@ -78,6 +78,7 @@ export default function ItemDescendantListItem({
 
   return item.deletedAt ? null : (
     <li
+      key={item.clientId}
       className="flex justify-between border-b border-shadow-light dark:border-dark-txt-1 bg-elem-light dark:bg-elem-dark-1"
       ref={setNodeRef}
       style={styles}

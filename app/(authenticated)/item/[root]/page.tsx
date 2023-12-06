@@ -1,26 +1,32 @@
-// @/app/(authenticated)/itemDescendant/[root]/page.tsx
+// @/app/(authenticated)/item/[action]/page.tsx
 
 "use server";
 
 import { getCurrentUserIdOrNull } from "@/actions/user";
 import ItemDescendantServerComponent from "@/components/itemDescendant/ItemDescendant.server";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ItemDescendantModelNameType } from "@/types/itemDescendant";
+import { ItemDescendantModelNameType, getParentModel } from "@/types/itemDescendant";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-export interface ItemDescendantPageProps {
+export interface ItemDescendantActionPageProps {
   params: { root: ItemDescendantModelNameType };
 }
 
-export default async function ItemDescendantPage({ params: { root } }: ItemDescendantPageProps) {
+export default async function ItemDescendantActionPage({ params: { root } }: ItemDescendantActionPageProps) {
+  const itemModel = getParentModel(root);
+  const resumeAction = "edit";
+
   const userId = await getCurrentUserIdOrNull();
-  return !userId ? null : (
-    <Suspense fallback={<ItemDescendantSkeleton />}>
-      <ItemDescendantServerComponent rootItemModel={root} parentId={userId} />
+  return !userId || !itemModel ? (
+    notFound()
+  ) : (
+    <Suspense fallback={<ItemDescendantActionSkeleton />}>
+      <ItemDescendantServerComponent itemModel={itemModel} resumeAction={resumeAction} />
     </Suspense>
   );
 }
 
-function ItemDescendantSkeleton() {
+function ItemDescendantActionSkeleton() {
   return <Skeleton className="border-2 border-primary-/20 h-48 w-full shadow-lg" />;
 }

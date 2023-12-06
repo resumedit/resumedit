@@ -123,7 +123,7 @@ export default function ItemDescendantListItemInput({
   // };
 
   return (
-    <div className="flex flex-col gap-y-2">
+    <div className="w-full flex flex-col gap-y-2">
       <div className="flex">
         <div className="flex-1 flex gap-x-4 gap-y-2" /* onMouseEnter={handleFocus} onMouseLeave={handleBlur} */>
           {itemFormFields.map((fieldName) => (

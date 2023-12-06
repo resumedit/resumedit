@@ -21,6 +21,7 @@ import { ItemDescendantListSynchronization } from "./ItemDescendantListSynchroni
 
 export interface ItemDescendantRenderProps {
   index: number;
+  id: string;
   item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>;
   itemModel: ItemDescendantModelNameType;
   rootItemModel: ItemDescendantModelNameType;
@@ -45,14 +46,7 @@ function ItemDescendantRender(props: ItemDescendantRenderProps): ReactNode {
   const atRootLevel = itemModel === rootItemModel;
 
   const renderItem = () => {
-    return (
-      <div className="space-y-1">
-        {/* <p>
-          renderItem({props.itemModel} at index {props.index})
-        </p> */}
-        <ItemDescendantItem {...props} />
-      </div>
-    );
+    return <ItemDescendantItem {...props} />;
   };
 
   return !descendantModel || item.deletedAt ? null : (
@@ -64,14 +58,15 @@ function ItemDescendantRender(props: ItemDescendantRenderProps): ReactNode {
           ?.filter((descendant) => !descendant.deletedAt)
           .map((descendant, descendantIndex) => (
             <ItemDescendantRender
-              key={descendant.clientId}
               {...props}
+              key={descendant.clientId}
+              id={descendant.clientId}
               index={descendantIndex}
               item={descendant}
               itemModel={descendantModel}
             />
           ))}
-      {descendantModel === leafItemModel ? null : (
+      {item.itemModel === leafItemModel ? null : (
         <ItemDescendantItemInput {...{ ...props, itemModel: descendantModel }} />
       )}
     </>
@@ -132,11 +127,7 @@ function ItemDescendantClientContext(props: ItemDescendantClientContextProps) {
     }
   }, [serverState, isStoreInitialized, updateStoreWithServerData]);
 
-  return !isStoreInitialized ? null : (
-    <div className="space-y-1">
-      <ItemDescendantRender {...clientProps} />
-    </div>
-  );
+  return !isStoreInitialized ? null : <ItemDescendantRender {...clientProps} id={clientProps.item.clientId} />;
 }
 
 export interface ItemDescendantClientComponentProps {

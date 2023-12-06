@@ -3,7 +3,7 @@
 import { handleItemDescendantListFromClient } from "@/actions/syncItemDescendant";
 import { toast } from "@/components/ui/use-toast";
 import { dateToISOLocal } from "@/lib/utils/formatDate";
-import { getItemId } from "@/schemas/id";
+import { getItemId, isValidItemId } from "@/schemas/id";
 import { ItemClientStateType, ItemDisposition, ItemServerToClientType } from "@/types/item";
 import { getDescendantModel } from "@/types/itemDescendant";
 import { ModificationTimestampType } from "@/types/timestamp";
@@ -190,8 +190,6 @@ export function handleItemDescendantListFromServer<
   SI extends ItemServerToClientType,
   SC extends ItemServerToClientType,
 >(clientState: Draft<ItemDescendantStore<I, C>>, serverState: ItemDescendantServerStateType<SI, SC>): void {
-  // >(clientState: ItemDescendantStore<I, C>,serverState: ItemDescendantServerStateType<SI, SC>, ): ItemDescendantStore<I, C> | null {
-
   if (!(clientState.lastModified instanceof Date)) {
     throw Error(
       `handleItemDescendantListFromServer: store has invalid lastModified=${
@@ -200,62 +198,67 @@ export function handleItemDescendantListFromServer<
     );
   }
 
-  // Assuming serverState contains the entire state of the current item (including item properties) and its descendants
-  const serverModified: ModificationTimestampType = serverState.lastModified;
-  const clientModified = clientState.lastModified;
+  // First determine, whether the local store corresponds to the serverState
+  if (
+    isValidItemId(clientState.id) &&
+    isValidItemId(clientState.parentId) &&
+    clientState.id === serverState.id &&
+    clientState.parentId === serverState.parentId
+  ) {
+    // serverState contains the entire state of the current item, i.e., item properties and descendants
+    const serverModified: ModificationTimestampType = serverState.lastModified;
+    const clientModified = clientState.lastModified;
 
-  const syncMsg =
-    "\n" +
-    `client: lastModified=${clientModified} descendants=${clientState.descendants?.length}` +
-    "\n" +
-    `server: lastModified=${serverModified} descendants=${serverState.descendants?.length}`;
+    const syncMsg =
+      "\n" +
+      `client: lastModified=${clientModified} descendants=${clientState.descendants?.length}` +
+      "\n" +
+      `server: lastModified=${serverModified} descendants=${serverState.descendants?.length}`;
 
-  if (serverModified <= clientModified) {
-    console.log(`handleItemDescendantListFromServer: CLIENT is more recent`, syncMsg);
-    // return null;
-    return;
-  }
+    if (serverModified <= clientModified) {
+      console.log(`handleItemDescendantListFromServer: CLIENT is more recent`, syncMsg);
+      // return null;
+      return;
+    }
 
-  console.log(`handleItemDescendantListFromServer: SERVER is more recent`, syncMsg);
-
-  // Handle initialization of the client's store: If the store does not have a valid `parentId`,
-  // we initialize it to the server's parentId and reset the timestamp to the epoch to ensure
-  // the rest of the store will be initialized with the server's state
-  if (!clientState.parentId) {
+    console.log(`handleItemDescendantListFromServer: SERVER is more recent`, syncMsg);
+  } else {
+    // Handle initialization of the client's store: reset the `lastModified` timestamp to the epoch
+    // to ensure that the rest of the store will be initialized with the server's state
+    console.log(
+      `handleItemDescendantListFromServer: SERVER id=${serverState.id} replaces client item with id=${clientState.id}`,
+    );
     console.log(
       `handleItemDescendantListFromServer: clientState.parentId is ${typeof clientState.parentId}:`,
       clientState.parentId,
     );
-    // mergedState = { ...mergedState, parentId: serverState.parentId, lastModified: new Date(0) };
-    clientState.parentId = serverState.parentId;
     clientState.lastModified = new Date(0);
   }
+
+  // Update the state of the current item (I) with the server's data
+  // Obtain a copy of the serverState but exclue `lastModified` and `descendants`,
+  // as those properties require separate handling
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { lastModified: serverModified, descendants: serverDescendants, ...serverItem } = serverState;
+  Object.assign(clientState, serverItem);
 
   // Only attempt to merge descendants if the itemModel has a descendant model
   const descendantModel = getDescendantModel(serverState.itemModel);
   if (descendantModel) {
     mergeDescendantListFromServer(clientState, serverState);
   }
-  // Update the state of the current item (I) with the server's data
-  // Object.assign(mergedState, serverState);
-  // Object.assign(clientState, serverState);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { descendants: serverDescendants, ...serverItem } = serverState;
-
-  Object.assign(clientState, serverItem);
+  // Update timestamp to server's `lastModified`
+  clientState.lastModified = serverState.lastModified;
 
   console.log(
     `handleItemDescendantListFromServer: synchronized: serverState.lastModified=${dateToISOLocal(
       serverState.lastModified,
     )} clientState.lastModified=${dateToISOLocal(clientState.lastModified)}:`,
-    "\n",
-    syncMsg,
     "\nClient state now contains",
     `${clientState.descendants?.length} descendants:`,
     clientState.descendants,
   );
-  // return mergedState;
 }
 
 export function sanitizeItemDescendantClientState<I extends ItemClientStateType, C extends ItemClientStateType>(

@@ -1,29 +1,34 @@
-// @/app/(authenticated)/itemDescendant/[root]/page.tsx
+// @/app/(authenticated)/itemDescendant/[root]/[action]/page.tsx
 
 "use server";
 
 import { getCurrentUserIdOrNull } from "@/actions/user";
 import ItemDescendantServerComponent from "@/components/itemDescendant/ItemDescendant.server";
 import { Skeleton } from "@/components/ui/skeleton";
-import { isValidItemId } from "@/schemas/id";
+import { IdSchemaType, isValidItemId } from "@/schemas/id";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-export default async function ItemDescendantPage() {
-  const itemModel = "user";
-  const resumeAction = "edit";
+export interface ItemDescendantActionPageProps {
+  params: { resumeId: IdSchemaType };
+}
+
+export default async function ItemDescendantActionPage({ params: { resumeId } }: ItemDescendantActionPageProps) {
+  const itemModel = "resume";
+  const id = resumeId;
+  const resumeAction = "view";
+
   const userId = await getCurrentUserIdOrNull();
-  const id = userId;
   const validId = isValidItemId(id);
-  return !id || !validId ? (
+  return !userId || !id || !validId ? (
     notFound()
   ) : (
-    <Suspense fallback={<ItemDescendantSkeleton />}>
+    <Suspense fallback={<ItemDescendantActionSkeleton />}>
       <ItemDescendantServerComponent itemModel={itemModel} itemId={id} resumeAction={resumeAction} />
     </Suspense>
   );
 }
 
-function ItemDescendantSkeleton() {
+function ItemDescendantActionSkeleton() {
   return <Skeleton className="border-2 border-primary-/20 h-48 w-full shadow-lg" />;
 }

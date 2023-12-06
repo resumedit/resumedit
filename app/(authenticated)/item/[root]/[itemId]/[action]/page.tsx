@@ -1,23 +1,33 @@
-// @/app/(authenticated)/itemDescendant/[root]/[action]/page.tsx
+// @/app/(authenticated)/item/[root]/[id]/[action]/page.tsx
 
 "use server";
 
 import { getCurrentUserIdOrNull } from "@/actions/user";
 import ItemDescendantServerComponent from "@/components/itemDescendant/ItemDescendant.server";
 import { Skeleton } from "@/components/ui/skeleton";
+import { IdSchemaType, isValidItemId } from "@/schemas/id";
 import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { ResumeActionType } from "@/types/resume";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 export interface ItemDescendantActionPageProps {
-  params: { root: ItemDescendantModelNameType; action: ResumeActionType };
+  params: { root: ItemDescendantModelNameType; id: IdSchemaType; action: ResumeActionType };
 }
 
-export default async function ItemDescendantActionPage({ params: { root, action } }: ItemDescendantActionPageProps) {
+export default async function ItemDescendantActionPage({
+  params: { root, id, action },
+}: ItemDescendantActionPageProps) {
+  const itemModel = root;
+  const resumeAction = action;
+
   const userId = await getCurrentUserIdOrNull();
-  return !userId ? null : (
+  const validId = isValidItemId(id);
+  return !userId || !id || !validId ? (
+    notFound()
+  ) : (
     <Suspense fallback={<ItemDescendantActionSkeleton />}>
-      <ItemDescendantServerComponent rootItemModel={root} parentId={userId} resumeAction={action} />
+      <ItemDescendantServerComponent itemModel={itemModel} itemId={id} resumeAction={resumeAction} />
     </Suspense>
   );
 }

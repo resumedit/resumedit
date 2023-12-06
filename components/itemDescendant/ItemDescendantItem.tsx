@@ -18,16 +18,14 @@ export default function ItemDescendantItem(props: ItemDescendantRenderProps) {
   const canEdit = itemModel === "user" ? false : resumeAction === "edit";
 
   return (
-    <>
-      <ItemDescendantListItem
-        index={index}
-        itemModel={itemModel}
-        item={item}
-        setItemData={setDescendantData}
-        markItemAsDeleted={markDescendantAsDeleted}
-        itemIsDragable={false}
-        canEdit={canEdit}
-      />
-    </>
+    <ItemDescendantListItem
+      index={index}
+      itemModel={itemModel}
+      item={item}
+      setItemData={setDescendantData}
+      markItemAsDeleted={markDescendantAsDeleted}
+      itemIsDragable={false}
+      canEdit={canEdit}
+    />
   );
 }
