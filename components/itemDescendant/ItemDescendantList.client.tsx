@@ -190,7 +190,7 @@ export default function ItemDescendantListContext(props: ItemDescendantListConte
   const clientId = getItemId(itemModel!);
   const parentId = serverState.parentId;
   const id = serverState.id;
-  const storeVersion = 1; // Or any logic to determine the version
+  const storeVersion = 1; // FIXME: add logic to determine the version from the serverUpdate
   const logUpdateFromServer = false; //process.env.NODE_ENV === "development";
 
   return (

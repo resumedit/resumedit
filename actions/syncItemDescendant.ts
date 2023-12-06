@@ -9,9 +9,9 @@ import {
   ItemDescendantClientStateType,
   ItemDescendantServerStateType,
   ItemDescendantStore,
-  ItemServerToClientDescendantListType,
+  ItemServerStateDescendantListType,
 } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { ItemClientStateType, ItemClientToServerType, ItemServerToClientType } from "@/types/item";
+import { ItemClientStateType, ItemClientToServerType, ItemServerStateType } from "@/types/item";
 import {
   getDescendantModel,
   getModelAccessor,
@@ -26,9 +26,24 @@ import {
   softDeleteAndCascadeItem,
 } from "./itemDescendant";
 
+export async function handleNestedItemDescendantListFromClient(
+  item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>,
+): Promise<ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType> | null> {
+  const itemResult = await handleItemDescendantListFromClient(item);
+  let descendantResults: Array<ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType> | null> = [];
+  if (itemResult) {
+    for (const descendant of itemResult.descendants) {
+      const descendantResult = await handleNestedItemDescendantListFromClient(descendant);
+      descendantResults = [...descendantResults, descendantResult];
+    }
+    console.log(`handleNestedItemDescendantListFromClient:`, itemResult, descendantResults);
+  }
+  return itemResult;
+}
+
 export async function handleItemDescendantListFromClient(
   clientState: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>,
-): Promise<ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType> | null> {
+): Promise<ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType> | null> {
   const itemModel = clientState.itemModel;
   const descendantModel = getDescendantModel(itemModel);
 
@@ -69,7 +84,7 @@ export async function handleItemDescendantListFromClient(
       // The descendants covered by the client are set to the clientLastModified timestamp
       const lastModified = clientLastModified;
 
-      const updatedItemDescendantState: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType> =
+      const updatedItemDescendantState: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType> =
         await prisma.$transaction(async (prisma) => {
           // Process both the properties of the current item and its descendants
           const prismaItemModelInstance = getModelAccessor(itemModel, prisma as PrismaClient);
@@ -78,24 +93,32 @@ export async function handleItemDescendantListFromClient(
           if (itemModel === "user") {
             const { id, email, firstName, lastName } = clientState as unknown as UserInputType;
             const data = { id, email, firstName, lastName };
+            console.log(`handleItemDescendantListFromClient: ${itemModel}.update:`, {
+              where: { id },
+              data,
+            });
             await prismaItemModelInstance.update({
               where: { id },
               data,
             });
           } else {
             // Update current item properties
+            console.log(`handleItemDescendantListFromClient: ${itemModel}.update:`, {
+              where: { id },
+              data: keepOnlyFieldsForUpdate<ItemClientToServerType>(existingItem, currentTimestamp),
+            });
             await prismaItemModelInstance.update({
               where: { id },
               data: keepOnlyFieldsForUpdate<ItemClientToServerType>(existingItem, currentTimestamp),
             });
           }
-          let descendantsAfterUpdate = clientDescendants as ItemServerToClientDescendantListType<
-            ItemServerToClientType,
-            ItemServerToClientType
+          let descendantsAfterUpdate = clientDescendants as ItemServerStateDescendantListType<
+            ItemServerStateType,
+            ItemServerStateType
           >;
-          let descendantsCreatedByThisClient: ItemServerToClientDescendantListType<
-            ItemServerToClientType,
-            ItemServerToClientType
+          let descendantsCreatedByThisClient: ItemServerStateDescendantListType<
+            ItemServerStateType,
+            ItemServerStateType
           > = [];
 
           if (descendantModel) {
@@ -160,6 +183,7 @@ export async function handleItemDescendantListFromClient(
                       `handleItemDescendantListFromClient: client sent an descendant without "id": create new descendant with data:`,
                       data,
                     );
+                    console.log(`handleItemDescendantListFromClient: ${descendantModel}.create:`, data);
                     const createdItem = await prismaDescendantModelInstance.create({
                       data,
                     });
@@ -184,7 +208,11 @@ export async function handleItemDescendantListFromClient(
             await Promise.all(descendantPromises);
 
             // Fetch updated descendants to ensure we include only existing ones
-            descendantsAfterUpdate = await getItemsByParentId(descendantModel, id, prisma as PrismaClient);
+            descendantsAfterUpdate = (await getItemsByParentId(
+              descendantModel,
+              id,
+              prisma as PrismaClient,
+            )) as ItemServerStateDescendantListType<ItemServerStateType, ItemServerStateType>;
 
             // Replace the descendants created by the client to include the clientId
             descendantsAfterUpdate = descendantsAfterUpdate.map((descendant) => {
@@ -200,8 +228,7 @@ export async function handleItemDescendantListFromClient(
                 .map((a: ItemClientStateType) => a.id?.substring(0, 7))
                 .join(", ")}\n.findMany returned ${descendantsAfterUpdate.length} descendants:\n${descendantsAfterUpdate
                 .map(
-                  (a: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>) =>
-                    a.id?.substring(0, 7),
+                  (a: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>) => a.id?.substring(0, 8),
                 )
                 .join(", ")}\n`,
             );
@@ -219,7 +246,7 @@ export async function handleItemDescendantListFromClient(
               // Compare server descendants with client descendants
               const clientItemIds = new Set(clientDescendants.map((a) => a.id));
               clientDescendantsComplete = descendantsAfterUpdate.every(
-                (serverItem: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>) =>
+                (serverItem: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>) =>
                   clientItemIds.has(serverItem.id),
               );
             }
@@ -258,12 +285,14 @@ export async function handleItemDescendantListFromClient(
             ...existingItem,
             lastModified: finalLastModified,
             descendants: descendantsAfterUpdate,
-          } as ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>;
+          } as ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>;
         });
 
       return updatedItemDescendantState;
     } else if (clientLastModified < serverLastModified) {
-      return getItemDescendantList(itemModel, existingItem.id!);
+      return getItemDescendantList(itemModel, existingItem.id!) as Promise<
+        ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>
+      >;
     } else {
       return null;
     }
@@ -273,6 +302,8 @@ export async function handleItemDescendantListFromClient(
     const itemData = keepOnlyFieldsForUpdate<ItemClientToServerType>({ ...clientState, parentId }, clientLastModified);
     console.log(`handleItemDescendantListFromClient: parentId=${parentId}: create item with itemData:`, itemData);
     const prismaItemModelInstance = getModelAccessor(itemModel, prisma as PrismaClient);
+    console.log(`handleItemDescendantListFromClient: ${itemModel}.create:`, itemData);
+
     return await prismaItemModelInstance.create({
       itemData,
     });

@@ -125,6 +125,7 @@ const fieldsToExcludeFromCreate = [
   "parentId",
   "id",
   "itemModel",
+  "itemData",
   "descendantModel",
   "descendants",
   "disposition",

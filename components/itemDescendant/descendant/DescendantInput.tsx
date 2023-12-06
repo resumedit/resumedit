@@ -39,6 +39,11 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
   };
 
   const itemDraft = getItemDraft();
+
+  if (ancestorClientIdChain.length > 0) {
+    console.log(ancestorClientIdChain);
+  }
+
   return (
     <div key={item.clientId} className="flex gap-x-4 items-center">
       <div

@@ -8,7 +8,7 @@ import {
   ItemDescendantServerStateType,
   ItemServerStateDescendantListType,
 } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { ItemServerStateType, ItemServerToClientType } from "@/types/item";
+import { ItemServerStateType } from "@/types/item";
 import { ItemDescendantModelNameType, getDescendantModel, getModelAccessor } from "@/types/itemDescendant";
 import { PrismaClient } from "@prisma/client";
 
@@ -39,7 +39,7 @@ export async function getItemsByParentId(
   model: ItemDescendantModelNameType,
   parentId: IdSchemaType,
   prismaTransaction?: PrismaClient,
-): Promise<ItemServerStateDescendantListType<ItemServerToClientType, ItemServerToClientType>> {
+): Promise<ItemServerStateDescendantListType<ItemServerStateType, ItemServerStateType>> {
   const prismaClient = prismaTransaction || prisma;
   const prismaItemModelInstance = getModelAccessor(model, prismaClient);
   // Retrieve the items
@@ -55,7 +55,7 @@ export async function getItemDescendantList(
   itemModel: ItemDescendantModelNameType,
   itemId: IdSchemaType,
   prismaTransaction?: PrismaClient,
-): Promise<ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>> {
+): Promise<ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>> {
   const executeLogic = async (prismaClient: PrismaClient) => {
     const item = await getItem(itemModel, itemId, prisma);
     if (!item) {

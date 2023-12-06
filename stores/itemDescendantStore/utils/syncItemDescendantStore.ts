@@ -1,50 +1,53 @@
 // @/stores/itemDescendant/util/syncItemDescendant.ts
 
-import { handleItemDescendantListFromClient } from "@/actions/syncItemDescendant";
+import { handleNestedItemDescendantListFromClient } from "@/actions/syncItemDescendant";
 import { toast } from "@/components/ui/use-toast";
 import { dateToISOLocal } from "@/lib/utils/formatDate";
 import { getItemId, isValidItemId } from "@/schemas/id";
-import { ItemClientStateType, ItemClientToServerType, ItemDisposition, ItemServerToClientType } from "@/types/item";
+import {
+  ClientIdType,
+  ItemClientStateType,
+  ItemClientToServerType,
+  ItemDisposition,
+  ItemServerToClientType,
+} from "@/types/item";
 import { getDescendantModel, stripFieldsForDatabase } from "@/types/itemDescendant";
 import { ModificationTimestampType } from "@/types/timestamp";
 import { Draft } from "immer";
 import {
   ItemDescendantClientStateType,
-  ItemDescendantHookType,
   ItemDescendantServerStateType,
-  ItemDescendantServerToClientType,
   ItemDescendantStore,
+  ItemDescendantStoreStateOnly,
 } from "../createItemDescendantStore";
 
 export function keepOnlyStateForServer<T extends ItemClientToServerType>(
   rootState: T,
   lastModified?: Date,
 ): ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType> {
-  // Trim down store state for transmitting to server
-  // Essentially, we want to keep only the item and the descendant list
-  // First, remove all functions
-  const rootStateWithoutFunctions = JSON.parse(
-    JSON.stringify(rootState, (key, val) => (typeof val === "function" ? undefined : val)),
-  );
-
-  // Then, remove all propeties that are not part of the item
-  const nonItemRootStateProperties = new Set<
-    "parentModel" | "itemModel" | "descendantModel" | "descendantDraft" | "logUpdateFromServer"
-  >();
+  // Remove all properties that are not part of the item
+  const nonItemRootStateProperties = new Set<"descendantDraft" | "logUpdateFromServer">();
   const fieldsToStrip = new Set<keyof T>([...nonItemRootStateProperties] as Array<keyof T>);
 
-  const itemData = stripFieldsForDatabase(rootStateWithoutFunctions, fieldsToStrip, lastModified);
+  const itemData = stripFieldsForDatabase(rootState, fieldsToStrip, lastModified);
 
   const payload = { ...itemData };
   return payload as ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>;
 }
 
-export async function sendItemDescendantToServer(store: ItemDescendantHookType) {
-  const rootState = store((state) => state);
-  const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
-
+export async function syncItemDescendantStoreWithServer(
+  rootState: ItemDescendantStoreStateOnly<ItemClientStateType, ItemClientStateType>,
+  updateStoreWithServerData: (
+    serverState: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>,
+  ) => void,
+): Promise<ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType> | null> {
   const clientModified = rootState.lastModified;
-  const updatedState = await handleItemDescendantListFromClient(rootState);
+
+  const clientToServerState = keepOnlyStateForServer<ItemClientToServerType>(rootState);
+  console.log(`ItemDescendantListSynchronization:sendItemDescendantToServer:clientToServerState:`, clientToServerState);
+
+  // const updatedItemList = await handleItemDescendantListFromClient(clientToServerState);
+  const updatedState = await handleNestedItemDescendantListFromClient(clientToServerState);
 
   if (updatedState) {
     updateStoreWithServerData(updatedState);
@@ -59,6 +62,33 @@ export async function sendItemDescendantToServer(store: ItemDescendantHookType) 
       });
     }
   }
+  return updatedState;
+}
+
+function augmentItemFromServer<SI extends ItemServerToClientType, SC extends ItemServerToClientType>(
+  serverItem: ItemDescendantServerStateType<SI, SC>,
+  parentClientId: ClientIdType,
+): Draft<ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>> {
+  // Disposition property is set to `synced` on all descendants
+  const dispositionProperty = {
+    disposition: ItemDisposition.Synced,
+  };
+  const itemModel = serverItem.descendantModel!;
+  const descendantModel = itemModel ? getDescendantModel(itemModel) : null;
+  const modelProperties = {
+    itemModel,
+    descendantModel,
+  };
+
+  const clientItem = {
+    ...serverItem,
+    ...modelProperties,
+    ...dispositionProperty,
+    parentClientId,
+    clientId: getItemId(serverItem.descendantModel!),
+    descendants: serverItem.descendants || [],
+  };
+  return clientItem as Draft<ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>>;
 }
 
 function mergeDescendantListFromServer<
@@ -66,19 +96,14 @@ function mergeDescendantListFromServer<
   C extends ItemClientStateType,
   SI extends ItemServerToClientType,
   SC extends ItemServerToClientType,
->(clientState: Draft<ItemDescendantStore<I, C>>, serverState: ItemDescendantServerToClientType<SI, SC>): void {
-  // We slap the same disposition property on all descendants
-  const dispositionProperty = {
-    disposition: ItemDisposition.Synced,
-  };
-
-  const itemModel = serverState.descendantModel;
-  const descendantModel = itemModel ? getDescendantModel(itemModel) : null;
-  const creationProperties = {
-    itemModel,
-    descendantModel,
-    descendants: [],
-  };
+>(clientState: Draft<ItemDescendantClientStateType<I, C>>, serverState: ItemDescendantServerStateType<SI, SC>): void {
+  // const itemModel = serverState.descendantModel;
+  // const descendantModel = itemModel ? getDescendantModel(itemModel) : null;
+  // const creationProperties = {
+  //   itemModel,
+  //   descendantModel,
+  //   descendants: [],
+  // };
 
   const serverModified: ModificationTimestampType = serverState.lastModified;
   const clientModified = clientState.lastModified;
@@ -128,11 +153,6 @@ function mergeDescendantListFromServer<
     1. ... TODO
     */
 
-    // FIXME: As a stopgap measure, we used a temporary array to hold the merged
-    // descendants; however, this does not suffice to gracefully update new descendants
-    // created on the client.
-    // const mergedDescendants = [];
-
     for (const serverDescendant of serverState.descendants) {
       let clientDescendant;
       if (serverDescendant.clientId) {
@@ -179,35 +199,16 @@ function mergeDescendantListFromServer<
               `mergeDescendantListFromServer: clientId=${clientDescendant.clientId} parentClientId=${clientDescendant.parentClientId}`,
             );
           }
-          const mergedDescendant = {
-            ...clientDescendant,
-            ...serverDescendant,
-            ...dispositionProperty,
-            ...deletedAtProperty,
-          } as Draft<ItemDescendantClientStateType<I, C>>;
-
-          clientState.descendants = clientState.descendants.map((descendant) => {
-            if (descendant.id === mergedDescendant.id) {
-              return mergedDescendant;
-            }
-            return descendant;
-          });
-          // mergedDescendants.push(mergedDescendant);
+          // Before merging the descendant, we need to descend into the next level down
+          mergeDescendantListFromServer(clientDescendant, serverDescendant);
         }
       } else {
         // New item from server
-        const newDescendant = {
-          ...creationProperties,
-          ...serverDescendant,
-          ...dispositionProperty,
-          parentClientId: clientState.clientId,
-          clientId: getItemId(clientState.descendantModel!),
-        } as Draft<ItemDescendantClientStateType<I, C>>;
+        const newDescendant = augmentItemFromServer({ ...serverDescendant }, clientState.clientId);
+
         clientState.descendants = [...clientState.descendants, newDescendant];
-        // mergedDescendants.push(newDescendant);
       }
     }
-    // clientState.descendants = mergedDescendants as Draft<ItemDescendantClientStateType<I, C>>[];
   } else {
     if (clientHasDescendants) {
       // Only the client has descendants. If the server has more recent
@@ -225,15 +226,11 @@ function mergeDescendantListFromServer<
           `mergeDescendantListFromServer: SERVER is more recent and client has no descendants: Initialize with server's descendants`,
         );
         // Descendant list of server initializes the one of the client
+        // Before we merge this new descendant from the server, we need to
+        // augment its descendant list with clientIds recursively
         const clientDescendants = serverState.descendants.map(
           (serverDescendant: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>) => {
-            // New item from server
-            const newDescendant = {
-              ...serverDescendant,
-              ...dispositionProperty,
-              parentClientId: clientState.clientId,
-              clientId: getItemId(clientState.descendantModel!),
-            };
+            const newDescendant = augmentItemFromServer(serverDescendant, clientState.clientId);
             return newDescendant as ItemDescendantClientStateType<I, C>;
           },
         );
@@ -303,7 +300,7 @@ export function handleItemDescendantListFromServer<
     clientState.lastModified = new Date(0);
   }
 
-  // Update the state of the current item (I) with the server's data
+  // Update the state of the current item with the server's data
   // Obtain a copy of the serverState but exclue `lastModified` and `descendants`,
   // as those properties require separate handling
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

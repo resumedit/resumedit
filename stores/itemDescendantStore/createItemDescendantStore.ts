@@ -1,4 +1,5 @@
 // @/stores/itemDescendant/createItemDescendantStore.ts
+import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { IdSchemaType, getItemId } from "@/schemas/id";
 import {
   ClientIdType,
@@ -8,7 +9,6 @@ import {
   ItemDisposition,
   ItemOrderableClientStateType,
   ItemServerStateType,
-  ItemServerToClientType,
 } from "@/types/item";
 import { ItemDescendantModelNameType, createDateSafeLocalstorage, getDescendantModel } from "@/types/itemDescendant";
 import { Draft } from "immer";
@@ -17,7 +17,7 @@ import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { reBalanceListOrderValues, updateListOrderValues } from "./utils/descendantOrderValues";
 import { logUpdateStoreWithServerData } from "./utils/logItemDescendantStore";
-import { handleItemDescendantListFromServer } from "./utils/syncItemDescendant";
+import { handleItemDescendantListFromServer } from "./utils/syncItemDescendantStore";
 
 // Type used by client to maintain client state
 export type ItemClientStateDescendantListType<I, C> = Array<ItemDescendantClientStateType<I, C>>;
@@ -40,7 +40,6 @@ export type ItemDescendantStoreState<I, C> = ItemClientStateType & {
 
 // Type used by client to maintain client state with orderable descendants
 export type ItemOrderableClientStateDescendantListType<I, C> = Array<ItemOrderableDescendantClientStateType<I, C>>;
-
 export type ItemOrderableDescendantClientStateType<I, C> = ItemClientStateType & {
   itemModel: ItemDescendantModelNameType;
   descendantModel: ItemDescendantModelNameType | null;
@@ -49,7 +48,6 @@ export type ItemOrderableDescendantClientStateType<I, C> = ItemClientStateType &
 
 // The store state additionally includes a descendantDraft at the item level
 export type ItemOrderableStoreStateDescendantListType<I, C> = Array<ItemOrderableDescendantStoreStateType<I, C>>;
-
 export type ItemOrderableDescendantStoreStateType<I, C> = ItemClientStateType & {
   itemModel: ItemDescendantModelNameType;
   descendantModel: ItemDescendantModelNameType | null;
@@ -57,32 +55,32 @@ export type ItemOrderableDescendantStoreStateType<I, C> = ItemClientStateType & 
   descendantDraft: ItemDataType<C>;
 };
 
-export type ItemServerStateDescendantListType<I, C> = Array<ItemDescendantServerStateType<I, C>>;
-
 // Type used by server to maintain server state
+export type ItemServerStateDescendantListType<I, C> = Array<ItemDescendantServerStateType<I, C>>;
 export type ItemDescendantServerStateType<I, C> = ItemServerStateType & {
   itemModel: ItemDescendantModelNameType;
   descendantModel: ItemDescendantModelNameType | null;
   descendants: ItemServerStateDescendantListType<I, C>;
 };
 
-export type ItemServerStateDescendantOrderableListType<I, C> = Array<ItemDescendantServerStateOrderableType<I, C>>;
-
-export type ItemDescendantServerStateOrderableType<I, C> = ItemServerStateType & {
-  order: number;
-  itemModel: ItemDescendantModelNameType;
-  descendantModel: ItemDescendantModelNameType | null;
-  descendants: ItemServerStateDescendantOrderableListType<I, C>;
-};
+// Type used by server to maintain server state with orderable descendants
+// export type ItemServerStateDescendantOrderableListType<I, C> = Array<ItemDescendantServerStateOrderableType<I, C>>;
+// export type ItemDescendantServerStateOrderableType<I, C> = ItemServerStateType & {
+//   order: number;
+//   itemModel: ItemDescendantModelNameType;
+//   descendantModel: ItemDescendantModelNameType | null;
+//   descendants: ItemServerStateDescendantOrderableListType<I, C>;
+// };
 
 // Type used by server to send its state to the client
-export type ItemServerToClientDescendantListType<I, C> = Array<ItemDescendantServerToClientType<I, C>>;
+// FIXME: Replaced by ItemDescendantServerStateType to allow recursive calls of merge functions
+// export type ItemServerToClientDescendantListType<I, C> = Array<ItemDescendantServerToClientType<I, C>>;
 
-export type ItemDescendantServerToClientType<I, C> = ItemServerToClientType & {
-  itemModel: ItemDescendantModelNameType;
-  descendantModel: ItemDescendantModelNameType | null;
-  descendants: ItemServerToClientDescendantListType<I, C>;
-};
+// export type ItemDescendantServerToClientType<I, C> = ItemServerToClientType & {
+//   itemModel: ItemDescendantModelNameType;
+//   descendantModel: ItemDescendantModelNameType | null;
+//   descendants: ItemServerToClientDescendantListType<I, C>;
+// };
 
 export type ItemDescendantStoreActions<I extends ItemClientStateType, C extends ItemClientStateType> = {
   setItemData: (data: ItemDataUntypedType, clientId: ClientIdType) => void;
@@ -107,7 +105,7 @@ export type ItemDescendantStoreActions<I extends ItemClientStateType, C extends 
   updateDescendantDraft: (descendantData: ItemDataUntypedType, ancestorClientIds: Array<ClientIdType>) => void;
   commitDescendantDraft: (ancestorClientIds: Array<ClientIdType>) => void;
   updateStoreWithServerData: (
-    serverState: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>,
+    serverState: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>,
   ) => void;
 };
 
@@ -125,6 +123,30 @@ type ItemDescendantSelectorType<I extends ItemClientStateType, C extends ItemCli
 export type ItemDescendantHookType = <I extends ItemClientStateType, C extends ItemClientStateType, T>(
   selector?: ItemDescendantSelectorType<I, C, T>,
 ) => T;
+
+// Mapped type to extract the keys of ItemDescendantStoreActions
+type ItemDescendantStoreActionKeys<
+  I extends ItemClientStateType,
+  C extends ItemClientStateType,
+> = keyof ItemDescendantStoreActions<I, C>;
+
+// Define a type for only the state properties of the store
+export type ItemDescendantStoreStateOnly<I extends ItemClientStateType, C extends ItemClientStateType> = Omit<
+  ItemDescendantStore<I, C>,
+  ItemDescendantStoreActionKeys<I, C>
+>;
+
+// Custom hook to access only the state of the store
+export function useItemDescendantStoreState(
+  storeName: string,
+): ItemDescendantStoreStateOnly<ItemClientStateType, ItemClientStateType> {
+  const store = useItemDescendantStore(storeName);
+
+  return store((state) => {
+    // Type assertion to ensure the returned type is ItemDescendantStoreStateOnly
+    return state as ItemDescendantStoreStateOnly<ItemClientStateType, ItemClientStateType>;
+  });
+}
 
 export interface ItemDescendantStoreConfigType {
   itemModel: ItemDescendantModelNameType;
@@ -396,7 +418,7 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
           });
         },
         updateStoreWithServerData: (
-          serverState: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>,
+          serverState: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>,
         ) => {
           if (logUpdateFromServer) {
             logUpdateStoreWithServerData(
