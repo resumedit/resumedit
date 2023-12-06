@@ -9,14 +9,19 @@ import { ClientIdType, ItemDisposition } from "@/types/item";
 import { getDescendantModel, getItemDescendantStoreStateForServer } from "@/types/itemDescendant";
 import { ModificationTimestampType } from "@/types/timestamp";
 import { Draft } from "immer";
-import { ItemDescendantStore } from "../createItemDescendantStore";
+import { ItemDescendantClientState, ItemDescendantStore } from "../createItemDescendantStore";
 
 export async function syncItemDescendantStoreWithServer(
   store: ItemDescendantStore,
   updateStoreWithServerData: (serverState: ItemDescendantServerStateType) => void,
-): Promise<ItemDescendantServerStateType | Date> {
-  const clientModified = store.lastModified;
-  const rootState = getItemDescendantStoreStateForServer(store);
+  force?: boolean,
+): Promise<ItemDescendantServerStateType | Date | null> {
+  let rootState = getItemDescendantStoreStateForServer(store);
+  let clientModified = new Date(rootState.lastModified);
+  if (force) {
+    clientModified = new Date(rootState.lastModified.getTime() + 1);
+    rootState = updateItemToLastModifiedDescendant(rootState, clientModified);
+  }
   const updatedState = await handleNestedItemDescendantListFromClient(rootState);
 
   if (updatedState && !(updatedState instanceof Date)) {
@@ -33,6 +38,48 @@ export async function syncItemDescendantStoreWithServer(
     }
   }
   return updatedState;
+}
+function updateItemToLastModifiedDescendant(
+  item: ItemDescendantClientState,
+  lastModified: Date,
+): ItemDescendantClientState {
+  // Base case: If the item has no descendants, return the item as is
+  if (!item.descendants || item.descendants.length === 0) {
+    if (item.disposition !== ItemDisposition.Synced) {
+      return { ...item, lastModified: lastModified };
+    }
+    return item;
+  }
+
+  // Recursive case: Traverse the descendants and update their lastModified timestamps
+  let latestTimestamp = item.disposition !== ItemDisposition.Synced ? lastModified : item.lastModified;
+  const updatedDescendants = item.descendants.map((descendant) => {
+    // Update each descendant recursively
+    const updatedDescendant = updateItemToLastModifiedDescendant(descendant, lastModified);
+
+    // Find the latest timestamp among descendants
+    if (updatedDescendant.lastModified > latestTimestamp) {
+      latestTimestamp = updatedDescendant.lastModified;
+    }
+
+    return updatedDescendant;
+  });
+
+  // Update the item's lastModified timestamp if a descendant has a more recent timestamp
+  // or if the item itself is not synced
+  if (latestTimestamp > item.lastModified || item.disposition !== ItemDisposition.Synced) {
+    return {
+      ...item,
+      lastModified: latestTimestamp,
+      descendants: updatedDescendants,
+    };
+  }
+
+  // If no descendant has a more recent timestamp and item is synced, return the item with updated descendants
+  return {
+    ...item,
+    descendants: updatedDescendants,
+  };
 }
 
 export function handleNestedItemDescendantListFromServer(
@@ -202,7 +249,8 @@ function mergeDescendantListFromServer(
       let clientDescendant;
       const descendantLastModified = serverDescendant.lastModified;
       // FIXME: Server should only return a clientId for newly created items
-      // Currently, it returns one for all items
+      // Currently, it returns one for all items that the client sent, even those that
+      // are not new to the server
       if (serverDescendant.clientId) {
         clientDescendant = clientState.descendants.find(
           (descendant: ItemDescendantClientStateType) => descendant.clientId === serverDescendant.clientId,

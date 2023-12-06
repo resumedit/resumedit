@@ -28,7 +28,7 @@ import { PrismaClient } from "@prisma/client";
 
 export async function handleNestedItemDescendantListFromClient(
   clientItem: ItemDescendantClientStateType,
-): Promise<ItemDescendantServerStateType | Date> {
+): Promise<ItemDescendantServerStateType | Date | null> {
   // Take the time
   const currentTimestamp = new Date();
 
@@ -39,8 +39,8 @@ export async function handleNestedItemDescendantListFromClient(
     return processClientItemRecursively(clientItem, currentTimestamp, prismaTransaction as PrismaClient);
   });
 
-  if (!(response instanceof Date)) {
-    // Enssure the response corresponds to the schema
+  if (response !== null && !(response instanceof Date)) {
+    // Ensure the response corresponds to the schema
     response = response.descendants ? response : { ...response, descendants: [] };
     itemDescendantServerToClientSchema.parse(response);
   }
@@ -52,11 +52,11 @@ async function processClientItemRecursively(
   clientItem: ItemDescendantClientStateType,
   currentTimestamp: Date,
   prismaTransaction: PrismaClient,
-): Promise<ItemDescendantServerStateType | Date> {
+): Promise<ItemDescendantServerStateType | Date | null> {
   /*
    * Process ITEM
    */
-  let serverItem: ItemDescendantServerStateType | Date = await processClientItem(
+  let serverItem: ItemDescendantServerStateType | Date | null = await processClientItem(
     clientItem,
     prismaTransaction,
     currentTimestamp,
@@ -65,10 +65,16 @@ async function processClientItemRecursively(
   /*
    * Process DESCENDANTS, if any
    */
-  if (serverItem instanceof Date) {
+  if (serverItem === null) {
     console.log(
-      `processClientItemRecursively: clientItem.itemModel=${clientItem.itemModel}: processClientItem returned serverItem as Date`,
+      `processClientItemRecursively: clientItem.itemModel=${clientItem.itemModel}: processClientItem returned null`,
     );
+    return serverItem;
+  } else if (serverItem instanceof Date) {
+    console.log(
+      `processClientItemRecursively: clientItem.itemModel=${clientItem.itemModel}: processClientItem returned Date`,
+    );
+    return serverItem;
   } else if (clientItem.descendants.length === 0) {
     console.log(
       `processClientItemRecursively: clientItem.itemModel=${clientItem.itemModel}: clientItem has no descendants`,
@@ -78,6 +84,7 @@ async function processClientItemRecursively(
     // Pass along the serverItem's `id` for the case where the descendant has just been created on the server
     // and the descendants from the client do not contain the parentId yet
     const parentId = serverItem.id;
+    let lastModified = serverItem.lastModified;
     const updatedDescendants: Array<ItemDescendantServerStateType> = [];
     console.log(
       `processClientItemRecursively: clientItem.itemModel=${clientItem.itemModel}: clientItem has ${clientItem.descendants.length} descendants to process:`,
@@ -89,15 +96,33 @@ async function processClientItemRecursively(
         currentTimestamp,
         prismaTransaction,
       );
-      console.log(
-        `processClientItemRecursively: descendant.itemModel=${descendant.itemModel}: descendantResult`,
-        descendantResult,
-      );
-      if (!(descendantResult instanceof Date)) {
+      if (descendantResult === null) {
+        // FIXME: Need to determine an adequate timestamp to ensure the client
+        // processes the update
+        lastModified = new Date();
+        console.log(
+          `processClientItemRecursively: descendant.itemModel=${
+            descendant.itemModel
+          }: processItem returned ${descendantResult}: updated lastModified=${dateToISOLocal(lastModified)}`,
+        );
+      } else if (descendantResult instanceof Date) {
+        lastModified = descendantResult > lastModified ? descendantResult : lastModified;
+        console.log(
+          `processClientItemRecursively: descendant.itemModel=${
+            descendant.itemModel
+          }: processItem returned Date=${dateToISOLocal(descendantResult)}: updated lastModified=${dateToISOLocal(
+            lastModified,
+          )}`,
+        );
+      } else {
+        console.log(
+          `processClientItemRecursively: descendant.itemModel=${descendant.itemModel}: descendantResult`,
+          descendantResult,
+        );
         updatedDescendants.push(descendantResult);
       }
     }
-    serverItem = { ...serverItem, descendants: updatedDescendants };
+    serverItem = { ...serverItem, descendants: updatedDescendants, lastModified };
   }
 
   const response = augmentServerStateToDescendantServerState(serverItem);
@@ -112,7 +137,7 @@ async function processClientItem(
   clientItem: ItemClientStateType,
   prismaTransaction: PrismaClient,
   currentTimestamp: Date,
-): Promise<ItemDescendantServerStateType | Date> {
+): Promise<ItemDescendantServerStateType | Date | null> {
   if (!clientItem.itemModel || !clientItem.parentId) {
     throw Error(
       `processClientItem: itemModel=${clientItem.itemModel} parentId=${
@@ -126,9 +151,7 @@ async function processClientItem(
 
   // Ensure that the client's lastModified timestamp is less recent than currentTimestamp
   const clientLastModified =
-    clientItem.lastModified < currentTimestamp
-      ? clientItem.lastModified
-      : new Date(currentTimestamp.getMilliseconds() - 1);
+    clientItem.lastModified < currentTimestamp ? clientItem.lastModified : new Date(currentTimestamp.getTime() + 1);
 
   // The best case scenario is that the client was the only one to have made changes
   // In this case, we return only the `lastModified` timestamp of the client
@@ -142,9 +165,16 @@ async function processClientItem(
     const existingClientItem = augmentClientStateToServerState(clientItem);
     const id = existingClientItem.id!;
 
-    const serverOutput = (await prismaItemModelInstance.findUnique({
+    const serverOutput: ItemOutputType = await prismaItemModelInstance.findUnique({
       where: { id },
-    })) as ItemOutputType;
+    });
+
+    // If the item cannot be found, it means that the client has a stale copy
+    // and should remove it
+    if (!serverOutput) {
+      console.log(`: client sent an item that does not exist on the server:`, clientItem);
+      return null;
+    }
 
     const serverLastModifiedDb = serverOutput?.lastModified;
 
@@ -171,11 +201,11 @@ async function processClientItem(
       serverItem = augmentServerOutputToServerState(mergedItem, clientItem);
     } else if (clientLastModified < serverLastModified) {
       // Client has older lastModified timestamp; this implies that the server
-      // should ignore the clien's version and any of its descendants
+      // should ignore the client's version and any of its descendants
       console.log(
         `processClientItem ${itemModel}: NOOP: item exists and clientLastModified=${dateToISOLocal(
           clientLastModified,
-        )} == ${dateToISOLocal(serverLastModified)}=serverLastModified`,
+        )} < ${dateToISOLocal(serverLastModified)}=serverLastModified`,
       );
     } else {
       // Same lastModified timestamp implies no differences for this item

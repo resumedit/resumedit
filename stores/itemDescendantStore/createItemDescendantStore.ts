@@ -203,7 +203,7 @@ export const createItemDescendantStore = ({
             const now = new Date();
             state.deletedAt = new Date(now);
 
-            // Update the modification timestamp
+            // Update the modification timestamp to ensure the server picks up the update
             state.lastModified = new Date(now);
           });
         },
@@ -255,7 +255,13 @@ export const createItemDescendantStore = ({
             // Update the state with the deletedAt timestamp for the specified descendant
             ancestorState.descendants = ancestorState.descendants.map((descendant) => {
               if (descendant.clientId === clientId) {
-                return { ...descendant, disposition: ItemDisposition.Modified, deletedAt: new Date(now) };
+                return {
+                  ...descendant,
+                  disposition: ItemDisposition.Modified,
+                  deletedAt: new Date(now),
+                  // Update the modification timestamp to ensure the server picks up the update
+                  lastModified: new Date(now),
+                };
               }
               return descendant;
             });
