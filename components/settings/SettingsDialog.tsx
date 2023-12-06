@@ -18,7 +18,7 @@ export default function SettingsDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Configure {siteConfig.name}</DialogTitle>
-          <DialogDescription>Changes to the settings below take effect immediately.</DialogDescription>
+          <DialogDescription>Settings are stored in your browser</DialogDescription>
         </DialogHeader>
         <SettingsForm />
       </DialogContent>

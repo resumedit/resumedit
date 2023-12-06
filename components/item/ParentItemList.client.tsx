@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import ParentItemList from "./ParentItemList";
 import ParentItemListStoreState from "./ParentItemListStoreState";
 import ParentItemListSynchronization from "./ParentItemListSynchronization";
+import useSettingsStore from "@/stores/settings/useSettingsStore";
 
 interface Props {
   storeName: keyof ParentItemModelAccessor;
@@ -22,6 +23,10 @@ const ParentItemListClientContext = ({ serverState }: Props) => {
   const parentId = store((state) => state.parentId);
   const parentModel = store((state) => state.parentModel);
   const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
+
+  const settingsStore = useSettingsStore();
+  const { showParentItemListInternals } = settingsStore;
+  const showInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
 
   useEffect(() => {
     if (updateStoreWithServerData) {
@@ -38,12 +43,13 @@ const ParentItemListClientContext = ({ serverState }: Props) => {
       <div className="space-y-1">
         <ParentItemListSynchronization />
         <ParentItemList />
-        {/* <ParentItemListInput /> */}
-        <ParentItemListStoreState
-          storeName={storeName}
-          parentId={serverState.parentId || idDefault}
-          serverModified={serverState.lastModified}
-        />
+        {showInternals ?? (
+          <ParentItemListStoreState
+            storeName={storeName}
+            parentId={serverState.parentId || idDefault}
+            serverModified={serverState.lastModified}
+          />
+        )}
       </div>
     </>
   );

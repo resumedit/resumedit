@@ -11,8 +11,9 @@ type SettingsStateType = {
 };
 
 type SettingsActionsType = {
-  toggleShowParentItemListInternals: () => void;
-  toggleAllowDeleteAllItems: () => void;
+  setSettings: (newSettings: SettingsStateType) => void;
+  // toggleShowParentItemListInternals: () => void;
+  // toggleAllowDeleteAllItems: () => void;
 };
 
 type SettingsStoreType = SettingsStateType & SettingsActionsType;
@@ -23,22 +24,28 @@ const storeVersion = 1;
 const useSettingsStore = create(
   persist(
     immer<SettingsStoreType>((set /*, get */) => ({
-      allowDeleteAllItems: true,
+      allowDeleteAllItems: false,
       showParentItemListInternals: true,
-      showParentItemIdentifiers: true,
+      showParentItemIdentifiers: false,
       impersonatingUserAuthProviderId: null,
 
-      toggleShowParentItemListInternals: (): void => {
+      setSettings: (newSettings): void => {
         set((state) => {
-          state.showParentItemListInternals = !state.showParentItemListInternals;
+          Object.assign(state, newSettings);
         });
       },
 
-      toggleAllowDeleteAllItems: (): void => {
-        set((state) => {
-          state.allowDeleteAllItems = !state.allowDeleteAllItems;
-        });
-      },
+      // toggleShowParentItemListInternals: (): void => {
+      //   set((state) => {
+      //     state.showParentItemListInternals = !state.showParentItemListInternals;
+      //   });
+      // },
+
+      // toggleAllowDeleteAllItems: (): void => {
+      //   set((state) => {
+      //     state.allowDeleteAllItems = !state.allowDeleteAllItems;
+      //   });
+      // },
     })),
     {
       name: `settings-storage-${storeNameSuffix}`, // unique name for localStorage key

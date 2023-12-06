@@ -2,11 +2,8 @@
 
 import { useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
+import { findItemIndexByClientId } from "@/stores/parentItemList/utills/itemOrderValues";
 import { ItemClientStateType, OrderableItemClientStateType } from "@/types/item";
-import ParentItemListItem from "./ParentItemListItem";
-import ParentItemListItemInput from "./ParentItemListItemInput";
-import ParentItemSortableWrapper from "./utils/ParentItemSortableWrapper";
-import { useState } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -18,7 +15,11 @@ import {
 } from "@dnd-kit/core";
 import { restrictToParentElement } from "@dnd-kit/modifiers";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { findItemIndexByClientId } from "@/stores/parentItemList/utills/itemOrderValues";
+import { useState } from "react";
+import ParentItemListItem from "./ParentItemListItem";
+import ParentItemListItemInput from "./ParentItemListItemInput";
+import ParentItemSortableWrapper from "./utils/ParentItemSortableWrapper";
+import useSettingsStore from "@/stores/settings/useSettingsStore";
 
 const ParentItemList = () => {
   const [editingInput, setEditingInput] = useState(true);
@@ -29,6 +30,10 @@ const ParentItemList = () => {
   const setItemDeleted = store((state) => state.setItemDeleted);
   const reArrangeItemList = store((state) => state.reArrangeItemList);
   const resetItemListOrderValues = store((state) => state.resetItemListOrderValues);
+
+  const settingsStore = useSettingsStore();
+  const { showParentItemListInternals } = settingsStore;
+  const showInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -61,29 +66,32 @@ const ParentItemList = () => {
       className="bg-elem-light dark:bg-elem-dark-1 mt-5 mb-5 rounded-md shadow-2xl shadow-shadow-light
      dark:shadow-black overflow-hidden"
     >
-      <button
-        className="px-1 border-2 text-primary rounded-md"
-        name="resetItemListOrderValues"
-        role="button"
-        onClick={() => {
-          resetItemListOrderValues();
-        }}
-      >
-        Reset order
-      </button>
-
-      <div className="m-3 space-x-2">
-        <button
-          className="px-1 border-2 text-destructive rounded-md"
-          name="deleteItemsByDisposition"
-          role="button"
-          onClick={() => {
-            deleteItemsByDisposition();
-          }}
-        >
-          Remove deleted
-        </button>
-      </div>
+      {showInternals ?? (
+        <>
+          <button
+            className="px-1 border-2 text-primary rounded-md"
+            name="resetItemListOrderValues"
+            role="button"
+            onClick={() => {
+              resetItemListOrderValues();
+            }}
+          >
+            Reset order
+          </button>
+          <div className="m-3 space-x-2">
+            <button
+              className="px-1 border-2 text-destructive rounded-md"
+              name="deleteItemsByDisposition"
+              role="button"
+              onClick={() => {
+                deleteItemsByDisposition();
+              }}
+            >
+              Remove deleted
+            </button>
+          </div>
+        </>
+      )}
       {
         <DndContext
           sensors={sensors}

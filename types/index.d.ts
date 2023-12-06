@@ -44,6 +44,11 @@ export type SiteConfig = {
   platforms: string;
 };
 
+export type SettingsConfig = {
+  name: string;
+  description: string;
+};
+
 export type DocsConfig = {
   mainNav: MainNavItem[];
   sidebarNav: SidebarNavItem[];
