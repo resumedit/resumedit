@@ -5,8 +5,8 @@ import { useStoreName } from "@/contexts/StoreNameContext";
 import { cn } from "@/lib/utils";
 import { DateTimeFormat, DateTimeSeparator, dateToISOLocal } from "@/lib/utils/formatDate";
 import { getItemSchema, getSchemaFields, isNumberField } from "@/lib/utils/itemDescendantListUtils";
+import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
 import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { ItemClientStateType, ItemDataUntypedFieldNameType, ItemDisposition } from "@/types/item";
 import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -52,7 +52,7 @@ export default function Item(props: ItemProps) {
     value: string | number;
   };
 
-  const settingsStore = useSettingsStore();
+  const settingsStore = useAppSettingsStore();
   const { showItemDescendantInternals } = settingsStore;
   const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
 
@@ -66,7 +66,7 @@ export default function Item(props: ItemProps) {
     itemFormFields.reduce((acc, field) => ({ ...acc, [field]: "" }), {} as Record<string, any>),
   );
 
-  const validate = () => {
+  const updateValidationStatus = () => {
     const validationStatus = itemFormSchema.safeParse({ ...item });
     setInputIsValid(validationStatus.success);
     return validationStatus;
@@ -110,8 +110,7 @@ export default function Item(props: ItemProps) {
     }
 
     setFieldValues((prev) => ({ ...prev, ...updatedKeyValue }));
-    const validationStatus = validate();
-    console.log(validationStatus);
+    updateValidationStatus();
     return updatedKeyValue;
   }
 

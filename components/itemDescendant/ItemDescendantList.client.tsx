@@ -10,7 +10,7 @@ import {
   ItemDescendantClientStateType,
   ItemDescendantServerStateType,
 } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import useSettingsStore from "@/stores/settings/useSettingsStore";
+import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
 import {
   ClientIdType,
   ItemClientStateType,
@@ -133,7 +133,7 @@ function ItemDescendantListState(props: ItemDescendantListStateProps) {
   const updateDescendantDraft = store((state) => state.updateDescendantDraft);
   const commitDescendantDraft = store((state) => state.commitDescendantDraft);
 
-  const settingsStore = useSettingsStore();
+  const settingsStore = useAppSettingsStore();
   const { showItemDescendantIdentifiers, showItemDescendantSynchronization } = settingsStore;
   const showIdentifiers = process.env.NODE_ENV === "development" && showItemDescendantIdentifiers;
   const showSynchronization = process.env.NODE_ENV === "development" && showItemDescendantSynchronization;
@@ -157,7 +157,7 @@ function ItemDescendantListState(props: ItemDescendantListStateProps) {
     showSynchronization,
   };
 
-  // console.log(
+  // window.consoleLog(
   //   `ItemDescendantClientContext: ${JSON.stringify(
   //     rootState.descendants.filter((descendant) => !descendant.deletedAt),
   //     undefined,
@@ -166,7 +166,7 @@ function ItemDescendantListState(props: ItemDescendantListStateProps) {
   // );
   useEffect(() => {
     if (updateStoreWithServerData && !isStoreInitialized) {
-      // console.log(`ItemDescendantClientContext: useEffect with serverState:`, serverState);
+      // window.consoleLog(`ItemDescendantClientContext: useEffect with serverState:`, serverState);
       updateStoreWithServerData(serverState);
       setStoreInitialized(true);
     }

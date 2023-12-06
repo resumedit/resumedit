@@ -8,7 +8,7 @@ import {
   ItemOrderableClientStateDescendantListType,
 } from "@/stores/itemDescendantStore/createItemDescendantStore";
 import { findItemIndexByClientId } from "@/stores/itemDescendantStore/utils/descendantOrderValues";
-import useSettingsStore from "@/stores/settings/useSettingsStore";
+import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
 import {
   ClientIdType,
   ItemClientStateType,
@@ -48,7 +48,7 @@ export default function DescendantList(props: ItemDescendantListProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [inlineInsert, setInlineInsert] = useState(!isRootItemModel && !isLeafItemModel);
 
-  const settingsStore = useSettingsStore();
+  const settingsStore = useAppSettingsStore();
   const { showItemDescendantInternals } = settingsStore;
   const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
 
@@ -68,14 +68,14 @@ export default function DescendantList(props: ItemDescendantListProps) {
     ItemOrderableClientStateType,
     ItemOrderableClientStateType
   > => {
-    // console.log(
+    // window.consoleLog(
     //   `DescendantInput:itemDraft(clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`,
     // );
     return getDescendants(ancestorClientIdChain);
   };
 
   const setItemData = (descendantData: ItemDataUntypedType, clientId: ClientIdType): void => {
-    // console.log(
+    // window.consoleLog(
     //   `Descendant:setItemData(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
     //     ancestorClientIdChain,
     //   )}`,
@@ -84,7 +84,7 @@ export default function DescendantList(props: ItemDescendantListProps) {
   };
 
   const markItemAsDeleted = (clientId: IdSchemaType): void => {
-    // console.log(
+    // window.consoleLog(
     //   `Descendant:markDescendantAsDeleted(clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(
     //     ancestorClientIdChain,
     //   )}`,
@@ -113,12 +113,12 @@ export default function DescendantList(props: ItemDescendantListProps) {
   const commitDescendantDraft = store((state) => state.commitDescendantDraft);
 
   const getItemDraft = (): ItemDataType<ItemClientStateType> => {
-    // console.log(`DescendantInput:getItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
+    // window.consoleLog(`DescendantInput:getItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
     return getDescendantDraft(ancestorClientIdChain);
   };
 
   const updateItemDraft = (descendantData: ItemDataUntypedType): void => {
-    // console.log(
+    // window.consoleLog(
     //   `DescendantInput:updateItemDraft(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
     //     ancestorClientIdChain,
     //   )}`,
@@ -127,7 +127,7 @@ export default function DescendantList(props: ItemDescendantListProps) {
   };
 
   const commitItemDraft = (): void => {
-    // console.log(`DescendantInput:commitItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
+    // window.consoleLog(`DescendantInput:commitItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
     commitDescendantDraft(ancestorClientIdChain);
   };
 

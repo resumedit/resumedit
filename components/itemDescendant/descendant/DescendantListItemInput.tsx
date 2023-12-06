@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { getItemSchema, getSchemaFields, isNumberField } from "@/lib/utils/itemDescendantListUtils";
-import useSettingsStore from "@/stores/settings/useSettingsStore";
+import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
 import { ItemClientStateType, ItemDataType, ItemDataUntypedFieldNameType, ItemDataUntypedType } from "@/types/item";
 import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { Plus } from "lucide-react";
@@ -35,7 +35,7 @@ export default function DescendantListItemInput({
 
   const [inputIsValid, setInputIsValid] = useState(false);
 
-  const settingsStore = useSettingsStore();
+  const settingsStore = useAppSettingsStore();
   const { showItemDescendantInternals } = settingsStore;
   const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
 
@@ -102,7 +102,12 @@ export default function DescendantListItemInput({
       setFieldValues(itemFormFields.reduce((acc, field) => ({ ...acc, [field]: "" }), {}));
       setInputIsValid(false);
     } else {
-      console.log(`handleSubmit: Validation failed. itemDraft:`, itemDraft, `validationStatus:`, validationStatus);
+      window.consoleLog(
+        `handleSubmit: Validation failed. itemDraft:`,
+        itemDraft,
+        `validationStatus:`,
+        validationStatus,
+      );
       toast({ title: `Validation failed`, description: JSON.stringify(validationStatus) });
     }
     return validationStatus.success;
@@ -113,12 +118,12 @@ export default function DescendantListItemInput({
   };
 
   // const handleFocus = (event: React.MouseEvent<HTMLDivElement>) => {
-  //   console.log(`handleFocus: setEditingInput from ${editingInput} -> true with event[${typeof event}]:`, event);
+  //   window.consoleLog(`handleFocus: setEditingInput from ${editingInput} -> true with event[${typeof event}]:`, event);
   //   setEditingInput(true);
   // };
 
   // const handleBlur = (event: React.MouseEvent<HTMLDivElement>) => {
-  //   console.log(`handleFocus: setEditingInput from ${editingInput} -> false with event[${typeof event}]:`, event);
+  //   window.consoleLog(`handleFocus: setEditingInput from ${editingInput} -> false with event[${typeof event}]:`, event);
   //   setEditingInput(false);
   // };
 

@@ -1,7 +1,7 @@
 import { getCurrentUserOrNull as getCurrentUserOrNull } from "@/actions/user";
 import { ActionButton } from "@/components/custom/ActionButton";
 import { DarkModeToggle } from "@/components/custom/DarkModeToggle";
-import SettingsSheet from "@/components/settings/SettingsSheet";
+import AppSettingsSheet from "@/components/appSettings/AppSettingsSheet";
 // import StyledLink from "@/components/StyledLink";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
@@ -15,7 +15,7 @@ const NavigationActionButtons = async ({ user }: { user: PrismaUser | undefined 
   return (
     <div className="flex gap-4">
       <div className="flex flex-wrap gap-x-4 gap-y-4 items-center">
-        <SettingsSheet />
+        <AppSettingsSheet />
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-4 items-center">
         <DarkModeToggle />

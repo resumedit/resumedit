@@ -1,4 +1,4 @@
-// @/components/settings/SettingsSheet.tsx
+// @/components/appSettings/AppSettingsSheet.tsx
 
 "use client";
 
@@ -20,9 +20,9 @@ import { settingsConfig } from "@/config/settings";
 import { siteConfig } from "@/config/site";
 import { Settings2Icon } from "lucide-react";
 import React from "react";
-import SettingsForm from "./SettingsForm";
+import AppSettingsForm from "./AppSettingsForm";
 
-export default function SettingsSheet() {
+export default function AppSettingsSheet() {
   return (
     <Sheet>
       <SheetTrigger>{<Settings2Icon />}</SheetTrigger>
@@ -39,7 +39,7 @@ export default function SettingsSheet() {
             </ReactMarkdown>
           </SheetDescription>
         </SheetHeader>
-        <SettingsForm />
+        <AppSettingsForm />
       </SheetContent>
     </Sheet>
   );

@@ -1,9 +1,10 @@
 // stores/useSettingsStore.ts
-import { create } from "zustand";
+import { siteConfig } from "@/config/site";
+import { StateCreator, create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 
-type SettingsStateType = {
+export type AppSettingsStoreState = {
   // Settings to be exposed to user
   synchronizationInterval: number;
 
@@ -14,28 +15,50 @@ type SettingsStateType = {
   showItemDescendantSynchronization: boolean;
   // allowDeleteAllItems: boolean;
   // impersonatingUserAuthProviderId: string | null;
+  isLoggingEnabled: boolean;
 };
 
-type SettingsActionsType = {
-  setSettings: (newSettings: SettingsStateType) => void;
+export type AppSettingsStoreActions = {
+  setSettings: (newSettings: AppSettingsStoreState) => void;
   setSynchronizationInterval: (newInterval: number) => void;
   // toggleAllowDeleteAllItems: () => void;
 };
 
-type SettingsStoreType = SettingsStateType & SettingsActionsType;
+export type AppSettingsStore = AppSettingsStoreState & AppSettingsStoreActions;
 
-const storeNameSuffix = `devel.resumedit.local`;
+// Selector type is used to type the return type when using the store with a selector
+type AppSettingsSelectorType<T> = (state: AppSettingsStoreState) => T;
+
+// Hook type is used as a return type when using the store
+export type AppSettingsHookType = <T>(selector?: AppSettingsSelectorType<T>) => T;
+
+export const updateGlobalLogging =
+  <T extends { isLoggingEnabled: boolean }>(config: StateCreator<T>): StateCreator<T> =>
+  (set, get, api) =>
+    config(
+      (args) => {
+        set(args);
+        // Update the global variable whenever isLoggingEnabled changes
+        window[siteConfig.name].isLoggingEnabled = get().isLoggingEnabled;
+      },
+      get,
+      api,
+    );
+
+const storeNameSuffix =
+  process.env.NODE_ENV === "development" ? `devel.${siteConfig.canonicalDomainName}` : siteConfig.canonicalDomainName;
 const storeVersion = 1;
 
-const useSettingsStore = create(
+const useAppSettingsStore = create(
   persist(
-    immer<SettingsStoreType>((set /*, get */) => ({
+    immer<AppSettingsStore>((set /*, get */) => ({
       synchronizationInterval: 0,
       showItemDescendantInternals: false,
       showItemDescendantIdentifiers: false,
       showItemDescendantSynchronization: false,
       // allowDeleteAllItems: false,
       // impersonatingUserAuthProviderId: null,
+      isLoggingEnabled: false,
 
       setSettings: (newSettings): void => {
         set((state) => {
@@ -56,4 +79,4 @@ const useSettingsStore = create(
   ),
 );
 
-export default useSettingsStore;
+export default useAppSettingsStore;

@@ -1,3 +1,5 @@
+// @/components/appSettings/AppSettingsDialog.tsx
+
 "use client";
 
 import {
@@ -9,9 +11,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { siteConfig } from "@/config/site";
-import SettingsForm from "./SettingsForm";
+import AppSettingsForm from "./AppSettingsForm";
 
-export default function SettingsDialog() {
+export default function AppSettingsDialog() {
   return (
     <Dialog>
       <DialogTrigger>Settings</DialogTrigger>
@@ -20,7 +22,7 @@ export default function SettingsDialog() {
           <DialogTitle>Configure {siteConfig.name}</DialogTitle>
           <DialogDescription>Settings are stored in your browser</DialogDescription>
         </DialogHeader>
-        <SettingsForm />
+        <AppSettingsForm />
       </DialogContent>
     </Dialog>
   );

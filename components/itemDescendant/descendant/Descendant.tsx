@@ -16,7 +16,7 @@ export default function Descendant(props: ItemDescendantRenderProps) {
   const markDescendantAsDeleted = store((state) => state.markDescendantAsDeleted);
 
   const setItemData = (descendantData: ItemDataUntypedType, clientId: ClientIdType): void => {
-    console.log(
+    window.consoleLog(
       `Descendant:setItemData(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
         ancestorClientIdChain,
       )}`,
@@ -25,7 +25,7 @@ export default function Descendant(props: ItemDescendantRenderProps) {
   };
 
   const markItemAsDeleted = (clientId: IdSchemaType): void => {
-    console.log(
+    window.consoleLog(
       `Descendant:markDescendantAsDeleted(clientId=${clientId}): parentItem=${JSON.stringify(ancestorClientIdChain)}`,
     );
     markDescendantAsDeleted(clientId, ancestorClientIdChain);

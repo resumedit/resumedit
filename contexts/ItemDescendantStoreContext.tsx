@@ -9,6 +9,8 @@ import { ItemClientStateType } from "@/types/item";
 import { ItemDescendantModelAccessor } from "@/types/itemDescendant";
 import { ReactNode, createContext, useContext, useEffect, useState } from "react";
 
+import useLogging from "@/hooks/useLogging";
+
 interface ItemDescendantStoreProviderProps {
   children: ReactNode;
   configs: ItemDescendantStoreConfigType[];
@@ -22,6 +24,10 @@ export function ItemDescendantStoreProvider({ children, configs }: ItemDescendan
   const [stores, setStores] = useState<RecordType>({} as RecordType);
   // Track initialization of stores
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Subscribe to Zustand store `AppSettings` and update global variable
+  // to determine if logging to console is enabled
+  useLogging();
 
   useEffect(() => {
     if (!isInitialized) {

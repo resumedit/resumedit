@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 import { useForm } from "react-hook-form";
 
 import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import useSettingsStore from "@/stores/settings/useSettingsStore";
+import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
 import { ItemClientStateType, ItemDataUntypedType, ItemDisposition } from "@/types/item";
 import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { ResumeActionType } from "@/types/resume";
@@ -60,7 +60,7 @@ export default function DescendantListItem({
     resolver: zodResolver(itemFormSchema),
   });
 
-  const settingsStore = useSettingsStore();
+  const settingsStore = useAppSettingsStore();
   const { showItemDescendantInternals } = settingsStore;
   const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
 
@@ -75,7 +75,7 @@ export default function DescendantListItem({
     if (inputProps?.name) {
       setItemData({ [inputProps.name]: val } as ItemDataUntypedType, item.clientId);
     } else {
-      console.log(
+      window.consoleLog(
         `ItemDescendantListItem: missing field name in handleSave(value=`,
         val,
         `, inputProps=`,

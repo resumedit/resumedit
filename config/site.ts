@@ -2,6 +2,7 @@ import { SiteConfig } from "@/types";
 
 export const siteConfig: SiteConfig = {
   name: "ResumEdit",
+  canonicalDomainName: "resumedit.com",
   description: "Your resume, revised",
   url: "https://tx.shadcn.com",
   ogImage: "https://tx.shadcn.com/og.jpg",

@@ -3,7 +3,7 @@
 import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { syncItemDescendantStoreWithServer } from "@/stores/itemDescendantStore/utils/syncItemDescendantStore";
-import useSettingsStore from "@/stores/settings/useSettingsStore";
+import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
 import { useCallback, useEffect } from "react";
 
 export function useSyncItemDescendantStore() {
@@ -13,7 +13,7 @@ export function useSyncItemDescendantStore() {
   const rootState = store((state) => state);
   const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
 
-  const synchronizationInterval = useSettingsStore((state) => state.synchronizationInterval);
+  const synchronizationInterval = useAppSettingsStore((state) => state.synchronizationInterval);
 
   const syncItems = useCallback(async () => {
     await syncItemDescendantStoreWithServer(rootState, updateStoreWithServerData);

@@ -1,24 +1,24 @@
-// components/settings/SettingsForm.tsx
+// components/appSettings/AppSettingsForm.tsx
 
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormLabel } from "@/components/ui/form";
-import { SettingsFormType, settingsSchema } from "@/schemas/settings";
-import useSettingsStore from "@/stores/settings/useSettingsStore";
+import { SettingsFormType, appSettingsSchema } from "@/schemas/appSettings";
+import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import z from "zod";
 import { DialogClose } from "../ui/dialog";
 import { Input } from "../ui/input";
 
-const SettingsForm = () => {
-  const defaultValues = useSettingsStore.getState();
-  const updateSettingsStore = useSettingsStore((state) => state.setSettings);
+const AppSettingsForm = () => {
+  const defaultValues = useAppSettingsStore.getState();
+  const setSettings = useAppSettingsStore((state) => state.setSettings);
 
   const form = useForm<SettingsFormType>({
-    resolver: zodResolver(settingsSchema),
+    resolver: zodResolver(appSettingsSchema),
     defaultValues: defaultValues,
   });
 
@@ -32,20 +32,20 @@ const SettingsForm = () => {
     }
     const isValid = await form.trigger(name);
     if (isValid) {
-      updateSettingsStore({ ...form.getValues() });
+      setSettings({ ...form.getValues() });
     }
   };
 
   // React Hook Form's submit function
   const onSubmit = (data: SettingsFormType) => {
     // Update Zustand store with new settings
-    updateSettingsStore(data);
+    setSettings(data);
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {Object.entries(settingsSchema.shape).map(([key, schema]) => {
+        {Object.entries(appSettingsSchema.shape).map(([key, schema]) => {
           const isCheckbox = schema instanceof z.ZodBoolean;
           return (
             <div key={key} className="form-item">
@@ -93,4 +93,4 @@ const SettingsForm = () => {
   );
 };
 
-export default SettingsForm;
+export default AppSettingsForm;

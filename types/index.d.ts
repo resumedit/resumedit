@@ -28,6 +28,7 @@ export type SidebarNavItem = {
 
 export type SiteConfig = {
   name: string;
+  canonicalDomainName: string;
   description: string;
   url: string;
   ogImage: string;

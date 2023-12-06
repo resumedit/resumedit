@@ -20,12 +20,12 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
   const commitDescendantDraft = store((state) => state.commitDescendantDraft);
 
   const getItemDraft = (): ItemDataType<ItemClientStateType> => {
-    // console.log(`DescendantInput:getItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
+    // window.consoleLog(`DescendantInput:getItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
     return getDescendantDraft(ancestorClientIdChain);
   };
 
   const updateItemDraft = (descendantData: ItemDataUntypedType): void => {
-    // console.log(
+    // window.consoleLog(
     //   `DescendantInput:updateItemDraft(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
     //     ancestorClientIdChain,
     //   )}`,
@@ -34,7 +34,7 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
   };
 
   const commitItemDraft = (): void => {
-    // console.log(`DescendantInput:commitItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
+    // window.consoleLog(`DescendantInput:commitItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
     commitDescendantDraft(ancestorClientIdChain);
   };
 

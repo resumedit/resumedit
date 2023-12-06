@@ -91,9 +91,11 @@ export const getCurrentUser = async (): Promise<PrismaUser> => {
     lastName: authUser.lastName,
   };
 
+  /*
   if (process.env.NODE_ENV === "development") {
     console.log(`actions/user:getCurrentUser: userData:`, userData);
   }
+  */
 
   const user = await prisma.user.upsert({
     where: { authProviderId: authUser.id },
