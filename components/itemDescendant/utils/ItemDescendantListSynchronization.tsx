@@ -20,20 +20,20 @@ export function ItemDescendantListSynchronization() {
 
   useSyncItemDescendantStore();
 
-  async function handleSynchronization(e: React.SyntheticEvent) {
+  async function handleSynchronization(e: React.MouseEvent) {
     e.preventDefault();
+    const forceUpdate = e.shiftKey;
 
     if (!rootState) {
       throw Error(`sendItemDescendantToServer(): storeName=${storeName}, rootState=${rootState})`);
     }
-
-    await syncItemDescendantStoreWithServer(rootState, updateStoreWithServerData);
+    await syncItemDescendantStoreWithServer(rootState, updateStoreWithServerData, forceUpdate);
   }
 
   return !store ? null : (
     <div>
       <form
-        className="py-2 mt-8 bg-elem-light dark:bg-elem-dark-1 flex items-center gap-x-3 rounded-md"
+        className="bg-elem-light dark:bg-elem-dark-1 mt-8 flex items-center gap-x-3 rounded-md py-2"
         name="setSyncIntervalForm"
       >
         <Button onClick={handleSynchronization} ref={synchronizeButtonRef}>

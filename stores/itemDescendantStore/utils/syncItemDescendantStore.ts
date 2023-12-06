@@ -14,13 +14,17 @@ import { ItemDescendantClientState, ItemDescendantStore } from "../createItemDes
 export async function syncItemDescendantStoreWithServer(
   store: ItemDescendantStore,
   updateStoreWithServerData: (serverState: ItemDescendantServerStateType) => void,
-  force?: boolean,
+  forceUpdate?: boolean,
 ): Promise<ItemDescendantServerStateType | Date | null> {
   let rootState = getItemDescendantStoreStateForServer(store);
   let clientModified = new Date(rootState.lastModified);
-  if (force) {
+  if (forceUpdate) {
     clientModified = new Date(rootState.lastModified.getTime() + 1);
     rootState = updateItemToLastModifiedDescendant(rootState, clientModified);
+    toast({
+      title: `Forced synchronization`,
+      description: `Updated lastModified: ${dateToISOLocal(new Date(clientModified))}`,
+    });
   }
   const updatedState = await handleNestedItemDescendantListFromClient(rootState);
 
