@@ -49,7 +49,11 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
         {ancestorClientIdChain.length > 0 ? (
           <>
             {" "}
-            below <pre>{`${ancestorClientIdChain.map((id) => id.substring(0, 8)).join("\n")}`}</pre>
+            below{" "}
+            <pre>{`${ancestorClientIdChain
+              .toReversed()
+              .map((id) => id.substring(0, 8))
+              .join("\n")}`}</pre>
           </>
         ) : null}
       </div>
