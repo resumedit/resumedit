@@ -5,7 +5,6 @@ import {
   ItemDataType,
   ItemDataUntypedType,
   ItemDisposition,
-  ItemOutputType,
   ItemServerToClientType,
   OrderableItemClientStateType,
 } from "@/types/item";
@@ -17,7 +16,6 @@ import {
   ParentItemModelAccessor,
   getParentModel,
 } from "@/types/parentItemList";
-import { ModificationTimestampType } from "@/types/timestamp";
 import { parse, stringify } from "devalue";
 import { Draft } from "immer";
 import { create } from "zustand";
@@ -79,22 +77,6 @@ export const createParentItemListStore = <P extends ItemClientStateType, I exten
         serverModified: new Date(0),
         synchronizationInterval: 0,
 
-        setParent: (parent) => {
-          set((state) => {
-            state.parent = parent as Draft<P>;
-          });
-        },
-
-        getItemList: () => {
-          return get().items;
-        },
-        setItemList: (items: I[]) => {
-          set((state) => {
-            state.items = items as Draft<I>[]; // Explicitly cast to Draft<C>[]
-          });
-        },
-        // addItem: (newItem: Omit<ItemInputType, "order">) => {
-        // addItem: (newItem: C) => {
         addItem: (itemData: ItemDataType<I>) => {
           const clientId = getItemId();
           // Add the extra fields for type `ItemClientType`
@@ -116,25 +98,6 @@ export const createParentItemListStore = <P extends ItemClientStateType, I exten
           });
           return clientId;
         },
-        getItem: (clientId: ClientIdType): I | undefined => {
-          const items = get().items;
-          if (items) {
-            return items.find((a) => a.clientId === clientId);
-          }
-          return undefined;
-        },
-        setItemSynced: (clientId: ClientIdType, serverData: ItemOutputType) => {
-          set((state) => {
-            const itemIndex = state.items.findIndex((a) => a.clientId === clientId);
-            if (itemIndex !== -1) {
-              state.items[itemIndex] = {
-                ...state.items[itemIndex],
-                id: serverData.id,
-                disposition: ItemDisposition.Synced,
-              };
-            }
-          });
-        },
         markItemAsDeleted: (clientId: ClientIdType): void => {
           // Update the state with the deletedAt timestamp for the specified item
           set((state) => {
@@ -150,46 +113,7 @@ export const createParentItemListStore = <P extends ItemClientStateType, I exten
             }
           });
         },
-        restoreDeletedItem: (clientId: ClientIdType): void => {
-          // Update the state with the deletedAt timestamp of the specified item reset
-          set((state) => {
-            state.items = state.items.map((item) => {
-              if (item.clientId === clientId) {
-                return { ...item, disposition: ItemDisposition.Modified, deletedAt: null };
-              }
-              return item;
-            });
-            // Update the modification timestamp
-            if (state.parent) {
-              state.parent.lastModified = new Date();
-            }
-          });
-        },
-        deleteItem: (clientId: ClientIdType): void => {
-          set((state) => {
-            state.items = state.items.filter((a) => a.clientId !== clientId);
-            // Update the modification timestamp
-            if (state.parent) {
-              state.parent.lastModified = new Date();
-            }
-          });
-        },
         setItemData: (clientId: ClientIdType, itemData: ItemDataUntypedType): void => {
-          // Update the state with the new content for the specified item
-          set((state) => {
-            state.items = state.items.map((item) => {
-              if (item.clientId === clientId) {
-                return { ...item, ...itemData, disposition: ItemDisposition.Modified, lastModified: new Date() };
-              }
-              return item;
-            });
-            // Update the modification timestamp
-            if (state.parent) {
-              state.parent.lastModified = new Date();
-            }
-          });
-        },
-        setItemDataUntyped: (clientId: ClientIdType, itemData: ItemDataUntypedType): void => {
           // Update the state with the new content for the specified item
           set((state) => {
             state.items = state.items.map((item) => {
@@ -275,24 +199,6 @@ export const createParentItemListStore = <P extends ItemClientStateType, I exten
             if (updatedState === null) {
               console.log(`No updated`);
             }
-          });
-        },
-        getLastModified: (): ModificationTimestampType | undefined => {
-          return get().parent?.lastModified;
-        },
-        setLastModified: (timestamp: ModificationTimestampType): void => {
-          set((state) => {
-            if (state.parent) {
-              state.parent.lastModified = timestamp;
-            }
-          });
-        },
-        getSynchronizationInterval: (): number => {
-          return get().synchronizationInterval;
-        },
-        setSynchronizationInterval: (interval: number): void => {
-          set((state) => {
-            state.synchronizationInterval = interval;
           });
         },
       })),

@@ -7,7 +7,6 @@ import {
   ItemClientToServerType,
   ItemDataType,
   ItemDataUntypedType,
-  ItemOutputType,
   ItemServerToClientType,
   OrderableItemClientStateType,
 } from "./item";
@@ -112,7 +111,7 @@ function generateParentIdKeys(): Set<string> {
 //               For example if the parent is `User`, the item is `Resume`
 //               and its column `parentId` refers to the `User` model instance that
 //               owns the resume
-// items:         array of item moel instances, e.g., Array<Resume>
+// items:         array of item model instances, e.g., Array<Resume>
 export type ParentItemListType<P, I> = {
   parent: P;
   items: I[];
@@ -125,54 +124,45 @@ type ParentIdKey = `${keyof ParentItemModelAccessor}Id`;
 
 export type ParentItemListStoreNameType = keyof ParentItemModelAccessor;
 
-export type ParentItemListState<P, C extends ItemClientStateType> = {
+export type ParentItemListState<P, I extends ItemClientStateType> = {
   parentModel: keyof ParentItemModelAccessor | null;
   itemModel: keyof ParentItemModelAccessor;
   parent: P | null;
-  items: C[];
-  itemDraft: ItemDataType<C>;
+  items: I[];
+  itemDraft: ItemDataType<I>;
   serverModified: ModificationTimestampType;
   synchronizationInterval: number;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type ParentItemListActions<P extends ItemClientStateType, C extends ItemClientStateType> = {
-  setParent: (parent: P) => void;
-  getItemList: () => C[];
-  setItemList: (items: C[]) => void;
-  addItem: (payload: ItemDataType<C>) => ClientIdType;
-  setItemSynced: (clientId: ClientIdType, serverData: ItemOutputType) => void;
+export type ParentItemListActions<P extends ItemClientStateType, I extends ItemClientStateType> = {
+  addItem: (payload: ItemDataType<I>) => ClientIdType;
   markItemAsDeleted: (clientId: ClientIdType) => void;
-  deleteItem: (clientId: ClientIdType) => void;
   setItemData: (clientId: ClientIdType, data: ItemDataUntypedType) => void;
   reArrangeItemList: (reArrangedItems: OrderableItemClientStateType[]) => void;
   resetItemListOrderValues: () => void;
   updateItemDraft: (itemData: ItemDataUntypedType) => void;
   commitItemDraft: () => void;
   updateStoreWithServerData: (serverState: ParentItemListType<ItemServerToClientType, ItemServerToClientType>) => void;
-  setLastModified: (timestamp: ModificationTimestampType) => void;
-  getLastModified: () => ModificationTimestampType | undefined;
-  setSynchronizationInterval: (interval: number) => void;
-  getSynchronizationInterval: () => number;
 };
 
-export type ParentItemListStore<P extends ItemClientStateType, C extends ItemClientStateType> = ParentItemListState<
+export type ParentItemListStore<P extends ItemClientStateType, I extends ItemClientStateType> = ParentItemListState<
   P,
-  C
+  I
 > &
-  ParentItemListActions<P, C>;
+  ParentItemListActions<P, I>;
 
-// Updated store type with type constraints for P and C
-type ParentItemListStoreType<P extends ItemClientStateType, C extends ItemClientStateType> = ParentItemListStore<P, C>;
+// Updated store type with type constraints for P and I
+type ParentItemListStoreType<P extends ItemClientStateType, I extends ItemClientStateType> = ParentItemListStore<P, I>;
 
 // Selector type now also needs to take into account the two type parameters and their constraints
-type ParentItemListSelectorType<P extends ItemClientStateType, C extends ItemClientStateType, T> = (
-  state: ParentItemListStoreType<P, C>,
+type ParentItemListSelectorType<P extends ItemClientStateType, I extends ItemClientStateType, T> = (
+  state: ParentItemListStoreType<P, I>,
 ) => T;
 
 // The hook type is updated to include the two type parameters with their constraints
-export type ParentItemListHookType = <P extends ItemClientStateType, C extends ItemClientStateType, T>(
-  selector?: ParentItemListSelectorType<P, C, T>,
+export type ParentItemListHookType = <P extends ItemClientStateType, I extends ItemClientStateType, T>(
+  selector?: ParentItemListSelectorType<P, I, T>,
 ) => T;
 
 export function stripFieldsForDatabase<T extends ItemClientToServerType>(
