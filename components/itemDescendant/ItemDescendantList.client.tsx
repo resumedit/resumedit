@@ -107,7 +107,7 @@ function ItemDescendantListRender(props: ItemDescendantRenderProps): ReactNode {
 
 interface ItemDescendantListStateProps extends ItemDescendantListContextProps {}
 function ItemDescendantListState(props: ItemDescendantListStateProps) {
-  const [isStoreInitialized, setStoreInitialized] = useState(false);
+  const [storeIsInitialized, setStoreIsInitialized] = useState(false);
 
   const globalStoreName = useStoreName();
   const store = useItemDescendantStore(globalStoreName);
@@ -153,14 +153,14 @@ function ItemDescendantListState(props: ItemDescendantListStateProps) {
   //   )}`,
   // );
   useEffect(() => {
-    if (updateStoreWithServerData && !isStoreInitialized) {
+    if (updateStoreWithServerData && !storeIsInitialized) {
       // window.consoleLog(`ItemDescendantClientContext: useEffect with serverState:`, serverState);
       updateStoreWithServerData(serverState);
-      setStoreInitialized(true);
+      setStoreIsInitialized(true);
     }
-  }, [serverState, isStoreInitialized, updateStoreWithServerData]);
+  }, [serverState, storeIsInitialized, updateStoreWithServerData]);
 
-  return !isStoreInitialized ? null : <ItemDescendantListRender {...clientProps} />;
+  return !storeIsInitialized ? null : <ItemDescendantListRender {...clientProps} />;
 }
 
 export interface ItemDescendantListContextProps {

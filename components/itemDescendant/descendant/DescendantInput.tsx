@@ -5,6 +5,7 @@ import { useStoreName } from "@/contexts/StoreNameContext";
 // import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ItemClientStateType, ItemDataType, ItemDataUntypedType } from "@/schemas/item";
+import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
 import { useState } from "react";
 import { ItemDescendantRenderProps } from "../ItemDescendantList.client";
 import DescendantListItemInput from "./DescendantListItemInput";
@@ -14,6 +15,10 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
   const canEdit = resumeAction === "edit";
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [editingInput, setEditingInput] = useState(canEdit);
+
+  const settingsStore = useAppSettingsStore();
+  const { showItemDescendantIdentifiers } = settingsStore;
+  const showIdentifiers = process.env.NODE_ENV === "development" && showItemDescendantIdentifiers;
 
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);
@@ -46,7 +51,7 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
         })}
       >
         Add new {itemModel}
-        {ancestorClientIdChain.length > 0 ? (
+        {showIdentifiers && ancestorClientIdChain.length > 0 ? (
           <>
             {" "}
             below{" "}

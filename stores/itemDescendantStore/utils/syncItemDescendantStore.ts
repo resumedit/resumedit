@@ -69,6 +69,7 @@ export function handleNestedItemDescendantListFromServer(
     );
     // Reset `lastModified` to the epoch to ensure that the store is initialized with the server's state
     clientState.lastModified = new Date(0);
+    clientState.descendants = [];
   }
   const updatedClientState = processServerItemDescendant(clientState, serverState);
   window.consoleLog(
@@ -99,10 +100,6 @@ export function processServerItemDescendant(
   // Update the state of the current item with the server's data,
   // ignoring any items that locally have a more recent lastModified timestamp
   // than serverLastModified
-  // The result of this function is a timestamp:
-  // A. Same as serverLastModified: indicates no changes more recent than server
-  // B. More recent than serverLastModified: indicates changes have occured and
-  //    need to be synced to the server
   updateClientItemWithServerItem(clientItem, serverItem);
 
   /*
@@ -117,10 +114,6 @@ export function processServerItemDescendant(
       "\n",
       serverItem.descendants,
     );
-    // The result of this function is a timestamp:
-    // A. Same as serverLastModified: indicates no changes more recent than server
-    // B. More recent than serverLastModified: indicates changes have occured and
-    //    need to be synced to the server
     mergeDescendantListFromServer(clientItem, serverItem);
   }
 
@@ -416,13 +409,6 @@ function clientItemMatchesServerItem(
     throw Error(
       `clientItemMatchesServerItem: clientId=${clientItem.clientId} parentClientId=${clientItem.parentClientId}`,
     );
-  }
-  if (clientItem.lastModified > serverItem.lastModified) {
-    if (!(clientItem.disposition === ItemDisposition.Modified || clientItem.disposition === ItemDisposition.Initial)) {
-      throw Error(
-        `clientItemMatchesServerItem: clientItem more recent than server but disposition= ${clientItem.disposition}`,
-      );
-    }
   }
   if (!(clientItem.lastModified instanceof Date) || !(clientItem.createdAt instanceof Date)) {
     throw Error(
