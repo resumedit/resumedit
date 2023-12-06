@@ -66,9 +66,6 @@ export default function DescendantListItem({
 
   // Construct the URL to edit this item
   const pathname = usePathname();
-  // FIXME: Moved into <ItemActionButton />
-  // const getItemActionURL = (action: ResumeActionType) =>
-  //   `${pathname.replace(rootItemModel, itemModel)}/${item.id}/${action}`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSave = (val: any, inputProps?: InputProps) => {
@@ -111,7 +108,7 @@ export default function DescendantListItem({
           </Link>
         </div>
       ) : null} */}
-      {item.id && (itemModel === "resume" || pathname.startsWith("/item")) ? (
+      {itemModel === "resume" || pathname.startsWith("/item") ? (
         <ItemActionButton pathname={pathname} item={item} action={resumeAction} />
       ) : null}
       {canEdit && itemIsDragable ? (

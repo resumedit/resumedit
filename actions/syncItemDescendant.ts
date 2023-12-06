@@ -25,6 +25,7 @@ import {
 } from "@/types/utils/itemDescendant";
 import { PrismaClient } from "@prisma/client";
 import { getItemDescendantList, getItemsByParentId } from "./itemDescendant";
+import { UserInputType } from "@/schemas/user";
 
 export async function handleNestedItemDescendantListFromClient(
   clientItem: ItemDescendantClientStateType,
@@ -238,10 +239,19 @@ async function updateServerItemWithClientItem(
   if (clientLastModified > serverLastModified) {
     timestampRelation = ">";
     mergeStrategy = `MERGE: item exists`;
+    let itemDataForUpdate;
+    // The `User` model requires special treatment
+    if (itemModel === "user") {
+      const { id, email, firstName, lastName } = clientItem as unknown as UserInputType;
+      itemDataForUpdate = { id, email, firstName, lastName };
+    } else {
+      itemDataForUpdate = getItemDataForUpdate<ItemClientToServerType>(clientItem);
+    }
+
     // Update current item properties
     console.log(logPrefix, `${itemModel}.update:`, {
       where: { id },
-      data: getItemDataForUpdate<ItemClientToServerType>(clientItem),
+      data: itemDataForUpdate,
     });
     const updatedServerOutput = await prismaItemModelInstance.update({
       where: { id },

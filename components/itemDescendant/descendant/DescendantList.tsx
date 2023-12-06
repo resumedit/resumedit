@@ -47,7 +47,7 @@ export default function DescendantList(props: DescendantListProps) {
   const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
 
   const descendantModel = item.descendantModel;
-  const descendantsAreDragable = descendantModel === "achievement" ? true : false;
+  const descendantsAreDragable = descendantModel === "achievement";
 
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);
@@ -65,9 +65,11 @@ export default function DescendantList(props: DescendantListProps) {
 
   const setItemData = (descendantData: ItemDataUntypedType, clientId: ClientIdType): void => {
     window.consoleLog(
-      `Descendant:setItemData(descendantData=${descendantData}, clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(
-        ancestorClientIdChain,
-      )}`,
+      `Descendant:setItemData(descendantData=${JSON.stringify(
+        descendantData,
+        undefined,
+        2,
+      )}, clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`,
     );
     setDescendantData(descendantData, clientId, ancestorClientIdChain);
   };
@@ -76,6 +78,8 @@ export default function DescendantList(props: DescendantListProps) {
     window.consoleLog(
       `Descendant:markItemAsDeleted(clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(
         ancestorClientIdChain,
+        undefined,
+        2,
       )}`,
     );
     markDescendantAsDeleted(clientId, ancestorClientIdChain);
@@ -151,7 +155,6 @@ export default function DescendantList(props: DescendantListProps) {
         <button
           className="rounded-md border-2 px-1 text-primary"
           name="resetDescendantsOrderValues"
-          role="button"
           onClick={() => {
             resetItemsOrderValues();
           }}

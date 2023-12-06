@@ -3,7 +3,7 @@
 "use server";
 
 import { prisma } from "@/prisma/client";
-import { IdSchemaType, idDefault } from "@/schemas/id";
+import { IdSchemaType, idDefault, isValidItemId } from "@/schemas/id";
 import { ItemDescendantServerOutputType, ItemDescendantServerStateListType } from "@/schemas/itemDescendant";
 import {
   ItemDescendantModelNameType,
@@ -16,9 +16,14 @@ import { PrismaClient } from "@prisma/client";
 export async function getItem(model: ItemDescendantModelNameType, id: IdSchemaType, prismaTransaction?: PrismaClient) {
   const prismaClient = prismaTransaction ?? prisma;
   const prismaModelInstance = getModelAccessor(model, prismaClient);
-  const item = await prismaModelInstance.findUnique({
+  let item = await prismaModelInstance.findUnique({
     where: { id },
   });
+  // Since the top-most model does not have a parent, we initialize to the default id
+  if (!item.parentId && model === itemDescendantModelHierarchy[0]) {
+    item = { ...item, parentId: idDefault };
+  }
+
   return item;
 }
 
@@ -59,9 +64,12 @@ export async function getItemDescendantList(
 ): Promise<ItemDescendantServerOutputType> {
   const executeLogic = async (prismaClient: PrismaClient) => {
     const logPrefix = `getItemDescendantList(itemModel=${itemModel}, itemId=${itemId})`;
+    if (!isValidItemId(itemId)) {
+      throw Error(logPrefix + `: for ${itemModel} the provided itemId="${itemId}" is not valid`);
+    }
     let item = await getItem(itemModel, itemId, prisma);
     if (!item) {
-      throw Error(`getItemDescendantList: No ${itemModel} instance with id=${itemId} found`);
+      throw Error(logPrefix + `: no ${itemModel} instance with id=${itemId} found`);
     }
     // Since the top-most model does not have a parent, we initialize to the default id
     if (!item.parentId && itemModel === itemDescendantModelHierarchy[0]) {

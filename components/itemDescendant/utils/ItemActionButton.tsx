@@ -6,6 +6,7 @@ import { itemDescendantModelHierarchy } from "@/types/itemDescendant";
 import { ResumeActionType, resumeActionButtonIcons, resumeActionTypes } from "@/types/resume";
 import Link from "next/link";
 import { Button } from "../../ui/button";
+import { ItemDescendantListSynchronization } from "./ItemDescendantListSynchronization";
 
 export function getActionURL(pathname: string, item: ItemDescendantClientStateType, action: ResumeActionType = "edit") {
   // Regex pattern that combines item model and ID patterns
@@ -28,6 +29,9 @@ export interface ItemActionButtonProps {
 }
 export function ItemActionButton(props: ItemActionButtonProps) {
   const { pathname, item, action = "view" } = props;
+  if (!item.id) {
+    return <ItemDescendantListSynchronization title="Save" />;
+  }
   const actionURL = getActionURL(pathname, item, action);
   const actionButtonInner = resumeActionButtonIcons[action];
 

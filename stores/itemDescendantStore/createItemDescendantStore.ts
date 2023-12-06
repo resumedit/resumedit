@@ -121,7 +121,7 @@ export const createItemDescendantStore = ({
   storeVersion = 1,
   storeName: customStoreName,
 }: ItemDescendantStoreConfigType) => {
-  const storeName = customStoreName ? customStoreName : `${itemModel}-${storeNameSuffix}`;
+  const storeName = customStoreName ?? `${itemModel}-${storeNameSuffix}`;
 
   return create(
     persist(
@@ -272,7 +272,7 @@ export const createItemDescendantStore = ({
             // Update the state with the new draft descendant data
             ancestorStateChain[0].descendantDraft = {
               ...(state.descendantDraft as ItemDataUntypedType),
-              ...(descendantData as ItemDataUntypedType),
+              ...descendantData,
             } as Draft<ItemDataUntypedType>;
           });
         },
@@ -290,7 +290,7 @@ export const createItemDescendantStore = ({
                 `commitDescendantDraft: ancestorState has invalid descendantModel: ${JSON.stringify(ancestorState)}`,
               );
             }
-            const descendantModel = ancestorState.descendantModel!;
+            const descendantModel = ancestorState.descendantModel;
 
             // Create a copy of the draft
             const descendantData = {

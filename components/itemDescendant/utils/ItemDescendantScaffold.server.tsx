@@ -24,10 +24,10 @@ export interface ItemDescendantScaffoldServerComponentProps {
 async function RenderLevels({
   itemModel,
   levels,
-}: {
+}: Readonly<{
   itemModel: ItemDescendantModelNameType;
   levels: Array<Record<string, string>>;
-}) {
+}>) {
   return (
     <>
       <h1>
@@ -52,7 +52,7 @@ export default async function ItemDescendantScaffoldServerComponent({
   itemModel,
   id,
   ...props
-}: ItemDescendantScaffoldServerComponentProps) {
+}: Readonly<ItemDescendantScaffoldServerComponentProps>) {
   const userId = await getCurrentUserIdOrNull();
   if (!userId) {
     throw Error(`ItemDescendantScaffoldServerComponent: Cannot render itemModel=${itemModel}: current user not found`);
@@ -109,9 +109,6 @@ export default async function ItemDescendantScaffoldServerComponent({
       if (itemList?.length > 0) {
         derivedItemId = itemList[0].id;
         levels = [...levels, { itemModel: derivedItemModel, itemId: derivedItemId }];
-        // if (derivedItemModel === targetItemModel) {
-        //   break;
-        // }
       } else {
         return (
           <>
