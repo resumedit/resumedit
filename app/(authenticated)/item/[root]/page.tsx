@@ -2,7 +2,6 @@
 
 "use server";
 
-import { getCurrentUserIdOrNull } from "@/actions/user";
 import ItemDescendantServerComponent from "@/components/itemDescendant/ItemDescendant.server";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ItemDescendantModelNameType, getParentModel } from "@/types/itemDescendant";
@@ -17,8 +16,7 @@ export default async function ItemDescendantActionPage({ params: { root } }: Ite
   const itemModel = getParentModel(root);
   const resumeAction = "edit";
 
-  const userId = await getCurrentUserIdOrNull();
-  return !userId || !itemModel ? (
+  return !itemModel ? (
     notFound()
   ) : (
     <Suspense fallback={<ItemDescendantActionSkeleton />}>

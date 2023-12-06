@@ -57,6 +57,10 @@ export default async function ItemDescendantServerComponent({
     throw Error(`ItemDescendantServerComponent: Cannot render itemModel=${itemModel}: current user not found`);
   }
 
+  if (itemModel === itemDescendantModelHierarchy[0]) {
+    itemId = itemId ? itemId : userId;
+  }
+
   const resumeAction = props.resumeAction ? props.resumeAction : "view";
 
   // Check if `itemModel` is a valid model

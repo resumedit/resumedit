@@ -1,12 +1,10 @@
-// @/app/(authenticated)/itemDescendant/[root]/[action]/page.tsx
+// @/app/(authenticated)/resume/[resumeId]/page.tsx
 
 "use server";
 
-import { getCurrentUserIdOrNull } from "@/actions/user";
 import ItemDescendantServerComponent from "@/components/itemDescendant/ItemDescendant.server";
 import { Skeleton } from "@/components/ui/skeleton";
-import { IdSchemaType, isValidItemId } from "@/schemas/id";
-import { notFound } from "next/navigation";
+import { IdSchemaType } from "@/schemas/id";
 import { Suspense } from "react";
 
 export interface ItemDescendantActionPageProps {
@@ -18,11 +16,7 @@ export default async function ItemDescendantActionPage({ params: { resumeId } }:
   const id = resumeId;
   const resumeAction = "view";
 
-  const userId = await getCurrentUserIdOrNull();
-  const validId = isValidItemId(id);
-  return !userId || !id || !validId ? (
-    notFound()
-  ) : (
+  return (
     <Suspense fallback={<ItemDescendantActionSkeleton />}>
       <ItemDescendantServerComponent itemModel={itemModel} itemId={id} resumeAction={resumeAction} />
     </Suspense>
