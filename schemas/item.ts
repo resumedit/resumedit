@@ -1,12 +1,12 @@
 // @/schemas/item.ts
 
 import { z } from "zod";
-import { idSchema } from "./id";
+import { idDefault, idSchema } from "./id";
 
 const itemFormSchema = z.object({});
 
 const itemInternalSchema = z.object({
-  id: idSchema.optional(), // UUID
+  id: idSchema.optional().default(idDefault), // UUID
   // This value is assigned by the database and cannot be empty
   createdAt: z.date().optional().default(new Date(0)),
   // This value is assigned by the database and cannot be empty

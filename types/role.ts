@@ -2,7 +2,7 @@
 import { IdSchemaType } from "@/schemas/id";
 import { RoleInputType, RoleOutputType } from "@/schemas/role";
 import { ItemClientStateType, ItemClientToServerType, ItemDisposition, ItemServerToClientType, ItemType } from "./item";
-import { ClientIdType } from "./parentItemList";
+import { ClientIdType } from "./item";
 import { ModificationTimestampType } from "./timestamp";
 
 export interface RoleItemType extends ItemType {

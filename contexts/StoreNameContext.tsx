@@ -2,7 +2,6 @@
 
 "use client";
 
-import { ParentItemListStoreNameType } from "@/types/parentItemList";
 import { FC, ReactNode, createContext, useContext } from "react";
 
 interface StoreNameContextProps {
@@ -21,5 +20,5 @@ export const useStoreName = () => {
   if (context === null) {
     throw new Error("useStoreName must be used within a StoreNameProvider");
   }
-  return context as ParentItemListStoreNameType;
+  return context as string;
 };

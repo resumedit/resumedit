@@ -19,5 +19,5 @@ export const userSchema = {
   store: userFormSchema.merge(userInternalSchema),
 };
 
-export type UserSchemaInput = z.input<typeof userSchema.store>;
-export type UserSchemaOutput = z.output<typeof userSchema.store>;
+export type UserInputType = z.input<typeof userSchema.store>;
+export type UserOutputType = z.output<typeof userSchema.store>;

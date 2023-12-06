@@ -9,12 +9,9 @@ type SettingsStateType = {
 
   // Flags have an effect only in development environment
   // TODO: Make sure those flags are not exposed in settings in production
-  showNestedItemInternals: boolean;
-  showNestedItemIdentifiers: boolean;
-  showNestedItemSynchronization: boolean;
-  showParentItemListInternals: boolean;
-  showParentItemIdentifiers: boolean;
-  showParentItemListSynchronization: boolean;
+  showItemDescendantInternals: boolean;
+  showItemDescendantIdentifiers: boolean;
+  showItemDescendantSynchronization: boolean;
   // allowDeleteAllItems: boolean;
   // impersonatingUserAuthProviderId: string | null;
 };
@@ -22,7 +19,6 @@ type SettingsStateType = {
 type SettingsActionsType = {
   setSettings: (newSettings: SettingsStateType) => void;
   setSynchronizationInterval: (newInterval: number) => void;
-  // toggleShowParentItemListInternals: () => void;
   // toggleAllowDeleteAllItems: () => void;
 };
 
@@ -35,12 +31,9 @@ const useSettingsStore = create(
   persist(
     immer<SettingsStoreType>((set /*, get */) => ({
       synchronizationInterval: 0,
-      showNestedItemInternals: false,
-      showNestedItemIdentifiers: false,
-      showNestedItemSynchronization: false,
-      showParentItemListInternals: false,
-      showParentItemIdentifiers: false,
-      showParentItemListSynchronization: false,
+      showItemDescendantInternals: false,
+      showItemDescendantIdentifiers: false,
+      showItemDescendantSynchronization: false,
       // allowDeleteAllItems: false,
       // impersonatingUserAuthProviderId: null,
 
@@ -55,12 +48,6 @@ const useSettingsStore = create(
           state.synchronizationInterval = newInterval;
         });
       },
-
-      // toggleShowParentItemListInternals: (): void => {
-      //   set((state) => {
-      //     state.showParentItemListInternals = !state.showParentItemListInternals;
-      //   });
-      // },
     })),
     {
       name: `settings.${storeNameSuffix}`, // unique name for localStorage key

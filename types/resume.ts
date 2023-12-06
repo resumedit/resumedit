@@ -1,78 +1,16 @@
 // @/types/resume.ts
-import { IdSchemaType } from "@/schemas/id";
-import { ResumeInputType, ResumeOutputType } from "@/schemas/resume";
-import { ItemClientStateType, ItemClientToServerType, ItemDisposition, ItemServerToClientType, ItemType } from "./item";
-import { ClientIdType } from "./parentItemList";
-import { ModificationTimestampType } from "./timestamp";
+import { resumeSchema } from "@/schemas/resume";
+import { ItemClientStateType, ItemClientToServerType, ItemServerToClientType, ItemType } from "./item";
+import z from "zod";
 
 export type ResumeActionType = "view" | "edit";
 
-export interface ResumeItemType extends ItemType {
-  parentId: ItemType["parentId"];
-  name: string;
-  description?: string;
-  content?: string;
-}
+export interface ResumeItemType extends z.input<typeof resumeSchema.form>, ItemType {}
 
-export interface ResumeItemClientStateType extends ItemClientStateType {
-  parentId: ItemType["parentId"];
-  name: string;
-  description?: string;
-  content?: string;
-}
+export interface ResumeItemClientStateType extends z.input<typeof resumeSchema.form>, ItemClientStateType {}
 
-export interface ResumeItemServerStateType extends ItemType {
-  parentId: ItemType["parentId"];
-  name: string;
-  createdAt: Date;
-  description: string;
-  content: string;
-}
+export interface ResumeItemServerStateType extends z.output<typeof resumeSchema.store>, ItemType {}
 
-export interface ResumeItemClientToServerType extends ItemClientToServerType {
-  parentId: ItemType["parentId"];
-  name: string;
-  description?: string;
-  content?: string;
-}
+export interface ResumeItemClientToServerType extends z.input<typeof resumeSchema.form>, ItemClientToServerType {}
 
-export interface ResumeItemServerToClientType extends ItemServerToClientType {
-  parentId: ItemType["parentId"];
-  name: string;
-  createdAt: Date;
-  description: string;
-  content: string;
-}
-
-// ----------------------------------------------------------
-
-export type ResumeClientStateType = ResumeInputType & {
-  clientId: ClientIdType;
-  disposition: ItemDisposition;
-};
-
-export type ResumeServerInputType = ResumeInputType & {
-  disposition: ItemDisposition;
-};
-
-export type ResumeListType = {
-  parentId: IdSchemaType;
-  lastModified: ModificationTimestampType;
-};
-
-export type ResumeListClientStateType = ResumeListType & {
-  items: ResumeClientStateType[];
-};
-
-export type ResumeListServerStateType = ResumeListType & {
-  parentId: IdSchemaType;
-  items: ResumeOutputType[];
-};
-
-export type ResumeListServerInputType = ResumeListType & {
-  items: ResumeServerInputType[];
-};
-
-export type ResumeListServerOutputType = ResumeListType & {
-  items: ResumeOutputType[];
-};
+export interface ResumeItemServerToClientType extends z.output<typeof resumeSchema.form>, ItemServerToClientType {}

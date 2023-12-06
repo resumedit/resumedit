@@ -5,10 +5,14 @@
 import { getCurrentUserIdOrNull } from "@/actions/user";
 import ItemDescendantServerComponent from "@/components/itemDescendant/ItemDescendant.server";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { Suspense } from "react";
 
-export default async function ItemDescendantPage() {
-  const root = "resume";
+export interface ItemDescendantPageProps {
+  params: { root: ItemDescendantModelNameType };
+}
+
+export default async function ItemDescendantPage({ params: { root } }: ItemDescendantPageProps) {
   const userId = await getCurrentUserIdOrNull();
   return !userId ? null : (
     <Suspense fallback={<ItemDescendantSkeleton />}>

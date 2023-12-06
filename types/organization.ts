@@ -2,7 +2,7 @@ import { IdSchemaType } from "@/schemas/id";
 import { OrganizationInputType, OrganizationOutputType } from "@/schemas/organization";
 import { ItemClientStateType, ItemClientToServerType, ItemDisposition, ItemServerToClientType, ItemType } from "./item";
 import { ModificationTimestampType } from "./timestamp";
-import { ClientIdType } from "./parentItemList";
+import { ClientIdType } from "./item";
 
 export interface OrganizationItemType extends ItemType {
   parentId: ItemType["parentId"];
