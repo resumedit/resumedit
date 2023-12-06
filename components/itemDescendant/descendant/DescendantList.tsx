@@ -39,6 +39,8 @@ export default function DescendantList(props: ItemDescendantListProps) {
   const descendants = store((state) => state.descendants);
   const reArrangeDescendants = store((state) => state.reArrangeDescendants);
   const resetDescendantsOrderValues = store((state) => state.resetDescendantsOrderValues);
+  const setDescendantData = store((state) => state.setDescendantData);
+  const markDescendantAsDeleted = store((state) => state.markDescendantAsDeleted);
 
   // const descendantDraft = store((state) => state.descendantDraft);
   // const updateDescendantDraft = store((state) => state.updateDescendantDraft);
@@ -108,8 +110,6 @@ export default function DescendantList(props: ItemDescendantListProps) {
           <ItemDescendantSortableWrapper items={descendants} disabled={!descendantsAreDragable}>
             {descendants.map(
               (item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>, index: number) => {
-                const setDescendantData = store((state) => state.setDescendantData);
-                const markDescendantAsDeleted = store((state) => state.markDescendantAsDeleted);
                 return (
                   <DescendantListItem
                     key={item.clientId}
