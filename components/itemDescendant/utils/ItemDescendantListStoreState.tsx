@@ -5,7 +5,7 @@ import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { dateToISOLocal } from "@/lib/utils/formatDate";
 import { ItemDescendantServerStateType } from "@/schemas/itemDescendant";
-import { ItemDescendantModelAccessor } from "@/types/itemDescendant";
+import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 
 interface ItemDescendantStoreStateTypeProps {
   storeName: ItemDescendantModelNameType;

@@ -75,10 +75,9 @@ export type ItemDescendantStoreActions = {
     clientId: ClientIdType,
     ancestorClientIds: Array<ClientIdType>,
   ) => void;
-  // addDescendant: (descendantData: ItemDataUntypedType) => void; // FIXME: Untested
   markDescendantAsDeleted: (clientId: ClientIdType, ancestorClientIds: Array<ClientIdType>) => void;
   reArrangeDescendants: (
-    reArrangedDescendants: ItemDescendantClientStateListType,
+    reArrangedDescendants: ItemDescendantOrderableClientStateListType,
     ancestorClientIds: Array<ClientIdType>,
   ) => void;
   resetDescendantsOrderValues: (ancestorClientIds: Array<ClientIdType>) => void;

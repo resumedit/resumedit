@@ -6,7 +6,6 @@ import { getItemDescendantList, getItemsByParentId } from "@/actions/itemDescend
 import { getCurrentUserIdOrNull } from "@/actions/user";
 import { IdSchemaType } from "@/schemas/id";
 import {
-  ItemDescendantModelAccessor,
   ItemDescendantModelNameType,
   getDescendantModel,
   getParentModel,
