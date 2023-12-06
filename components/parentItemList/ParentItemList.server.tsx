@@ -12,8 +12,8 @@ import {
   getItemModel,
   parentItemModelHierarchy,
 } from "@/types/parentItemList";
-import ParentItemListClientComponent from "./ParentItemList.client";
 import { ResumeActionType } from "@/types/resume";
+import ParentItemListClientComponent from "./ParentItemList.client";
 
 export interface ParentItemListServerComponentProps {
   storeName: keyof ParentItemModelAccessor;
@@ -76,9 +76,9 @@ export default async function ParentItemListServerComponent({
     const serverItems = await getParentItemList(itemStoreName, derivedParentId);
     serverState = {
       ...serverItems,
-    } as ParentItemListType<ItemServerStateType>;
+    } as ParentItemListType<ItemServerStateType, ItemServerStateType>;
 
-    console.log(`ItemList.server: serverState:`, serverState);
+    console.log(`ParentItemList.server: serverState:`, serverState);
   } else {
     throw Error(`No entries for parent of storeName=${itemStoreName} found`);
   }

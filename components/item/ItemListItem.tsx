@@ -29,14 +29,14 @@ export interface ParentItemListItemProps {
   setItemDeleted: (itemId: IdSchemaType) => void;
 }
 
-const ParentItemListItem = ({
+export default function ItemListItem({
   storeName,
   resumeAction,
   itemsAreDragable,
   index,
   item,
   setItemDeleted,
-}: ParentItemListItemProps) => {
+}: ParentItemListItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: item.clientId,
   });
@@ -72,7 +72,7 @@ const ParentItemListItem = ({
     }
   };
 
-  return item.disposition === ItemDisposition.Deleted ? null : (
+  return item.deletedAt !== null ? null : (
     <li
       className="flex justify-between border-b border-shadow-light dark:border-dark-txt-1 bg-elem-light dark:bg-elem-dark-1"
       ref={setNodeRef}
@@ -196,6 +196,4 @@ const ParentItemListItem = ({
       </div>
     </li>
   );
-};
-
-export default ParentItemListItem;
+}

@@ -9,7 +9,7 @@ import { getItemSchema, getSchemaFields } from "@/lib/utils/parentItemListUtils"
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 
-const ParentItemListInput = () => {
+export default function ItemInput() {
   const storeName = useStoreName();
   const itemFormSchema = getItemSchema(storeName, "form");
   const itemDisplayFields = getSchemaFields(storeName, "display");
@@ -24,15 +24,18 @@ const ParentItemListInput = () => {
   });
 
   const store = useParentItemListStore(storeName);
-  const parentId = store((state) => state.parentId);
+  const parent = store((state) => state.parent);
   const addItem = store((state) => state.addItem);
 
   const onSubmit: SubmitHandler<FieldValues> = (data) => {
+    if (!parent) {
+      throw new Error(`ParentItemListInput:onSubmit: parent is ${parent}`);
+    }
     // Add the new item
-    addItem({ ...data, parentId });
+    addItem({ ...data, parentId: parent.id });
   };
 
-  return parentId ? (
+  return parent ? (
     <form
       className="px-4 py-2 mt-8 bg-elem-light dark:bg-elem-dark-1 flex items-center gap-x-3 rounded-md"
       onSubmit={handleSubmit(onSubmit)}
@@ -49,6 +52,4 @@ const ParentItemListInput = () => {
       <Button type="submit">Add Item</Button>
     </form>
   ) : null;
-};
-
-export default ParentItemListInput;
+}

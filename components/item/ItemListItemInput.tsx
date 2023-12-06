@@ -17,7 +17,7 @@ interface ParentItemListItemInputProps {
   setEditingInput: Dispatch<SetStateAction<boolean>>;
 }
 
-const ParentItemListItemInput = ({ editingInput /*, setEditingInput */ }: ParentItemListItemInputProps) => {
+export default function ItemListItemInput({ editingInput /*, setEditingInput */ }: ParentItemListItemInputProps) {
   const storeName = useStoreName();
   const store = useParentItemListStore(storeName);
   const itemDraft = store((state) => state.itemDraft);
@@ -145,6 +145,4 @@ const ParentItemListItemInput = ({ editingInput /*, setEditingInput */ }: Parent
       )}
     </div>
   );
-};
-
-export default ParentItemListItemInput;
+}

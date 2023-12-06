@@ -20,7 +20,7 @@ export interface NestedParentItemListServerComponentProps {
 async function fetchServerState(
   storeName: keyof ParentItemModelAccessor,
   parentId: IdSchemaType,
-): Promise<ParentItemListType<ItemServerStateType>> {
+): Promise<ParentItemListType<ItemServerStateType, ItemServerStateType>> {
   // Get list of items that belong to the given `parentId`
   const serverParentItemList = await getParentItemList(storeName, parentId);
   return serverParentItemList;

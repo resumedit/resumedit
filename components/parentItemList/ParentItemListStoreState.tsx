@@ -4,25 +4,22 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { dateToISOLocal } from "@/lib/utils/formatDate";
-import { IdSchemaType } from "@/schemas/id";
-import { ParentItemModelAccessor } from "@/types/parentItemList";
-import { ModificationTimestampType } from "@/types/timestamp";
+import { ItemServerToClientType } from "@/types/item";
+import { ParentItemListType, ParentItemModelAccessor } from "@/types/parentItemList";
 
-interface Props {
+interface ParentItemListStoreStateProps {
   storeName: keyof ParentItemModelAccessor;
-  parentId: IdSchemaType;
-  serverModified: ModificationTimestampType;
+  serverState: ParentItemListType<ItemServerToClientType, ItemServerToClientType>;
 }
 
-const ParentItemListStoreState = (props: Props) => {
+const ParentItemListStoreState = (props: ParentItemListStoreStateProps) => {
   const storeName = useStoreName();
   const store = useParentItemListStore(storeName);
   const parentModel = store((state) => state.parentModel);
   const itemModel = store((state) => state.itemModel);
-  const parentId = store((state) => state.parentId);
-  const lastModified = store((state) => state.lastModified);
+  const parent = store((state) => state.parent);
 
-  return !props.parentId ? null : (
+  return !props.serverState ? null : (
     <Table>
       <TableCaption>
         ParentItemListStore <code>{storeName}</code>
@@ -30,10 +27,10 @@ const ParentItemListStoreState = (props: Props) => {
       <TableHeader>
         <TableRow>
           <TableHead>Source</TableHead>
-          <TableHead>storeName|itemModel</TableHead>
+          <TableHead>itemModel</TableHead>
           <TableHead>parentModel</TableHead>
-          <TableHead>parentId</TableHead>
-          <TableHead>lastModified</TableHead>
+          <TableHead>parent</TableHead>
+          <TableHead>parent.lastModified</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -41,15 +38,19 @@ const ParentItemListStoreState = (props: Props) => {
           <TableCell>Props</TableCell>
           <TableCell>{props.storeName}</TableCell>
           <TableCell>n/a</TableCell>
-          <TableCell>{props.parentId}</TableCell>
-          <TableCell>{dateToISOLocal(props.serverModified).replace("T", "\n")}</TableCell>
+          <TableCell className="text-xs">
+            <pre>{JSON.stringify(props.serverState.parent, undefined, 2)}</pre>
+          </TableCell>
+          <TableCell>{dateToISOLocal(props.serverState.parent.lastModified).replace("T", "\n")}</TableCell>
         </TableRow>
         <TableRow key="store">
           <TableCell>Store</TableCell>
           <TableCell>{itemModel}</TableCell>
           <TableCell>{parentModel}</TableCell>
-          <TableCell>{parentId}</TableCell>
-          <TableCell>{dateToISOLocal(lastModified || 0).replace("T", "\n")}</TableCell>
+          <TableCell className="text-xs">
+            <pre>{JSON.stringify(parent, undefined, 2)}</pre>
+          </TableCell>
+          <TableCell>{dateToISOLocal(parent?.lastModified).replace("T", "\n")}</TableCell>
         </TableRow>
       </TableBody>
     </Table>

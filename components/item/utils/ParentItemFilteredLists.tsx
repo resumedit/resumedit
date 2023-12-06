@@ -3,7 +3,7 @@
 import { useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { ItemClientStateType } from "@/types/item";
-import ParentItemListItem, { ParentItemListItemProps } from "../ParentItemListItem";
+import ItemListItem, { ParentItemListItemProps } from "../ItemListItem";
 import SortableWrapper from "./ParentItemSortableWrapper";
 
 interface ParentItemFilteredListProps extends ParentItemListItemProps {
@@ -13,13 +13,13 @@ interface ParentItemFilteredListProps extends ParentItemListItemProps {
 const ParentItemFilteredList = ({ resumeAction, itemsAreDragable, items }: ParentItemFilteredListProps) => {
   const storeName = useStoreName();
   const store = useParentItemListStore(storeName);
-  const setItemDeleted = store((state) => state.setItemDeleted);
+  const setItemDeleted = store((state) => state.markItemAsDeleted);
 
   return (
     <SortableWrapper items={items}>
       {items.map((item, index) => {
         return (
-          <ParentItemListItem
+          <ItemListItem
             storeName={storeName}
             resumeAction={resumeAction}
             itemsAreDragable={itemsAreDragable}

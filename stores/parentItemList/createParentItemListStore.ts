@@ -1,72 +1,101 @@
 // @/stores/parentItemList/createParentItemListStore.ts
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { immer } from "zustand/middleware/immer";
-
-import { IdSchemaType, getItemId, isValidItemId } from "@/schemas/id";
+import { getItemId } from "@/schemas/id";
 import {
   ItemClientStateType,
   ItemDataType,
   ItemDataUntypedType,
   ItemDisposition,
   ItemOutputType,
+  ItemServerToClientType,
   OrderableItemClientStateType,
 } from "@/types/item";
 import {
   ClientIdType,
+  ParentItemListState,
   ParentItemListStore,
   ParentItemListType,
   ParentItemModelAccessor,
   getParentModel,
 } from "@/types/parentItemList";
 import { ModificationTimestampType } from "@/types/timestamp";
+import { parse, stringify } from "devalue";
 import { Draft } from "immer";
-import { handleParentItemListFromServer } from "./utills/handleParentItemListFromServer";
+import { create } from "zustand";
+import { PersistStorage, persist } from "zustand/middleware";
+import { immer } from "zustand/middleware/immer";
 import { reBalanceListOrderValues, updateListOrderValues } from "./utills/itemOrderValues";
+import { logUpdateStoreWithServerData } from "./utills/logParentItemListStore";
+import { handleParentItemListFromServer } from "./utills/syncParentItemList";
+
+function createTypesafeLocalstorage<P extends ItemClientStateType, I extends ItemClientStateType>(): PersistStorage<
+  ParentItemListState<P, I>
+> {
+  return {
+    getItem: (name) => {
+      const str = localStorage.getItem(name);
+      if (!str) return null;
+      return parse(str);
+    },
+    setItem: (name, value) => {
+      // localStorage.setItem(name, stringify(value));
+      // Create a deep clone of the value, excluding functions
+      const valueWithoutFunctions = JSON.parse(
+        JSON.stringify(value, (key, val) => (typeof val === "function" ? undefined : val)),
+      );
+      localStorage.setItem(name, stringify(valueWithoutFunctions));
+    },
+    removeItem: (name) => {
+      localStorage.removeItem(name);
+    },
+  };
+}
+
+const storeVersion = 3;
+const storeNameSuffix = "list.devel.resumedit.local";
 
 export interface StoreConfigType {
   itemModel: keyof ParentItemModelAccessor;
   storeVersion?: number;
   storeName?: string;
+  logUpdateFromServer?: boolean;
 }
 
-const storeNameSuffix = `list.devel.resumedit.local`;
-const storeVersion = 2;
-export const createParentItemListStore = <T extends ItemClientStateType>(props: StoreConfigType) => {
-  const parentModel: keyof ParentItemModelAccessor | null = getParentModel(props.itemModel);
+export const createParentItemListStore = <P extends ItemClientStateType, I extends ItemClientStateType>(
+  props: StoreConfigType,
+) => {
+  // Retrieve the parent model
+  const parentModel = getParentModel(props.itemModel);
   const itemModel = props.itemModel;
   const storeName = `${itemModel}-${storeNameSuffix}`;
+
   return create(
     persist(
-      immer<ParentItemListStore<T>>((set, get) => ({
+      immer<ParentItemListStore<P, I>>((set, get) => ({
         parentModel: parentModel,
-        parentId: null,
         itemModel: itemModel,
+        parent: null,
         items: [],
-        itemDraft: {} as ItemDataType<T>,
-        lastModified: new Date(0),
+        itemDraft: {} as I,
         serverModified: new Date(0),
         synchronizationInterval: 0,
 
-        getParentId: (): IdSchemaType | null => {
-          return get().parentId;
-        },
-        setParentId: (id: IdSchemaType): void => {
+        setParent: (parent) => {
           set((state) => {
-            state.parentId = id;
+            state.parent = parent as Draft<P>;
           });
         },
+
         getItemList: () => {
           return get().items;
         },
-        setItemList: (items: T[]) => {
+        setItemList: (items: I[]) => {
           set((state) => {
-            state.items = items as Draft<T>[]; // Explicitly cast to Draft<T>[]
+            state.items = items as Draft<I>[]; // Explicitly cast to Draft<C>[]
           });
         },
         // addItem: (newItem: Omit<ItemInputType, "order">) => {
-        // addItem: (newItem: T) => {
-        addItem: (itemData: ItemDataType<T>) => {
+        // addItem: (newItem: C) => {
+        addItem: (itemData: ItemDataType<I>) => {
           const clientId = getItemId();
           // Add the extra fields for type `ItemClientType`
           const data = {
@@ -75,17 +104,19 @@ export const createParentItemListStore = <T extends ItemClientStateType>(props: 
             lastModified: new Date(),
             disposition: ItemDisposition.New,
             ...itemData,
-          } as unknown as Draft<T>;
+          } as unknown as Draft<I>;
           set((state) => {
             // Append it to the end of the store's `items` array
             state.items.push(data);
 
             // Update the modification timestamp
-            state.lastModified = new Date();
+            if (state.parent) {
+              state.parent.lastModified = new Date();
+            }
           });
           return clientId;
         },
-        getItem: (clientId: ClientIdType): T | undefined => {
+        getItem: (clientId: ClientIdType): I | undefined => {
           const items = get().items;
           if (items) {
             return items.find((a) => a.clientId === clientId);
@@ -104,22 +135,43 @@ export const createParentItemListStore = <T extends ItemClientStateType>(props: 
             }
           });
         },
-        setItemDeleted: (clientId: ClientIdType): void => {
-          // Update the state with the deleted state for the specified item
+        markItemAsDeleted: (clientId: ClientIdType): void => {
+          // Update the state with the deletedAt timestamp for the specified item
           set((state) => {
             state.items = state.items.map((item) => {
               if (item.clientId === clientId) {
-                return { ...item, disposition: ItemDisposition.Deleted };
+                return { ...item, disposition: ItemDisposition.Modified, deletedAt: new Date() };
               }
               return item;
             });
-            state.lastModified = new Date();
+            // Update the modification timestamp
+            if (state.parent) {
+              state.parent.lastModified = new Date();
+            }
+          });
+        },
+        restoreDeletedItem: (clientId: ClientIdType): void => {
+          // Update the state with the deletedAt timestamp of the specified item reset
+          set((state) => {
+            state.items = state.items.map((item) => {
+              if (item.clientId === clientId) {
+                return { ...item, disposition: ItemDisposition.Modified, deletedAt: null };
+              }
+              return item;
+            });
+            // Update the modification timestamp
+            if (state.parent) {
+              state.parent.lastModified = new Date();
+            }
           });
         },
         deleteItem: (clientId: ClientIdType): void => {
           set((state) => {
             state.items = state.items.filter((a) => a.clientId !== clientId);
-            state.lastModified = new Date();
+            // Update the modification timestamp
+            if (state.parent) {
+              state.parent.lastModified = new Date();
+            }
           });
         },
         setItemData: (clientId: ClientIdType, itemData: ItemDataUntypedType): void => {
@@ -127,11 +179,14 @@ export const createParentItemListStore = <T extends ItemClientStateType>(props: 
           set((state) => {
             state.items = state.items.map((item) => {
               if (item.clientId === clientId) {
-                return { ...item, ...itemData, disposition: ItemDisposition.Modified };
+                return { ...item, ...itemData, disposition: ItemDisposition.Modified, lastModified: new Date() };
               }
               return item;
             });
-            state.lastModified = new Date();
+            // Update the modification timestamp
+            if (state.parent) {
+              state.parent.lastModified = new Date();
+            }
           });
         },
         setItemDataUntyped: (clientId: ClientIdType, itemData: ItemDataUntypedType): void => {
@@ -139,24 +194,23 @@ export const createParentItemListStore = <T extends ItemClientStateType>(props: 
           set((state) => {
             state.items = state.items.map((item) => {
               if (item.clientId === clientId) {
-                return { ...item, ...itemData, disposition: ItemDisposition.Modified };
+                return { ...item, ...itemData, disposition: ItemDisposition.Modified, lastModified: new Date() };
               }
               return item;
             });
-            state.lastModified = new Date();
-          });
-        },
-        deleteItemsByDisposition: (disposition?: ItemDisposition): void => {
-          const removeDisposition = disposition ? disposition : ItemDisposition.Deleted;
-          set((state) => {
-            state.items = state.items.filter((a) => a.disposition !== removeDisposition);
-            state.lastModified = new Date();
+            // Update the modification timestamp
+            if (state.parent) {
+              state.parent.lastModified = new Date();
+            }
           });
         },
         reArrangeItemList: (reArrangedItems: OrderableItemClientStateType[]): void => {
           set((state) => {
-            state.items = updateListOrderValues(reArrangedItems) as unknown as Array<T> as Draft<T>[];
-            state.lastModified = new Date();
+            state.items = updateListOrderValues(reArrangedItems) as unknown as Array<I> as Draft<I>[];
+            // Update the modification timestamp
+            if (state.parent) {
+              state.parent.lastModified = new Date();
+            }
           });
         },
         resetItemListOrderValues: (): void => {
@@ -164,33 +218,30 @@ export const createParentItemListStore = <T extends ItemClientStateType>(props: 
             state.items = reBalanceListOrderValues(
               state.items as unknown as OrderableItemClientStateType[],
               true,
-            ) as unknown as Draft<T>[];
-            state.lastModified = new Date();
+            ) as unknown as Draft<I>[];
+            // Update the modification timestamp
+            if (state.parent) {
+              state.parent.lastModified = new Date();
+            }
           });
         },
         updateItemDraft: (itemData: ItemDataUntypedType) =>
           set((state) => {
-            state.itemDraft = { ...(state.itemDraft as ItemDataType<T>), ...(itemData as ItemDataType<T>) } as Draft<
-              ItemDataType<T>
+            state.itemDraft = { ...(state.itemDraft as ItemDataType<I>), ...(itemData as ItemDataType<I>) } as Draft<
+              ItemDataType<I>
             >;
-            state.lastModified = new Date();
+            // Update the modification timestamp
+            if (state.parent) {
+              state.parent.lastModified = new Date();
+            }
           }),
         commitItemDraft: () => {
           // Generate a new clientId
           const clientId = getItemId();
 
           set((state) => {
-            // // Create a copy of the draft
-            // const itemData = { ...(state.itemDraft as ItemDataType<T>) } as ItemDataType<T>;
-            // // Use the existing addItem function to add the draft as a new item
-            // const addItemFunction = get().addItem;
-            // addItemFunction(itemData);
-
-            // // Reset the draft
-            // state.itemDraft = {} as Draft<ItemDataType<T>>;
-
             // Create a copy of the draft
-            const itemData = { ...(state.itemDraft as ItemDataType<T>) } as ItemDataType<T>;
+            const itemData = { ...(state.itemDraft as ItemDataType<I>) } as ItemDataType<I>;
 
             // Construct the new item
             const newItem = {
@@ -199,68 +250,41 @@ export const createParentItemListStore = <T extends ItemClientStateType>(props: 
               lastModified: new Date(),
               disposition: ItemDisposition.New,
               ...itemData,
-            } as unknown as Draft<T>;
+            } as unknown as Draft<I>;
 
             // Append it to the end of the store's `items` array
             state.items.push(newItem);
 
             // Update the modification timestamp
-            state.lastModified = new Date();
+            if (state.parent) {
+              state.parent.lastModified = new Date();
+            }
 
             // Reset the draft
-            state.itemDraft = {} as Draft<ItemDataType<T>>;
+            state.itemDraft = {} as Draft<ItemDataType<I>>;
           });
         },
-        updateStoreWithServerData: (serverState: ParentItemListType<ItemOutputType>) => {
-          console.log(
-            `useParentItemListStore/updateStoreWithServerData: parentId=${get().parentId} serverState.parentId=${
-              serverState.parentId
-            }`,
-          );
-          const currentParentId = get().parentId || serverState.parentId;
-
-          if (!isValidItemId(currentParentId)) {
-            throw Error(`useParentItemListStore/updateStoreWithServerData: parentId is ${get().parentId}`);
+        updateStoreWithServerData: (
+          serverState: ParentItemListType<ItemServerToClientType, ItemServerToClientType>,
+        ) => {
+          if (props.logUpdateFromServer) {
+            logUpdateStoreWithServerData({ parent: get().parent, items: get().items }, serverState);
           }
-          // At this point, TypeScript knows currentParentId is not null
-          // We can safely cast currentParentId to IdSchemaType
-          const validParentId = currentParentId as IdSchemaType;
           set((state) => {
-            const updatedState = handleParentItemListFromServer({ ...state, parentId: validParentId }, serverState);
+            const updatedState = handleParentItemListFromServer(state, serverState);
             if (updatedState === null) {
-              state.items.forEach((item) => {
-                if (!(item.createdAt instanceof Date)) {
-                  console.log(`useParentItemListStore/updateStoreWithServerData: invalid createdAt:`, item.createdAt);
-                  item.createdAt = new Date(0);
-                }
-                if (!(item.lastModified instanceof Date)) {
-                  console.log(
-                    `useParentItemListStore/updateStoreWithServerData: invalid lastModified:`,
-                    item.lastModified,
-                  );
-                  item.lastModified = new Date(0);
-                }
-                item.disposition = ItemDisposition.Synced;
-              });
-            } else if (updatedState && updatedState.parentId && updatedState.items && updatedState.lastModified) {
-              state.parentId = updatedState.parentId;
-              state.items = updatedState.items;
-              state.lastModified = updatedState.lastModified;
-              state.serverModified = updatedState.lastModified;
-            } else {
-              console.log(
-                `useParentItemListStore: updateStoreWithServerData -> processUpdateFromServer returned invalid updatedState:`,
-                updatedState,
-              );
+              console.log(`No updated`);
             }
           });
         },
-        getLastModified: (): ModificationTimestampType => {
-          return get().lastModified;
+        getLastModified: (): ModificationTimestampType | undefined => {
+          return get().parent?.lastModified;
         },
         setLastModified: (timestamp: ModificationTimestampType): void => {
           set((state) => {
-            state.lastModified = timestamp;
+            if (state.parent) {
+              state.parent.lastModified = timestamp;
+            }
           });
         },
         getSynchronizationInterval: (): number => {
@@ -272,7 +296,7 @@ export const createParentItemListStore = <T extends ItemClientStateType>(props: 
           });
         },
       })),
-      { name: storeName, version: storeVersion },
+      { name: storeName, version: storeVersion, storage: createTypesafeLocalstorage<P, I>() },
     ),
   );
 };

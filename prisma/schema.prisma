@@ -14,10 +14,11 @@ datasource db {
 }
 
 model User {
-  id             String   @id @default(uuid()) @db.Uuid
-  authProviderId String   @unique
-  createdAt      DateTime @default(now())
-  lastModified   DateTime @default(now()) @updatedAt
+  id             String    @id @default(uuid()) @db.Uuid
+  authProviderId String    @unique
+  createdAt      DateTime  @default(now())
+  lastModified   DateTime  @default(now()) @updatedAt
+  deletedAt      DateTime? // Field to track soft deletion
   email          String?
   firstName      String?
   lastName       String?
@@ -28,6 +29,7 @@ model Resume {
   id           String         @id @default(uuid()) @db.Uuid
   createdAt    DateTime       @default(now())
   lastModified DateTime       @default(now()) @updatedAt
+  deletedAt    DateTime? // Field to track soft deletion
   parentId     String         @db.Uuid // User that owns this resume
   parent       User           @relation(fields: [parentId], references: [id], onDelete: Cascade)
   items        Organization[] // Reference to organizations at which the the user had a role
@@ -38,14 +40,15 @@ model Resume {
 }
 
 model Organization {
-  id           String   @id @default(uuid()) @db.Uuid
-  createdAt    DateTime @default(now())
-  lastModified DateTime @default(now()) @updatedAt
-  parentId     String   @db.Uuid // Resume that contains this organization
-  parent       Resume   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  id           String    @id @default(uuid()) @db.Uuid
+  createdAt    DateTime  @default(now())
+  lastModified DateTime  @default(now()) @updatedAt
+  deletedAt    DateTime? // Field to track soft deletion
+  parentId     String    @db.Uuid // Resume that contains this organization
+  parent       Resume    @relation(fields: [parentId], references: [id], onDelete: Cascade)
   items        Role[] // Reference to roles the user had at this organization
-  name         String   @db.Text
-  location     String   @default("") @db.Text
+  name         String    @db.Text
+  location     String    @default("") @db.Text
 
   @@index([parentId]) // Index for faster lookups on parentId
 }
@@ -54,6 +57,7 @@ model Role {
   id           String        @id @default(uuid()) @db.Uuid
   createdAt    DateTime      @default(now())
   lastModified DateTime      @default(now()) @updatedAt
+  deletedAt    DateTime? // Field to track soft deletion
   parentId     String        @db.Uuid
   parent       Organization  @relation(fields: [parentId], references: [id], onDelete: Cascade)
   items        Achievement[] // Reference to achievements the user made in this role
@@ -64,13 +68,14 @@ model Role {
 }
 
 model Achievement {
-  id           String   @id @default(uuid()) @db.Uuid
-  createdAt    DateTime @default(now())
-  lastModified DateTime @default(now()) @updatedAt
-  parentId     String   @db.Uuid
-  parent       Role     @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  content      String   @db.Text
-  order        Float    @db.DoublePrecision
+  id           String    @id @default(uuid()) @db.Uuid
+  createdAt    DateTime  @default(now())
+  lastModified DateTime  @default(now()) @updatedAt
+  deletedAt    DateTime? // Field to track soft deletion
+  parentId     String    @db.Uuid
+  parent       Role      @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  content      String    @db.Text
+  order        Float     @db.DoublePrecision
 
   @@unique([order, parentId, lastModified])
   @@index([parentId]) // Index for faster lookups on parentId

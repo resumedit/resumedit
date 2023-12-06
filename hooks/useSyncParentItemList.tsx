@@ -1,4 +1,4 @@
-import { handleParentItemListFromClient } from "@/actions/parentItemList";
+import { handleParentItemListFromClient } from "@/actions/syncParentItemList";
 import { toast } from "@/components/ui/use-toast";
 import { useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
@@ -7,21 +7,20 @@ import { ItemClientToServerType } from "@/types/item";
 import { ParentItemListStoreNameType, ParentItemListType } from "@/types/parentItemList";
 import { useCallback, useEffect } from "react";
 
-export function useSendParentItemLisToServer() {
+export function useSyncParentItemList() {
   const storeName = useStoreName();
   const store = useParentItemListStore(storeName);
   const synchronizationInterval = store((state) => state.synchronizationInterval);
 
-  const parentId = store((state) => state.parentId);
-  const lastModified = store((state) => state.lastModified);
+  const parent = store((state) => state.parent);
   const items = store((state) => state.items);
   const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
 
   const syncItems = useCallback(async () => {
     // Send the entire item list
-    const clientList = { parentId, lastModified, items } as ParentItemListType<ItemClientToServerType>;
-    if (clientList.parentId) {
-      const clientModified = clientList.lastModified;
+    const clientList = { parent, items } as ParentItemListType<ItemClientToServerType, ItemClientToServerType>;
+    if (clientList.parent) {
+      const clientModified = clientList.parent.lastModified;
       const updatedItemList = await handleParentItemListFromClient(
         storeName as ParentItemListStoreNameType,
         clientList,
@@ -29,19 +28,21 @@ export function useSendParentItemLisToServer() {
 
       if (updatedItemList) {
         updateStoreWithServerData(updatedItemList);
-        const serverModified = updatedItemList.lastModified;
+        const serverModified = updatedItemList.parent.lastModified;
 
         if (serverModified > clientModified) {
           toast({
             title: `Synchronized`,
             description: `Local: ${dateToISOLocal(new Date(clientModified))}: ${
               clientList.items.length
-            }\nServer: ${dateToISOLocal(new Date(updatedItemList.lastModified))}: ${updatedItemList.items.length}`,
+            }\nServer: ${dateToISOLocal(new Date(updatedItemList.parent.lastModified))}: ${
+              updatedItemList.items.length
+            }`,
           });
         }
       }
     }
-  }, [items, lastModified, parentId, storeName, updateStoreWithServerData]);
+  }, [items, parent, storeName, updateStoreWithServerData]);
 
   useEffect(() => {
     if (synchronizationInterval > 0) {

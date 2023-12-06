@@ -2,9 +2,8 @@
 import { IdSchemaType } from "@/schemas/id";
 import { ResumeInputType, ResumeOutputType } from "@/schemas/resume";
 import { ItemClientStateType, ItemClientToServerType, ItemDisposition, ItemServerToClientType, ItemType } from "./item";
+import { ClientIdType } from "./parentItemList";
 import { ModificationTimestampType } from "./timestamp";
-
-export type ClientIdType = IdSchemaType;
 
 export type ResumeActionType = "view" | "edit";
 

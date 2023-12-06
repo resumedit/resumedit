@@ -2,9 +2,10 @@
 
 "use server";
 
-import NestedParentItemListServerComponent from "@/components/item/NestedParentItemList.server";
+import NestedParentItemListServerComponent from "@/components/parentItemList/NestedParentItemList.server";
 import { Skeleton } from "@/components/ui/skeleton";
-import { IdSchemaType } from "@/schemas/id";
+import { IdSchemaType, isValidItemId } from "@/schemas/id";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 export interface ResumeViewPageProps {
@@ -12,7 +13,10 @@ export interface ResumeViewPageProps {
 }
 
 export default async function ResumeViewPage({ params: { id } }: ResumeViewPageProps) {
-  return (
+  const idIsValid = isValidItemId(id);
+  return !idIsValid ? (
+    notFound()
+  ) : (
     <Suspense fallback={<ParentItemListSkeleton />}>
       <NestedParentItemListServerComponent storeName="resume" resumeAction={"view"} id={id} />
     </Suspense>

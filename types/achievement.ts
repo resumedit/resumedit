@@ -2,8 +2,7 @@ import { keepOnlyFields } from "@/lib/utils/misc";
 import { AchievementInputType, AchievementOutputType } from "@/schemas/achievement";
 import { IdSchemaType } from "@/schemas/id";
 import { ModificationTimestampType } from "./timestamp";
-
-export type ClientIdType = IdSchemaType;
+import { ClientIdType } from "./parentItemList";
 
 export enum AchievementDisposition {
   New = "NEW", // Not yet synced with the server

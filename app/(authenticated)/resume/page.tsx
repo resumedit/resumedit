@@ -2,7 +2,7 @@
 
 "use server";
 
-import ParentItemListServerComponent from "@/components/item/ParentItemList.server";
+import ParentItemListServerComponent from "@/components/parentItemList/ParentItemList.server";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Suspense } from "react";
 

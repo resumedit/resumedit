@@ -3,17 +3,16 @@
 "use client";
 
 import { ParentItemListStoreProvider, useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
+import { ResumeActionProvider } from "@/contexts/ResumeActionContext";
 import { StoreNameProvider, useStoreName } from "@/contexts/StoreNameContext";
-import { idDefault } from "@/schemas/id";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { ItemServerStateType } from "@/types/item";
 import { ParentItemListType } from "@/types/parentItemList";
+import { ResumeActionType } from "@/types/resume";
 import { useEffect } from "react";
 import ParentItemList from "./ParentItemList";
 import { ParentItemListServerComponentProps } from "./ParentItemList.server";
 import ParentItemListStoreState from "./ParentItemListStoreState";
-import { ResumeActionProvider } from "@/contexts/ResumeActionContext";
-import { ResumeActionType } from "@/types/resume";
 import ParentItemListSynchronization from "./ParentItemListSynchronization";
 
 export interface ParentItemListClientContextProps extends ParentItemListClientComponentProps {}
@@ -21,8 +20,9 @@ export interface ParentItemListClientContextProps extends ParentItemListClientCo
 const ParentItemListClientContext = (props: ParentItemListClientContextProps) => {
   const globalStoreName = useStoreName();
   const storeName = props.storeName || globalStoreName;
+
   const store = useParentItemListStore(storeName);
-  const parentId = store((state) => state.parentId);
+  const parent = store((state) => state.parent);
   const parentModel = store((state) => state.parentModel);
   const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
 
@@ -36,7 +36,7 @@ const ParentItemListClientContext = (props: ParentItemListClientContextProps) =>
 
   useEffect(() => {
     if (updateStoreWithServerData) {
-      console.log(`ParentItemListClientContext: useEffect with serverState:`, serverState);
+      // console.log(`ParentItemListClientContext: useEffect with serverState:`, serverState);
       updateStoreWithServerData(serverState);
     }
   }, [serverState, updateStoreWithServerData]);
@@ -45,19 +45,13 @@ const ParentItemListClientContext = (props: ParentItemListClientContextProps) =>
     <>
       {showIdentifiers ? (
         <h2 className="text-xl mb-2">
-          <span className="capitalize">{storeName}s</span> of {parentModel} <code>{parentId}</code>
+          <span className="capitalize">{storeName}s</span> of {parentModel} <code>{JSON.stringify(parent)}</code>
         </h2>
       ) : null}
       <div className="space-y-1">
         {props.resumeAction === "edit" && showSynchronization ? <ParentItemListSynchronization /> : null}
         <ParentItemList />
-        {showListItemInternals ? (
-          <ParentItemListStoreState
-            storeName={storeName}
-            parentId={serverState.parentId || idDefault}
-            serverModified={serverState.lastModified}
-          />
-        ) : null}
+        {showListItemInternals ? <ParentItemListStoreState storeName={storeName} serverState={serverState} /> : null}
       </div>
     </>
   );
@@ -65,7 +59,7 @@ const ParentItemListClientContext = (props: ParentItemListClientContextProps) =>
 
 export interface ParentItemListClientComponentProps extends ParentItemListServerComponentProps {
   resumeAction?: ResumeActionType;
-  serverState: ParentItemListType<ItemServerStateType>;
+  serverState: ParentItemListType<ItemServerStateType, ItemServerStateType>;
 }
 
 const ParentItemListClientComponent = (props: ParentItemListClientComponentProps) => {

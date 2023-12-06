@@ -7,27 +7,13 @@ import {
   ItemClientToServerType,
   ItemDataType,
   ItemDataUntypedType,
-  ItemDisposition,
   ItemOutputType,
+  ItemServerToClientType,
   OrderableItemClientStateType,
 } from "./item";
 import { ModificationTimestampType } from "./timestamp";
 
 export type ClientIdType = IdSchemaType;
-
-// A parent item list comprises:
-// parentId:     identifies the parent instance and is an alias for the specific
-//               parent identifier of the item model.
-//               For example if the parent is `User`, the item is `Resume`
-//               and its column `parentId` refers to the user that owns the resume
-// lastModified: a timestamp when anything in the parent item list
-//               was last modified
-// item:         array of itemren, e.g., Array<Resume>
-export type ParentItemListType<T> = {
-  parentId: IdSchemaType;
-  lastModified: ModificationTimestampType;
-  items: T[];
-};
 
 export const parentItemModelHierarchy = ["user", "resume", "organization", "role", "achievement"];
 
@@ -121,6 +107,17 @@ function generateParentIdKeys(): Set<string> {
   return keys;
 }
 
+// A parent item list comprises:
+// parent:       An instance of the parent model to which all item models belong.
+//               For example if the parent is `User`, the item is `Resume`
+//               and its column `parentId` refers to the `User` model instance that
+//               owns the resume
+// items:         array of item moel instances, e.g., Array<Resume>
+export type ParentItemListType<P, I> = {
+  parent: P;
+  items: I[];
+};
+
 // List of parentId keys to be stripped from objects
 export const parentIdKeys = generateParentIdKeys();
 
@@ -128,44 +125,55 @@ type ParentIdKey = `${keyof ParentItemModelAccessor}Id`;
 
 export type ParentItemListStoreNameType = keyof ParentItemModelAccessor;
 
-export type ParentItemListState<T extends ItemClientStateType> = {
+export type ParentItemListState<P, C extends ItemClientStateType> = {
   parentModel: keyof ParentItemModelAccessor | null;
-  parentId: IdSchemaType | null;
   itemModel: keyof ParentItemModelAccessor;
-  items: T[];
-  itemDraft: ItemDataType<T>;
-  lastModified: ModificationTimestampType;
+  parent: P | null;
+  items: C[];
+  itemDraft: ItemDataType<C>;
   serverModified: ModificationTimestampType;
   synchronizationInterval: number;
 };
 
-export type ParentItemListActions<T extends ItemClientStateType> = {
-  getParentId: () => IdSchemaType | null;
-  setParentId: (id: IdSchemaType) => void;
-  getItemList: () => T[];
-  setItemList: (items: T[]) => void;
-  deleteItemsByDisposition: (disposition?: ItemDisposition) => void;
-  addItem: (payload: ItemDataType<T>) => ClientIdType;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export type ParentItemListActions<P extends ItemClientStateType, C extends ItemClientStateType> = {
+  setParent: (parent: P) => void;
+  getItemList: () => C[];
+  setItemList: (items: C[]) => void;
+  addItem: (payload: ItemDataType<C>) => ClientIdType;
   setItemSynced: (clientId: ClientIdType, serverData: ItemOutputType) => void;
-  setItemDeleted: (clientId: ClientIdType) => void;
+  markItemAsDeleted: (clientId: ClientIdType) => void;
   deleteItem: (clientId: ClientIdType) => void;
   setItemData: (clientId: ClientIdType, data: ItemDataUntypedType) => void;
   reArrangeItemList: (reArrangedItems: OrderableItemClientStateType[]) => void;
   resetItemListOrderValues: () => void;
   updateItemDraft: (itemData: ItemDataUntypedType) => void;
   commitItemDraft: () => void;
-  updateStoreWithServerData: (serverState: ParentItemListType<ItemOutputType>) => void;
+  updateStoreWithServerData: (serverState: ParentItemListType<ItemServerToClientType, ItemServerToClientType>) => void;
   setLastModified: (timestamp: ModificationTimestampType) => void;
-  getLastModified: () => ModificationTimestampType;
+  getLastModified: () => ModificationTimestampType | undefined;
   setSynchronizationInterval: (interval: number) => void;
   getSynchronizationInterval: () => number;
 };
 
-export type ParentItemListStore<T extends ItemClientStateType> = ParentItemListState<T> & ParentItemListActions<T>;
+export type ParentItemListStore<P extends ItemClientStateType, C extends ItemClientStateType> = ParentItemListState<
+  P,
+  C
+> &
+  ParentItemListActions<P, C>;
 
-type ParentItemListStoreType = ParentItemListStore<ItemClientStateType>;
-type ParentItemListSelectorType<T> = (state: ParentItemListStoreType) => T;
-export type ParentItemListHookType = <T>(selector?: ParentItemListSelectorType<T>) => T;
+// Updated store type with type constraints for P and C
+type ParentItemListStoreType<P extends ItemClientStateType, C extends ItemClientStateType> = ParentItemListStore<P, C>;
+
+// Selector type now also needs to take into account the two type parameters and their constraints
+type ParentItemListSelectorType<P extends ItemClientStateType, C extends ItemClientStateType, T> = (
+  state: ParentItemListStoreType<P, C>,
+) => T;
+
+// The hook type is updated to include the two type parameters with their constraints
+export type ParentItemListHookType = <P extends ItemClientStateType, C extends ItemClientStateType, T>(
+  selector?: ParentItemListSelectorType<P, C, T>,
+) => T;
 
 export function stripFieldsForDatabase<T extends ItemClientToServerType>(
   item: T,

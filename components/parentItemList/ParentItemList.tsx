@@ -16,9 +16,9 @@ import {
 import { restrictToParentElement } from "@dnd-kit/modifiers";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useState } from "react";
-import ParentItemListItem from "./ParentItemListItem";
-import ParentItemListItemInput from "./ParentItemListItemInput";
-import ParentItemSortableWrapper from "./utils/ParentItemSortableWrapper";
+import ItemListItem from "../item/ItemListItem";
+import ItemListItemInput from "../item/ItemListItemInput";
+import ParentItemSortableWrapper from "../item/utils/ParentItemSortableWrapper";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { useResumeAction } from "@/contexts/ResumeActionContext";
 
@@ -28,8 +28,7 @@ const ParentItemList = () => {
   const storeName = useStoreName();
   const store = useParentItemListStore(storeName);
   const items = store((state) => state.items);
-  const deleteItemsByDisposition = store((state) => state.deleteItemsByDisposition);
-  const setItemDeleted = store((state) => state.setItemDeleted);
+  const setItemDeleted = store((state) => state.markItemAsDeleted);
   const reArrangeItemList = store((state) => state.reArrangeItemList);
   const resetItemListOrderValues = store((state) => state.resetItemListOrderValues);
 
@@ -53,7 +52,7 @@ const ParentItemList = () => {
       const overIndex = findItemIndexByClientId(items, over!.id as string);
 
       // Create a new array with updated 'moved' properties
-      const updatedItems = items.map((item, index) => {
+      const updatedItems = items.map((item: ItemClientStateType, index: number) => {
         if (index === activeIndex || index === overIndex) {
           return { ...item, moved: true };
         }
@@ -65,7 +64,7 @@ const ParentItemList = () => {
     }
   };
 
-  return !items || !deleteItemsByDisposition ? null : (
+  return !items ? null : (
     <div
       className="bg-elem-light dark:bg-elem-dark-1 mt-5 mb-5 rounded-md shadow-2xl shadow-shadow-light
      dark:shadow-black overflow-hidden"
@@ -82,18 +81,6 @@ const ParentItemList = () => {
           >
             Reset order
           </button>
-          <div className="m-3 space-x-2">
-            <button
-              className="px-1 border-2 text-destructive rounded-md"
-              name="deleteItemsByDisposition"
-              role="button"
-              onClick={() => {
-                deleteItemsByDisposition();
-              }}
-            >
-              Remove deleted
-            </button>
-          </div>
         </>
       )}
       {
@@ -106,11 +93,11 @@ const ParentItemList = () => {
           <ul className="flex flex-col bg-elem-light dark:bg-elem-dark-1 overflow-auto">
             <ParentItemSortableWrapper items={items} disabled={!itemsAreDragable}>
               {resumeAction === "edit" ? (
-                <ParentItemListItemInput editingInput={editingInput} setEditingInput={setEditingInput} />
+                <ItemListItemInput editingInput={editingInput} setEditingInput={setEditingInput} />
               ) : null}
-              {items.map((item, index) => {
+              {items.map((item: ItemClientStateType, index: number) => {
                 return (
-                  <ParentItemListItem
+                  <ItemListItem
                     key={item.clientId}
                     index={index}
                     storeName={storeName}

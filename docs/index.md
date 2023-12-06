@@ -8,7 +8,6 @@ The basic data types are described below.
 export enum ItemDisposition {
   New = "NEW",
   Modified = "MODIFIED",
-  Deleted = "DELETED",
   Synced = "SYNCED",
 }
 
@@ -18,6 +17,7 @@ export type ItemType = {
   parentId: IdSchemaType;
   createdAt: ModificationTimestampType;
   lastModified: ModificationTimestampType;
+  deletedAt: ModificationTimestampType | null;
 };
 
 // Type to create records in Prisma with "id" optional

@@ -2,10 +2,11 @@
 
 "use server";
 
-import NestedParentItemListServerComponent from "@/components/item/NestedParentItemList.server";
+import NestedParentItemListServerComponent from "@/components/parentItemList/NestedParentItemList.server";
 import { Skeleton } from "@/components/ui/skeleton";
-import { IdSchemaType } from "@/schemas/id";
+import { IdSchemaType, isValidItemId } from "@/schemas/id";
 import { ResumeActionType } from "@/types/resume";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 export interface ResumeActionPageProps {
@@ -13,7 +14,10 @@ export interface ResumeActionPageProps {
 }
 
 export default async function ResumeActionPage({ params: { id, action } }: ResumeActionPageProps) {
-  return (
+  const idIsValid = isValidItemId(id);
+  return !idIsValid ? (
+    notFound()
+  ) : (
     <Suspense fallback={<ParentItemListSkeleton />}>
       <NestedParentItemListServerComponent storeName="resume" resumeAction={action} id={id} />
     </Suspense>

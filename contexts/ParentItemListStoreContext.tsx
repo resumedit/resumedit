@@ -1,16 +1,16 @@
 // @/contexts/ParentItemListStoreProvider
 
-import React, { createContext, FC, ReactNode, useState, useEffect, useContext } from "react";
-import { createParentItemListStore, StoreConfigType } from "@/stores/parentItemList/createParentItemListStore";
-import { ParentItemListStore, ParentItemModelAccessor } from "@/types/parentItemList";
+import { StoreConfigType, createParentItemListStore } from "@/stores/parentItemList/createParentItemListStore";
 import { ItemClientStateType } from "@/types/item";
+import { ParentItemListStore, ParentItemModelAccessor } from "@/types/parentItemList";
+import { ReactNode, createContext, useContext, useEffect, useState } from "react";
 
 interface ParentItemListStoreProviderProps {
   children: ReactNode;
   configs: StoreConfigType[];
 }
 
-type ParentItemListStoreType = ParentItemListStore<ItemClientStateType>;
+type ParentItemListStoreType = ParentItemListStore<ItemClientStateType, ItemClientStateType>;
 type ParentItemListSelectorType<T> = (state: ParentItemListStoreType) => T;
 type ParentItemListHookType = <T>(selector?: ParentItemListSelectorType<T>) => T;
 
@@ -18,7 +18,7 @@ type RecordType = Record<keyof ParentItemModelAccessor, ParentItemListHookType>;
 
 const ParentItemListStoreContext = createContext<RecordType>({} as RecordType);
 
-export const ParentItemListStoreProvider: FC<ParentItemListStoreProviderProps> = ({ children, configs }) => {
+export function ParentItemListStoreProvider({ children, configs }: ParentItemListStoreProviderProps) {
   const [stores, setStores] = useState<RecordType>({} as RecordType);
   // Track initialization of stores
   const [isInitialized, setIsInitialized] = useState(false);
@@ -28,7 +28,7 @@ export const ParentItemListStoreProvider: FC<ParentItemListStoreProviderProps> =
       // Inside useEffect of the ParentItemListStoreProvider
       const initializedStores = configs.reduce(
         (acc, config) => {
-          acc[config.itemModel] = createParentItemListStore<ItemClientStateType>(config);
+          acc[config.itemModel] = createParentItemListStore<ItemClientStateType, ItemClientStateType>(config);
           return acc;
         },
         {} as Record<keyof ParentItemModelAccessor, ParentItemListHookType>,
@@ -42,7 +42,7 @@ export const ParentItemListStoreProvider: FC<ParentItemListStoreProviderProps> =
   return !isInitialized ? null : (
     <ParentItemListStoreContext.Provider value={stores}>{children}</ParentItemListStoreContext.Provider>
   );
-};
+}
 
 // Custom hook to use the context
 export const useParentItemListStore = (model: keyof ParentItemModelAccessor) => {

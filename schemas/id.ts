@@ -1,3 +1,5 @@
+// @/schemas/id.ts
+
 import { v4 } from "uuid";
 import { z } from "zod";
 
@@ -6,7 +8,7 @@ export const idDefault = "00000000-0000-0000-0000-000000000000";
 
 export type IdSchemaType = z.infer<typeof idSchema>;
 
-export const isValidItemId = (id: string | null): boolean => {
+export const isValidItemId = (id: string | null | undefined): boolean => {
   if (id === null) return false;
 
   try {

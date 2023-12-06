@@ -1,29 +1,29 @@
 "use server";
 
-import { dateToISOLocal } from "@/lib/utils/formatDate";
 import { prisma } from "@/prisma/client";
 import { IdSchemaType } from "@/schemas/id";
-import { ItemClientToServerType, ItemDisposition, ItemServerToClientType } from "@/types/item";
-import {
-  ParentItemListStoreNameType,
-  ParentItemListType,
-  getModelAccessor,
-  getParentModel,
-  keepOnlyFieldsForCreate,
-  keepOnlyFieldsForUpdate,
-} from "@/types/parentItemList";
-import { ModificationTimestampType } from "@/types/timestamp";
-import { Prisma, PrismaClient } from "@prisma/client";
+import { ParentItemListStoreNameType, getItemModel, getModelAccessor, getParentModel } from "@/types/parentItemList";
+import { PrismaClient } from "@prisma/client";
+import { notFound } from "next/navigation";
 
-export async function getListLastModifiedById(
-  parentModel: ParentItemListStoreNameType,
-  parentId: IdSchemaType,
+export async function getItem(model: ParentItemListStoreNameType, id: IdSchemaType, prismaTransaction?: PrismaClient) {
+  const prismaClient = prismaTransaction || prisma;
+  const prismaModelInstance = getModelAccessor(model, prismaClient);
+  const item = await prismaModelInstance.findUnique({
+    where: { id },
+  });
+  return item;
+}
+
+export async function getItemLastModified(
+  model: ParentItemListStoreNameType,
+  id: IdSchemaType,
   prismaTransaction?: PrismaClient,
 ) {
   const prismaClient = prismaTransaction || prisma;
-  const prismaParentModelInstance = getModelAccessor(parentModel, prismaClient);
+  const prismaParentModelInstance = getModelAccessor(model, prismaClient);
   const item = await prismaParentModelInstance.findUnique({
-    where: { id: parentId },
+    where: { id },
     select: { lastModified: true },
   });
   return item?.lastModified;
@@ -58,15 +58,20 @@ export async function getParentItemList(
 
   // Function to execute the logic, using either an existing transaction or a new prisma client
   const executeLogic = async (prismaClient: PrismaClient) => {
-    const lastModified = await getListLastModifiedById(parentModel, parentId, prismaClient);
+    const parent = await getItem(parentModel, parentId, prismaClient);
 
-    if (!lastModified) throw new Error(`${parentModel} with ID ${parentId} not found.`);
+    if (!parent) {
+      if (process.env.NODE_ENV === "development") {
+        throw new Error(`${parentModel} with ID ${parentId} not found.`);
+      } else {
+        notFound();
+      }
+    }
 
     const items = await getItemList(model, parentId, prismaClient);
 
     return {
-      parentId,
-      lastModified,
+      parent,
       items,
     };
   };
@@ -87,307 +92,42 @@ export async function getParentItemList(
   }
 }
 
-export async function handleParentItemListFromClient(
-  // Item model in Prisma, e.g., 'achievement', 'role'
+// Recursive function to soft delete an item and all its descendants
+export async function softDeleteAndCascadeItem(
   model: ParentItemListStoreNameType,
-  clientList: ParentItemListType<ItemClientToServerType>,
-): Promise<ParentItemListType<ItemServerToClientType> | null> {
-  const parentId = clientList.parentId;
-  const parentModel = getParentModel(model);
+  itemId: string,
+  prismaTransaction?: PrismaClient,
+): Promise<void> {
+  const executeLogic = async (prismaClient: PrismaClient) => {
+    const now = new Date();
+    const modelAccessor = getModelAccessor(model, prismaClient);
 
-  if (!parentModel) {
-    throw Error(`handleParentItemListFromClient(model=${model}, parentId=${parentId}): no parent model for ${model}`);
-  }
-
-  const currentTimestamp = new Date();
-  const clientLastModified = clientList.lastModified < currentTimestamp ? clientList.lastModified : currentTimestamp;
-
-  let serverLastModified = await getListLastModifiedById(parentModel, parentId);
-  serverLastModified =
-    serverLastModified > currentTimestamp ? new Date(currentTimestamp.getTime() + 1) : serverLastModified;
-
-  if (clientLastModified > serverLastModified) {
-    // Detect if the client has any items not present on the server
-    let ghostItemsDetected = 0;
-
-    // Track items deleted on the server to indicate to the client
-    // that it can remove those as well
-    let serverItemsCreated = 0;
-
-    // Track items deleted on the server to indicate to the client
-    // that it can remove those as well
-    let serverItemsDeleted = 0;
-
-    // Incorporate all changes from the client into the server's state
-    const clientItems = clientList.items;
-
-    // The items covered by the client are set to the clientLastModified timestamp
-    const lastModified = clientLastModified;
-    const updatedList = await prisma.$transaction(async (prisma) => {
-      const prismaItemModelInstance = getModelAccessor(model, prisma as PrismaClient); // Type assertion
-      const prismaParentModelInstance = getModelAccessor(parentModel, prisma as PrismaClient); // Type assertion
-      // Process each item for update or creation
-      const itemPromises = clientItems.map(async (item) => {
-        try {
-          if (item.id) {
-            if (item.disposition === ItemDisposition.Deleted) {
-              console.log(
-                `mergeClientParentItemListWithServer: item.id=${item.id} disposition=${item.disposition}: delete item`,
-              );
-              await prismaItemModelInstance.delete({
-                where: { id: item.id },
-              });
-              ++serverItemsDeleted;
-            } else {
-              const data = keepOnlyFieldsForUpdate<ItemClientToServerType>(item, lastModified);
-              console.log(`mergeClientParentItemListWithServer: item.id=${item.id}: update item with data:`, data);
-              return await prismaItemModelInstance.update({
-                where: { id: item.id },
-                data,
-              });
-            }
-          } else {
-            const data = keepOnlyFieldsForCreate<ItemClientToServerType>(item, parentId, lastModified);
-
-            console.log(
-              `mergeClientParentItemListWithServer: client sent an item without "id": create new item with data:`,
-              data,
-            );
-            const createdItem = await prismaItemModelInstance.create({
-              data,
-            });
-            console.log(`mergeClientParentItemListWithServer: createdItem:`, createdItem);
-            ++serverItemsCreated;
-            return createdItem;
-          }
-        } catch (error) {
-          if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-            // Ignore not found error
-            console.log(`Item with id ${item.id} not found. Ignoring update.`);
-            ++ghostItemsDetected;
-          } else {
-            throw error; // Re-throw other errors
-          }
-        }
-      });
-
-      await Promise.all(itemPromises);
-
-      // Fetch updated items to ensure we include only existing ones
-      const itemsAfterUpdate = await getItemList(model, parentId, prisma as PrismaClient);
-
-      console.log(
-        `mergeClientParentItemListWithServer: client update with clientTimestamp=${dateToISOLocal(
-          clientLastModified,
-        )} applied:\n${clientItems.map((a) => a.id?.substring(0, 3)).join(", ")}\n.findMany returned ${
-          itemsAfterUpdate.length
-        } items:\n${itemsAfterUpdate.map((a: ItemClientToServerType) => a.id?.substring(0, 3)).join(", ")}\n`,
-      );
-
-      let clientItemsIncomplete = false;
-      if (ghostItemsDetected == 0 && serverItemsCreated == 0 && serverItemsDeleted == 0) {
-        // Compare server items with client items
-        const clientItemIds = new Set(clientItems.map((a) => a.id));
-        clientItemsIncomplete = !itemsAfterUpdate.every((serverItem: ItemClientToServerType) =>
-          clientItemIds.has(serverItem.id),
-        );
-      }
-      const clientNeedsUpdate = ghostItemsDetected || serverItemsCreated || serverItemsDeleted || clientItemsIncomplete;
-      // Determine the lastModified timestamp based on the comparison
-      const finalLastModified = clientNeedsUpdate ? currentTimestamp : clientLastModified;
-
-      console.log(
-        `mergeClientParentItemListWithServer: update role lastModified from server=${dateToISOLocal(
-          serverLastModified,
-        )} to finalLastModified=${dateToISOLocal(finalLastModified)}`,
-      );
-
-      // Update the lastModified timestamp of the parent
-      await prismaParentModelInstance.update({
-        where: { id: parentId },
-        data: { lastModified: finalLastModified },
-      });
-
-      return {
-        ...clientList,
-        lastModified: finalLastModified,
-        items: itemsAfterUpdate,
-      };
+    // Soft delete the specified item
+    await modelAccessor.update({
+      where: { id: itemId },
+      data: { deletedAt: now },
     });
 
-    return updatedList as ParentItemListType<ItemServerToClientType> | null;
-  } else if (clientLastModified < serverLastModified) {
-    return getParentItemList(parentModel, parentId);
-  }
-
-  return null;
-}
-
-export async function mergeClientListWithServer<T extends ItemClientToServerType, U extends ItemServerToClientType>(
-  clientList: ParentItemListType<T>,
-  getListLastModifiedById: (parentId: IdSchemaType) => Promise<ModificationTimestampType>,
-  getList: (parentId: IdSchemaType) => Promise<ParentItemListType<U>>,
-  // Item model in Prisma, e.g., 'achievement', 'role'
-  model: ParentItemListStoreNameType,
-  // Parent model in Prisma that contains the list of the item model, .g., 'role', 'organization'
-  parentModel: ParentItemListStoreNameType,
-): Promise<ParentItemListType<U> | null> {
-  const parentId = clientList.parentId;
-  const currentTimestamp = new Date();
-  const clientLastModified = clientList.lastModified < currentTimestamp ? clientList.lastModified : currentTimestamp;
-
-  let serverLastModified = await getListLastModifiedById(parentId);
-  serverLastModified =
-    serverLastModified > currentTimestamp ? new Date(currentTimestamp.getTime() + 1) : serverLastModified;
-
-  if (clientLastModified > serverLastModified) {
-    // Detect if the client has any items not present on the server
-    let ghostItemsDetected = 0;
-
-    // Track items deleted on the server to indicate to the client
-    // that it can remove those as well
-    let serverItemsCreated = 0;
-
-    // Track items deleted on the server to indicate to the client
-    // that it can remove those as well
-    let serverItemsDeleted = 0;
-
-    // Incorporate all changes from the client into the server's state
-    const clientItems = clientList.items;
-
-    // The items covered by the client are set to the clientLastModified timestamp
-    const lastModified = clientLastModified;
-    const updatedList = await prisma.$transaction(async (prisma) => {
-      const prismaItemModelInstance = getModelAccessor(model, prisma as PrismaClient); // Type assertion
-      const prismaParentModelInstance = getModelAccessor(parentModel, prisma as PrismaClient); // Type assertion
-      // Process each item for update or creation
-      const itemPromises = clientItems.map(async (item) => {
-        try {
-          if (item.id) {
-            if (item.disposition === ItemDisposition.Deleted) {
-              console.log(
-                `mergeClientParentItemListWithServer: item.id=${item.id} disposition=${item.disposition}: delete item`,
-              );
-              await prismaItemModelInstance.delete({
-                where: { id: item.id },
-              });
-              ++serverItemsDeleted;
-            } else {
-              const data = keepOnlyFieldsForUpdate<T>(item, lastModified);
-              console.log(`mergeClientParentItemListWithServer: item.id=${item.id}: update item with data:`, data);
-              return await prismaItemModelInstance.update({
-                where: { id: item.id },
-                data,
-              });
-            }
-          } else {
-            const data = keepOnlyFieldsForCreate<T>(item, parentId, lastModified);
-
-            console.log(
-              `mergeClientParentItemListWithServer: client sent an item without "id": create new item with data:`,
-              data,
-            );
-            const createdItem = await prismaItemModelInstance.create({
-              data,
-            });
-            console.log(`mergeClientParentItemListWithServer: createdItem:`, createdItem);
-            ++serverItemsCreated;
-            return createdItem;
-          }
-        } catch (error) {
-          if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-            // Ignore not found error
-            console.log(`Item with id ${item.id} not found. Ignoring update.`);
-            ++ghostItemsDetected;
-          } else {
-            throw error; // Re-throw other errors
-          }
-        }
+    // Recursively soft delete all descendant items
+    const itemModel = getItemModel(model);
+    if (itemModel) {
+      const itemModelAccessor = getModelAccessor(itemModel, prismaClient);
+      const itemsToDelete = await itemModelAccessor.findMany({
+        where: { parentId: itemId, deletedAt: null },
       });
 
-      await Promise.all(itemPromises);
-
-      // Fetch updated items to ensure we include only existing ones
-      const itemsAfterUpdate = (await prismaItemModelInstance.findMany({
-        // where: buildWhereClause(parentModel, parentId),
-        where: { parentId },
-        orderBy: { lastModified: "asc" },
-      })) as U[];
-
-      console.log(
-        `mergeClientParentItemListWithServer: client update with clientTimestamp=${dateToISOLocal(
-          clientLastModified,
-        )} applied:\n${clientItems.map((a) => a.id?.substring(0, 3)).join(", ")}\n.findMany returned ${
-          itemsAfterUpdate.length
-        } items:\n${itemsAfterUpdate.map((a) => a.id?.substring(0, 3)).join(", ")}\n`,
-      );
-
-      let clientItemsIncomplete = false;
-      if (ghostItemsDetected == 0 && serverItemsCreated == 0 && serverItemsDeleted == 0) {
-        // Compare server items with client items
-        const clientItemIds = new Set(clientItems.map((a) => a.id));
-        clientItemsIncomplete = !itemsAfterUpdate.every((serverItem) => clientItemIds.has(serverItem.id));
+      for (const item of itemsToDelete) {
+        await softDeleteAndCascadeItem(itemModel, item.id, prismaClient);
       }
-      const clientNeedsUpdate = ghostItemsDetected || serverItemsCreated || serverItemsDeleted || clientItemsIncomplete;
-      // Determine the lastModified timestamp based on the comparison
-      const finalLastModified = clientNeedsUpdate ? currentTimestamp : clientLastModified;
+    }
+  };
 
-      console.log(
-        `mergeClientParentItemListWithServer: update role lastModified from server=${dateToISOLocal(
-          serverLastModified,
-        )} to finalLastModified=${dateToISOLocal(finalLastModified)}`,
-      );
-
-      // Update the lastModified timestamp of the parent
-      await prismaParentModelInstance.update({
-        where: { id: parentId },
-        data: { lastModified: finalLastModified },
-      });
-
-      return {
-        ...clientList,
-        lastModified: finalLastModified,
-        items: itemsAfterUpdate,
-      };
+  // Use the provided transaction or create a new one if none was provided
+  if (prismaTransaction) {
+    await executeLogic(prismaTransaction);
+  } else {
+    await prisma.$transaction(async (prismaClient) => {
+      await executeLogic(prismaClient as unknown as PrismaClient);
     });
-
-    return updatedList as ParentItemListType<U> | null;
-  } else if (clientLastModified < serverLastModified) {
-    return getList(parentId);
   }
-
-  return null;
 }
-
-// export async function getParentItemList(
-//   storeName: ParentItemListStoreNameType,
-//   parentId: IdSchemaType,
-// ): Promise<ParentItemListType<ItemServerToClientType>> {
-//   return await prisma.$transaction(async (prisma) => {
-//     const model: ParentItemListStoreNameType = storeName;
-//     const parentModel: ParentItemListStoreNameType = getParentModel(model);
-//     const prismaItemModelInstance = getModelAccessor(model, prisma as PrismaClient); // Type assertion
-//     const prismaParentModelInstance = getModelAccessor(parentModel, prisma as PrismaClient); // Type assertion
-
-//     // Retrieve the parent with its lastModified timestamp
-//     const parent = await prismaParentModelInstance.findUnique({
-//       where: { id: parentId },
-//       select: { lastModified: true },
-//     });
-
-//     if (!parent) throw new Error(`User with ID ${parentId} not found.`);
-
-//     // Retrieve the items for the parent
-//     const items = await prismaItemModelInstance.findMany({
-//       where: { parentId: parentId },
-//       orderBy: { name: "asc" },
-//     });
-
-//     // Return the combined object
-//     return {
-//       parentId: parentId,
-//       lastModified: parent.lastModified,
-//       items: items,
-//     } as ParentItemListType<ItemServerToClientType>;
-//   });
-// }
