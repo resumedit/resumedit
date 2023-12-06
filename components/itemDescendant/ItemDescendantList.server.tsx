@@ -6,17 +6,17 @@ import { getItemDescendantList, getItemsByParentId } from "@/actions/itemDescend
 import { getCurrentUserIdOrNull } from "@/actions/user";
 import { IdSchemaType } from "@/schemas/id";
 import {
-  ItemDescendantModelAccessor,
   ItemDescendantModelNameType,
   getDescendantModel,
   getParentModel,
   itemDescendantModelHierarchy,
 } from "@/types/itemDescendant";
 import { ResumeActionType } from "@/types/resume";
+import { augmentToItemDescendantServerState } from "@/types/utils/itemDescendant";
 import ItemDescendantListContext from "./ItemDescendantList.client";
 
 export interface ItemDescendantListProps {
-  itemModel: keyof ItemDescendantModelAccessor;
+  itemModel: ItemDescendantModelNameType;
   itemId?: IdSchemaType;
   resumeAction?: ResumeActionType;
 }
@@ -24,10 +24,10 @@ export interface ItemDescendantListProps {
 async function RenderLevels({
   itemModel,
   levels,
-}: {
-  itemModel: keyof ItemDescendantModelAccessor;
+}: Readonly<{
+  itemModel: ItemDescendantModelNameType;
   levels: Array<Record<string, string>>;
-}) {
+}>) {
   return (
     <>
       <h1>
@@ -37,7 +37,7 @@ async function RenderLevels({
         <ul>
           {levels.map((level, index) => {
             return (
-              <li key={index}>
+              <li key={level.itemId}>
                 {index}: {level.itemModel}: <code className="text-sm">{level.itemId}</code>
               </li>
             );
@@ -48,14 +48,14 @@ async function RenderLevels({
   );
 }
 
-export default async function ItemDescendantList({ itemModel, itemId, ...props }: ItemDescendantListProps) {
+export default async function ItemDescendantList({ itemModel, itemId, ...props }: Readonly<ItemDescendantListProps>) {
   const userId = await getCurrentUserIdOrNull();
   if (!userId) {
     throw Error(`ItemDescendantServerComponent: Cannot render itemModel=${itemModel}: current user not found`);
   }
 
   if (itemModel === itemDescendantModelHierarchy[0]) {
-    itemId = itemId ? itemId : userId;
+    itemId = itemId ?? userId;
   }
 
   const resumeAction = props.resumeAction ? props.resumeAction : "view";
@@ -75,7 +75,7 @@ export default async function ItemDescendantList({ itemModel, itemId, ...props }
     );
   }
 
-  let serverState,
+  let serverOutput,
     levels: Array<Record<string, string>> = [],
     leafItemModel: ItemDescendantModelNameType | null =
       itemDescendantModelHierarchy[itemDescendantModelHierarchy.length - 1];
@@ -86,10 +86,10 @@ export default async function ItemDescendantList({ itemModel, itemId, ...props }
     if (itemModel === itemDescendantModelHierarchy[0]) {
       leafItemModel = getDescendantModel(itemModel)!;
       console.log(`itemModel=${itemModel}   itemId=${itemId} itemModel=${itemModel} itemId=${itemId}`);
-      serverState = await getItemDescendantList(itemModel, itemId);
-      console.log(`ItemDescendantServerComponent: serverState:`, serverState);
+      serverOutput = await getItemDescendantList(itemModel, itemId);
+      console.log(`ItemDescendantServerComponent: serverOutput:`, serverOutput);
     } else {
-      serverState = await getItemDescendantList(itemModel, itemId);
+      serverOutput = await getItemDescendantList(itemModel, itemId);
     }
   } else {
     // Otherwise:
@@ -131,15 +131,17 @@ export default async function ItemDescendantList({ itemModel, itemId, ...props }
     }
 
     if (leafItemModel && derivedItemId) {
-      serverState = await getItemDescendantList(derivedItemModel, derivedItemId);
+      serverOutput = await getItemDescendantList(derivedItemModel, derivedItemId);
 
-      console.log(`ItemDescendantServerComponent: serverState:`, serverState);
+      console.log(`ItemDescendantServerComponent: serverOutput:`, serverOutput);
     } else {
       throw Error(
         `ItemDescendantServerComponent: getItemDescendantList(leafItemModel=${leafItemModel}, derivedItemId=${derivedItemId}) returned nothing`,
       );
     }
   }
+
+  const serverState = augmentToItemDescendantServerState(serverOutput, itemModel);
 
   return !serverState ? null : (
     <>

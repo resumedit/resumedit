@@ -19,7 +19,6 @@ const itemPersistSchema = z.object({
 const itemPersistClientSchema = z.object({
   clientId: idSchema,
   parentClientId: idSchema.optional(),
-  disposition: z.nativeEnum(ItemDisposition),
 });
 
 const itemPersistServerSchema = z.object({
@@ -28,6 +27,7 @@ const itemPersistServerSchema = z.object({
 });
 
 const itemStateSchema = z.object({
+  disposition: z.nativeEnum(ItemDisposition),
   itemModel: z.enum(itemDescendantModelHierarchy),
   descendantModel: z.union([z.enum(itemDescendantModelHierarchy), z.null()]),
 });
@@ -38,6 +38,7 @@ export const itemSchema = {
   persistClient: itemDataSchema
     .merge(itemPersistSchema)
     .merge(itemPersistClientSchema)
+    .merge(itemStateSchema)
     .merge(itemPersistServerSchema.partial()),
   persistServer: itemDataSchema.merge(itemPersistSchema).merge(itemPersistServerSchema),
 };
@@ -61,7 +62,11 @@ export type ItemClientStateType = z.output<typeof itemClientStateSchema>;
 export const itemOrderableClientStateSchema = itemClientStateSchema.extend({
   order: z.number(),
 });
-export type ItemOrderableClientStateType = z.output<typeof itemOrderableClientStateSchema>;
+// Note: the below does not seem to include the `order` property for some reason
+// export type ItemOrderableClientStateType = z.output<typeof itemOrderableClientStateSchema>;
+export type ItemOrderableClientStateType = ItemClientStateType & {
+  order: number;
+};
 
 // Type used when client sends items to server for merge
 // Since `id` and `parentId` both refer to server-generated identifiers, the client
@@ -76,6 +81,11 @@ export type ItemOrderableClientStateType = z.output<typeof itemOrderableClientSt
 // Use z.output to derive the ItemClientToServerType type
 export const itemClientToServerTypeSchema = itemClientStateSchema;
 export type ItemClientToServerType = z.output<typeof itemClientToServerTypeSchema>;
+
+// Type persisted by server
+// Use z.output to derive the ItemServerOutputType type
+export const itemServerOutputSchema = itemSchema.persistServer;
+export type ItemServerOutputType = z.output<typeof itemServerOutputSchema>;
 
 // Type returned by server in response to items received from client to merge with server's state
 // export type ItemServerToClientType = ItemOutputType & {
@@ -101,10 +111,26 @@ export type ItemServerToClientType = z.output<typeof itemServerToClientSchema>;
 // };
 // Add all properties of itemPersistClientSchema as optional
 // FIXME: Avoid merging with the complete `itemClientStateSchema` as this makes all shared properties optional
-export const itemServerStateSchema = itemSchema.persistServer.merge(itemStateSchema).merge(itemPersistClientSchema);
+export const itemServerStateSchema = itemSchema.persistServer
+  .merge(itemStateSchema)
+  .merge(itemPersistClientSchema.partial());
 
 // Derive types from the merged schema
 export type ItemServerStateType = z.output<typeof itemServerStateSchema>;
+
+// Orderable server state type, for items that can be ordered and
+// therefore require a numeric `order` field that can be persisted in a table
+// export type ItemOrderableServerStateType = ItemServerStateType & {
+//   order: number;
+// };
+export const itemOrderableServerStateSchema = itemServerStateSchema.extend({
+  order: z.number(),
+});
+// Note: the below does not seem to include the `order` property for some reason
+// export type ItemOrderableServerStateType = z.output<typeof itemOrderableServerStateSchema>;
+export type ItemOrderableServerStateType = ItemServerStateType & {
+  order: number;
+};
 
 // An object with fields that are specific to the item, i.e., excluding all the fields shared
 // between `Resume`, `Organization`, `Role` and `Achievement`

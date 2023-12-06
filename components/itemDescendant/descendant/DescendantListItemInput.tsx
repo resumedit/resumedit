@@ -2,9 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import { getItemSchema, getSchemaFields, isNumberField } from "@/lib/utils/itemDescendantListUtils";
+import { ItemClientStateType, ItemDataType, ItemDataUntypedFieldNameType, ItemDataUntypedType } from "@/schemas/item";
 import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
-import { ItemDataType, ItemDataUntypedFieldNameType, ItemDataUntypedType } from "@/schemas/item";
-import { ItemClientStateType } from "@/schemas/item";
 import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { Plus } from "lucide-react";
 import { /*Dispatch, SetStateAction, */ useState } from "react";
@@ -30,7 +29,7 @@ export default function DescendantListItemInput({
   itemDraft,
   updateItemDraft,
   commitItemDraft,
-}: DescendantListItemInputProps) {
+}: Readonly<DescendantListItemInputProps>) {
   const itemFormSchema = getItemSchema(itemModel, "form");
   const itemFormFields = getSchemaFields(itemModel, "display");
 
@@ -136,7 +135,7 @@ export default function DescendantListItemInput({
             key={fieldName}
             fieldName={`${itemModel}-${fieldName}`}
             value={fieldValues[fieldName]}
-            placeholder={`${fieldName}`}
+            placeholder={`${fieldName} for ${itemModel}`}
             onChange={handleChange}
             onSave={handleSave}
             editing={editingInput}

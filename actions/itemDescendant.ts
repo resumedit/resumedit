@@ -3,13 +3,18 @@
 "use server";
 
 import { prisma } from "@/prisma/client";
-import { IdSchemaType } from "@/schemas/id";
-import { ItemDescendantServerStateType, ItemDescendantServerStateListType } from "@/schemas/itemDescendant";
-import { ItemDescendantModelNameType, getDescendantModel, getModelAccessor } from "@/types/itemDescendant";
+import { IdSchemaType, idDefault } from "@/schemas/id";
+import { ItemDescendantServerOutputType, ItemDescendantServerStateListType } from "@/schemas/itemDescendant";
+import {
+  ItemDescendantModelNameType,
+  getDescendantModel,
+  getModelAccessor,
+  itemDescendantModelHierarchy,
+} from "@/types/itemDescendant";
 import { PrismaClient } from "@prisma/client";
 
 export async function getItem(model: ItemDescendantModelNameType, id: IdSchemaType, prismaTransaction?: PrismaClient) {
-  const prismaClient = prismaTransaction || prisma;
+  const prismaClient = prismaTransaction ?? prisma;
   const prismaModelInstance = getModelAccessor(model, prismaClient);
   const item = await prismaModelInstance.findUnique({
     where: { id },
@@ -22,7 +27,7 @@ export async function getItemLastModified(
   id: IdSchemaType,
   prismaTransaction?: PrismaClient,
 ): Promise<Date | undefined> {
-  const prismaClient = prismaTransaction || prisma;
+  const prismaClient = prismaTransaction ?? prisma;
   const prismaModelInstance = getModelAccessor(model, prismaClient);
   const item = await prismaModelInstance.findUnique({
     where: { id },
@@ -36,7 +41,7 @@ export async function getItemsByParentId(
   parentId: IdSchemaType,
   prismaTransaction?: PrismaClient,
 ): Promise<ItemDescendantServerStateListType> {
-  const prismaClient = prismaTransaction || prisma;
+  const prismaClient = prismaTransaction ?? prisma;
   const prismaItemModelInstance = getModelAccessor(model, prismaClient);
   // Retrieve the items
   const items = await prismaItemModelInstance.findMany({
@@ -51,14 +56,18 @@ export async function getItemDescendantList(
   itemModel: ItemDescendantModelNameType,
   itemId: IdSchemaType,
   prismaTransaction?: PrismaClient,
-): Promise<ItemDescendantServerStateType> {
+): Promise<ItemDescendantServerOutputType> {
   const executeLogic = async (prismaClient: PrismaClient) => {
     const logPrefix = `getItemDescendantList(itemModel=${itemModel}, itemId=${itemId})`;
-    const item = await getItem(itemModel, itemId, prisma);
+    let item = await getItem(itemModel, itemId, prisma);
     if (!item) {
       throw Error(`getItemDescendantList: No ${itemModel} instance with id=${itemId} found`);
     }
-    let descendants: Array<ItemDescendantServerStateType> = [];
+    // Since the top-most model does not have a parent, we initialize to the default id
+    if (!item.parentId && itemModel === itemDescendantModelHierarchy[0]) {
+      item = { ...item, parentId: idDefault };
+    }
+    let descendants: Array<ItemDescendantServerOutputType> = [];
 
     // Fetch the items that are direct descendants of the item
     const descendantModel = getDescendantModel(itemModel);
@@ -68,7 +77,11 @@ export async function getItemDescendantList(
 
       // For each item, fetch its descendants recursively
       if (itemDescendants && itemDescendants.length > 0) {
-        console.log(`${logPrefix}: returning ${itemDescendants.length} descendants:`, itemDescendants);
+        console.log(
+          `${logPrefix}: returning ${itemDescendants.length}`,
+          itemDescendants.length != 1 ? "descendants: " : "descendant: ",
+          itemDescendants,
+        );
         const descendantModel = getDescendantModel(itemModel);
         if (descendantModel) {
           descendants = await Promise.all(
@@ -76,11 +89,9 @@ export async function getItemDescendantList(
           );
         }
       }
-    } else {
-      console.log(`${logPrefix}: no descendants found`);
     }
 
-    // Construct the ItemDescendantServerStateType for the current itemModel and itemId
+    // Construct the ItemDescendantServerOutputType for the current itemModel and itemId
     return {
       ...item,
       itemModel,

@@ -1,82 +1,12 @@
-import { IdSchemaType } from "@/schemas/id";
+import { ItemOrderableClientStateType, ItemOrderableServerStateType } from "@/schemas/item";
 import { ItemDisposition } from "@/types/item";
-import { ItemClientStateType, ItemOrderableClientStateType } from "@/schemas/item";
+import { ItemOrderFunction } from "@/types/itemDescendant";
 
 /**
- * Helper function for finding index of descendant object in given array
- * @param {ItemClientStateType[]} arr - Array of Items
- * @param {string} id - id of descendant object
- * @returns Index of descendant object in the descendants array
+ * Calculates the order value for appending a new item to the descendants list.
+ * @param descendants - An array of orderable descendant items.
+ * @returns The calculated order value.
  */
-export const findItemIndexByClientId = (arr: Array<ItemClientStateType>, id: IdSchemaType): number => {
-  return arr.findIndex((descendant) => descendant.clientId === id);
-};
-
-type OrderParams = {
-  targetDelta: number;
-  minimalDelta: number;
-  randomOffsetMax: number;
-  targetCapacity: number;
-  targetLowerBound: number;
-  targetUpperBound: number;
-  acceptableLowerBound: number;
-  acceptableUpperBound: number;
-  orderBase: number;
-  minimalOffset: number;
-};
-
-// Define upper and lower bounds for order values
-function getOrderParams<ItemOrderableClientStateType>(descendants: Array<ItemOrderableClientStateType>) {
-  // Delta between descendants to make optimial use of target range
-  const targetDelta = 1;
-
-  let minimalDelta = 1000000 * Number.EPSILON;
-  // const minimalDelta = 0.1;
-  let randomOffsetMax = minimalDelta / 2;
-
-  // Target values determine the result of the compression
-  // Capacity: at least 128 or twice the smallest power of 2 that can contain all descendants
-  let targetCapacity = Math.max(128, Math.pow(2, 4 + Math.ceil(Math.log2(descendants.length))));
-
-  let acceptableRangeScaleFactor = 8;
-
-  // For debugging, increase minimalDelta and randomOffsetMax and begin order at 0
-  if (process.env.NODE_ENV === "development") {
-    minimalDelta = 0.2;
-    randomOffsetMax = 0;
-    targetCapacity = Math.pow(2, Math.ceil(Math.log2(descendants.length)));
-    acceptableRangeScaleFactor = 2;
-  }
-
-  const targetHalfRange = targetCapacity * targetDelta;
-
-  const targetLowerBound = Math.max(-targetHalfRange, -Number.MAX_VALUE / 2);
-
-  const targetUpperBound = Math.min(targetHalfRange, Number.MAX_VALUE / 2);
-
-  // Acceptable values determine when compression is triggered
-  const acceptableHalfRange = acceptableRangeScaleFactor * targetHalfRange;
-  const acceptableLowerBound = Math.max(-acceptableHalfRange, -Number.MAX_VALUE / 2);
-  const acceptableUpperBound = Math.min(acceptableHalfRange, Number.MAX_VALUE / 2);
-
-  const orderBase = Math.ceil(targetLowerBound + (targetCapacity - (descendants.length + randomOffsetMax) / 2));
-
-  const minimalOffset = minimalDelta + randomOffsetMax;
-
-  return {
-    targetDelta: targetDelta,
-    minimalDelta: minimalDelta,
-    randomOffsetMax: randomOffsetMax,
-    targetCapacity: targetCapacity,
-    targetLowerBound: targetLowerBound,
-    targetUpperBound: targetUpperBound,
-    acceptableLowerBound: acceptableLowerBound,
-    acceptableUpperBound: acceptableUpperBound,
-    orderBase: orderBase,
-    minimalOffset: minimalOffset,
-  };
-}
-
 export function getOrderValueForAppending(descendants: Array<ItemOrderableClientStateType>): number {
   if (descendants.length === 0) {
     return 0; // Start with a default value if the list is empty
@@ -87,19 +17,52 @@ export function getOrderValueForAppending(descendants: Array<ItemOrderableClient
     return descendant.order > max ? descendant.order : max;
   }, 0);
 
-  // Add a small random offset
-  const randomOffset = Math.random() * randomOffsetMax;
-  return maxOrder + targetDelta + randomOffset;
+  return randomizeOrderValue(maxOrder + targetDelta, randomOffsetMax);
 }
 
-export function randomizeOrderValue(order: number, { randomOffsetMax }: OrderParams): number {
-  const randomOffset = Math.random() * randomOffsetMax;
-  const randomizedOrder = order + randomOffset;
-  return randomizedOrder;
+export function updateListOrderValues(
+  descendants: Array<ItemOrderableClientStateType>,
+  updatedLastModified?: Date,
+): Array<ItemOrderableClientStateType> {
+  if (descendants.length <= 1) return descendants;
+
+  // Update order values with minimal changes to reflect sequence
+  // of elements of `descendants` array
+  const updatedDescendants = adjustListOrderValues(descendants, updatedLastModified);
+
+  // Use reBalanceListOrderValues after adjustListOrderValues if necessary
+  const finalDescendants = reBalanceListOrderValues(updatedDescendants, updatedLastModified);
+
+  if (!validateListOrderValues(finalDescendants)) {
+    throw Error(
+      "updateListOrderValues: final order values failed validation:\n    descendants:" +
+        JSON.stringify(descendants, undefined, 2) +
+        "\n    updatedDescendants: " +
+        JSON.stringify(updatedDescendants) +
+        "\n    finalDescendants: " +
+        JSON.stringify(finalDescendants),
+    );
+  }
+
+  return finalDescendants;
+}
+
+export function sortDescendantsByOrderValues<T extends ItemOrderableClientStateType | ItemOrderableServerStateType>(
+  descendants: Array<T>,
+  orderFunction: ItemOrderFunction<T>,
+): Array<T> {
+  if (descendants.length <= 1) return descendants;
+
+  // Sort elements of `descendants` array by increasing order values
+  // Note: `.sort()` modifies the array in place, therefore we clone it first
+  const sortedDescendants = [...descendants].sort(orderFunction);
+
+  return sortedDescendants;
 }
 
 export function reBalanceListOrderValues(
   descendants: Array<ItemOrderableClientStateType>,
+  updatedLastModified?: Date,
   force?: boolean,
 ): Array<ItemOrderableClientStateType> {
   const { targetDelta, randomOffsetMax, acceptableLowerBound, acceptableUpperBound, orderBase } =
@@ -115,58 +78,24 @@ export function reBalanceListOrderValues(
 
   // Normalize orders to a new range
   const itemsWithOrderValuesReset = descendants.map((descendant, index) => {
-    // Add random offset to reduce probability of collisions
-    const randomOffset = Math.random() * randomOffsetMax;
-    const newOrder = orderBase + index * targetDelta + randomOffset;
+    const newOrder = orderBase + index * targetDelta;
 
     // Ensure that the `order` and `disposition` properties are added first,
     // so they are displayed first.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { order, disposition: disposition, ...otherProps } = descendant;
     const orderedItem = {
-      order: newOrder,
+      ...otherProps,
+      lastModified: updatedLastModified ?? descendant.lastModified,
+      order: randomizeOrderValue(newOrder, randomOffsetMax),
       disposition:
         descendant.disposition === ItemDisposition.Synced ? ItemDisposition.Modified : descendant.disposition,
-      ...otherProps,
     };
 
     return orderedItem;
   });
 
   return itemsWithOrderValuesReset as Array<ItemOrderableClientStateType>;
-}
-
-const getFirstOrderValue = (nextValidOrder: number | undefined, orderParams: OrderParams) => {
-  const { targetDelta, targetLowerBound, acceptableLowerBound, orderBase } = orderParams;
-  let firstOrderValue = orderBase;
-  if (nextValidOrder !== undefined) {
-    if (nextValidOrder > targetLowerBound) {
-      firstOrderValue = nextValidOrder - targetDelta;
-    } else if (nextValidOrder > acceptableLowerBound) {
-      firstOrderValue = (nextValidOrder - acceptableLowerBound) / 2;
-    }
-  }
-  return firstOrderValue;
-};
-
-function getCenteredOrderValue(prevOrder: number, nextOrder: number | undefined, orderParams: OrderParams) {
-  const { minimalOffset } = orderParams;
-  const lowerBound = prevOrder + minimalOffset;
-  let upperBound = lowerBound;
-  if (nextOrder !== undefined) {
-    upperBound = nextOrder - minimalOffset;
-  }
-  const centeredOrderValue = lowerBound + (upperBound - lowerBound) / 2;
-  return centeredOrderValue;
-}
-
-function getLastOrderValue(prevOrder: number, orderParams: OrderParams) {
-  const { targetDelta, targetUpperBound, acceptableUpperBound } = orderParams;
-  let lastOrderValue = prevOrder + targetDelta;
-  if (prevOrder > targetUpperBound) {
-    lastOrderValue = getCenteredOrderValue(prevOrder, acceptableUpperBound, orderParams);
-  }
-  return lastOrderValue;
 }
 
 function getAdjustedOrderValue(
@@ -272,7 +201,10 @@ function getAdjustedOrderValue(
   return newOrder;
 }
 
-function adjustListOrderValues(descendants: Array<ItemOrderableClientStateType>): Array<ItemOrderableClientStateType> {
+function adjustListOrderValues(
+  descendants: Array<ItemOrderableClientStateType>,
+  updatedLastModified?: Date,
+): Array<ItemOrderableClientStateType> {
   const orderParams = getOrderParams(descendants);
   const { randomOffsetMax } = orderParams;
 
@@ -298,11 +230,10 @@ function adjustListOrderValues(descendants: Array<ItemOrderableClientStateType>)
 
     // Update only if modified
     if (newOrder !== descendant.order) {
-      // Add random offset to reduce probability of collisions
-      const randomOffset = Math.random() * randomOffsetMax;
       descendant = {
         ...descendant,
-        order: newOrder + randomOffset,
+        lastModified: updatedLastModified ?? descendant.lastModified,
+        order: randomizeOrderValue(newOrder, randomOffsetMax),
         disposition: ItemDisposition.Modified,
       };
     }
@@ -325,21 +256,111 @@ function validateListOrderValues(descendants: Array<ItemOrderableClientStateType
   return true;
 }
 
-export function updateListOrderValues(
-  descendants: Array<ItemOrderableClientStateType>,
-): Array<ItemOrderableClientStateType> {
-  if (descendants.length <= 1) return descendants;
+type OrderParams = {
+  targetDelta: number;
+  minimalDelta: number;
+  randomOffsetMax: number;
+  targetCapacity: number;
+  targetLowerBound: number;
+  targetUpperBound: number;
+  acceptableLowerBound: number;
+  acceptableUpperBound: number;
+  orderBase: number;
+  minimalOffset: number;
+};
 
-  // Update order values with minimal changes to reflect sequence
-  // of descendants in `descendants` array
-  const updatedItems = adjustListOrderValues(descendants);
+// Define upper and lower bounds for order values
+function getOrderParams(descendants: Array<ItemOrderableClientStateType>) {
+  // Delta between descendants to make optimial use of target range
+  const targetDelta = 1;
 
-  // Use compressOrderValues after updateOrderValues if necessary
-  const finalItems = reBalanceListOrderValues(updatedItems);
+  let minimalDelta = 1000000 * Number.EPSILON;
+  // const minimalDelta = 0.1;
+  let randomOffsetMax = minimalDelta / 2;
 
-  if (!validateListOrderValues(finalItems)) {
-    return descendants;
+  // Target values determine the result of the compression
+  // Capacity: at least 128 or twice the smallest power of 2 that can contain all descendants
+  let targetCapacity = Math.max(128, Math.pow(2, 4 + Math.ceil(Math.log2(descendants.length))));
+
+  let acceptableRangeScaleFactor = 8;
+
+  // For debugging, increase minimalDelta and randomOffsetMax and begin order at 0
+  if (process.env.NODE_ENV === "development") {
+    minimalDelta = 0.2;
+    randomOffsetMax = 0;
+    targetCapacity = Math.pow(2, Math.ceil(Math.log2(descendants.length)));
+    acceptableRangeScaleFactor = 2;
   }
 
-  return finalItems;
+  const targetHalfRange = targetCapacity * targetDelta;
+
+  const targetLowerBound = Math.max(-targetHalfRange, -Number.MAX_VALUE / 2);
+
+  const targetUpperBound = Math.min(targetHalfRange, Number.MAX_VALUE / 2);
+
+  // Acceptable values determine when compression is triggered
+  const acceptableHalfRange = acceptableRangeScaleFactor * targetHalfRange;
+  const acceptableLowerBound = Math.max(-acceptableHalfRange, -Number.MAX_VALUE / 2);
+  const acceptableUpperBound = Math.min(acceptableHalfRange, Number.MAX_VALUE / 2);
+
+  const orderBase = Math.ceil(targetLowerBound + (targetCapacity - (descendants.length + randomOffsetMax) / 2));
+
+  const minimalOffset = minimalDelta + randomOffsetMax;
+
+  return {
+    targetDelta: targetDelta,
+    minimalDelta: minimalDelta,
+    randomOffsetMax: randomOffsetMax,
+    targetCapacity: targetCapacity,
+    targetLowerBound: targetLowerBound,
+    targetUpperBound: targetUpperBound,
+    acceptableLowerBound: acceptableLowerBound,
+    acceptableUpperBound: acceptableUpperBound,
+    orderBase: orderBase,
+    minimalOffset: minimalOffset,
+  };
+}
+
+const getFirstOrderValue = (nextValidOrder: number | undefined, orderParams: OrderParams) => {
+  const { targetDelta, targetLowerBound, acceptableLowerBound, orderBase } = orderParams;
+  let firstOrderValue = orderBase;
+  if (nextValidOrder !== undefined) {
+    if (nextValidOrder > targetLowerBound) {
+      firstOrderValue = nextValidOrder - targetDelta;
+    } else if (nextValidOrder > acceptableLowerBound) {
+      firstOrderValue = (nextValidOrder - acceptableLowerBound) / 2;
+    }
+  }
+  return firstOrderValue;
+};
+
+function getCenteredOrderValue(prevOrder: number, nextOrder: number | undefined, orderParams: OrderParams) {
+  const { minimalOffset } = orderParams;
+  const lowerBound = prevOrder + minimalOffset;
+  let upperBound = lowerBound;
+  if (nextOrder !== undefined) {
+    upperBound = nextOrder - minimalOffset;
+  }
+  const centeredOrderValue = lowerBound + (upperBound - lowerBound) / 2;
+  return centeredOrderValue;
+}
+
+function getLastOrderValue(prevOrder: number, orderParams: OrderParams) {
+  const { targetDelta, targetUpperBound, acceptableUpperBound } = orderParams;
+  let lastOrderValue = prevOrder + targetDelta;
+  if (prevOrder > targetUpperBound) {
+    lastOrderValue = getCenteredOrderValue(prevOrder, acceptableUpperBound, orderParams);
+  }
+  return lastOrderValue;
+}
+
+/**
+ * Randomizes the order value by adding a small random offset.
+ * @param order - The original order value.
+ * @param params - Parameters including the maximum random offset.
+ * @returns The randomized order value.
+ */
+function randomizeOrderValue(order: number, randomOffsetMax: number): number {
+  const randomOffset = Math.random() * randomOffsetMax;
+  return order + randomOffset;
 }

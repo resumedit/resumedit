@@ -1,13 +1,11 @@
 // @/types/itemDescendant.tsx
 
-import { stripFields, stripToType } from "@/lib/utils/misc";
-import { IdSchemaType } from "@/schemas/id";
-import { ItemClientToServerType } from "@/schemas/item";
-import { ItemDescendantStoreStateType } from "@/schemas/itemDescendant";
-import { ItemDescendantClientState, ItemDescendantStore } from "@/stores/itemDescendantStore/createItemDescendantStore";
+import { ItemOrderableClientStateType, ItemOrderableServerStateType } from "@/schemas/item";
+import {
+  ItemDescendantOrderableClientStateType,
+  ItemDescendantOrderableServerStateType,
+} from "@/schemas/itemDescendant";
 import { PrismaClient } from "@prisma/client";
-import { parse, stringify } from "devalue";
-import { PersistStorage } from "zustand/middleware";
 
 // Ensure the below is a tuple by adding `as const`
 export const itemDescendantModelHierarchy = ["user", "resume", "organization", "role", "achievement"] as const;
@@ -16,26 +14,80 @@ export type ItemDescendantModelNameType = (typeof itemDescendantModelHierarchy)[
 /**
  * Type representing each model's parent and its descendants in the hierarchy.
  */
-export type ItemDescendantModelAccessor = {
+export type ItemDescendantModelAccessor<T extends ItemOrderableClientStateType | ItemOrderableServerStateType> = {
   [K in ItemDescendantModelNameType]: {
     parent: ItemDescendantModelNameType | null;
-    child: ItemDescendantModelNameType | null;
+    descendant: ItemDescendantModelNameType | null;
+    orderField?: keyof ItemOrderableClientStateType;
+    customSortFunction?: ItemOrderFunction<T>;
   };
 };
 
 /**
  * Creates a mapping of each model to its parent and its descendants.
  */
-const itemDescendantModels: ItemDescendantModelAccessor = itemDescendantModelHierarchy.reduce(
+const baseItemDescendantModels: ItemDescendantModelAccessor<
+  ItemOrderableClientStateType | ItemOrderableServerStateType
+> = itemDescendantModelHierarchy.reduce(
   (acc, model, index, array) => {
     acc[model] = {
       parent: index === 0 ? null : array[index - 1],
-      child: index < array.length - 1 ? array[index + 1] : null,
+      descendant: index < array.length - 1 ? array[index + 1] : null,
     };
     return acc;
   },
-  {} as ItemDescendantModelAccessor,
+  {} as ItemDescendantModelAccessor<ItemOrderableClientStateType | ItemOrderableServerStateType>,
 );
+
+const itemDescendantModels: ItemDescendantModelAccessor<ItemOrderableClientStateType | ItemOrderableServerStateType> = {
+  ...baseItemDescendantModels,
+  /* Note: The implementation of the `Role` model requires a new type to be defined
+  role: {
+    ...baseItemDescendantModels.role, // Spread the existing 'role' properties
+    // Define a custom sorting function for Role
+    customSortFunction: (a: RoleItemClientStateType, b: RoleItemClientStateType) => {
+      // Sort by begin date, then by end date if begin dates are equal
+      // Assume 'Role' is a known type with 'period' property
+      return (
+        a.period.begin.getTime() - b.period.begin.getTime() ||
+        (a.period.end?.getTime() ?? 0) - (b.period.end?.getTime() ?? 0)
+      );
+    },
+  },
+  */
+  achievement: {
+    ...baseItemDescendantModels.achievement,
+    orderField: "order",
+  },
+};
+
+export type ItemOrderFunction<
+  T extends
+    | ItemDescendantOrderableClientStateType
+    | ItemOrderableClientStateType
+    | ItemDescendantOrderableServerStateType
+    | ItemOrderableServerStateType,
+> = (a: T, b: T) => number;
+export function getItemOrderFunction<T extends ItemOrderableClientStateType | ItemOrderableServerStateType>(
+  model: ItemDescendantModelNameType,
+): ItemOrderFunction<T> | undefined {
+  const entry = itemDescendantModels[model];
+  if (entry.customSortFunction) {
+    // The customSortFunction should be defined as ItemOrderFunction<T> in the ItemModelAccessor
+    return entry.customSortFunction as ItemOrderFunction<T>;
+  } else if (entry.orderField) {
+    return (a, b) => {
+      const fieldA = a[entry.orderField as keyof T];
+      const fieldB = b[entry.orderField as keyof T];
+      if (typeof fieldA === "number" && typeof fieldB === "number") {
+        return fieldA - fieldB;
+      }
+      // Handle the case where fieldA or fieldB is not a number, or return a default value
+      return 0;
+    };
+  }
+  return undefined;
+}
 
 /**
  * Retrieves the parent of a given model from the hierarchy.
@@ -52,14 +104,14 @@ export function getParentModel(model: ItemDescendantModelNameType): ItemDescenda
 }
 
 /**
- * Retrieves the child of a given model from the hierarchy.
- * @param model - The model whose child is to be found.
- * @returns The child model or null if it's the bottom-level model.
+ * Retrieves the descendant of a given model from the hierarchy.
+ * @param model - The model whose descendant is to be found.
+ * @returns The descendant model or null if it's the bottom-level model.
  */
 export function getDescendantModel(model: ItemDescendantModelNameType): ItemDescendantModelNameType | null {
   const entry = itemDescendantModels[model];
   if (entry) {
-    return entry.child;
+    return entry.descendant;
   }
   return null;
 }
@@ -87,128 +139,4 @@ export function getModelAccessor(model: ItemDescendantModelNameType, prisma: Pri
   // This function dynamically accesses the prisma model methods based on the model name
   // The as PrismaModelMethodType cast is safe as long as PrismaClient's API remains consistent with PrismaModelMethodType
   return prisma[model] as unknown as PrismaModelMethodType; // Adjust as needed for your Prisma setup
-}
-
-export function stripFieldsForDatabase<T extends ItemClientToServerType>(
-  item: T,
-  fieldsToStrip: Set<keyof T>,
-  lastModified?: Date,
-) {
-  const strippedData = {
-    ...stripFields(item, fieldsToStrip),
-    lastModified: lastModified || new Date(),
-  };
-
-  return strippedData;
-}
-
-const fieldsToExcludeFromCreate = [
-  "parentClientId",
-  "clientId",
-  "parentId",
-  "id",
-  "disposition",
-  "itemModel",
-  "descendantModel",
-  "descendants",
-  "descendantDraft",
-];
-
-export function getItemDataForCreate<T extends ItemClientToServerType>(
-  item: T,
-  parentId: IdSchemaType,
-  lastModified?: Date,
-) {
-  const fieldsToStrip = new Set<keyof T>([...fieldsToExcludeFromCreate] as Array<keyof T>);
-
-  const itemData = stripFieldsForDatabase(item, fieldsToStrip, lastModified);
-
-  // FIXME: The below code is no longer needed. It constructed a type-specific `parentId` clause, e.g.
-  // { userId: parentId } for type `Resume`, as its parent type is 'User'
-  // Now that we universally use the column name `parentId` the translation is no longer necessary
-  // const parentModel = itemDescendantModels.find((pair) => pair.model === model)?.parent as keyof ItemDescendantModelAccessor;
-  // const parentIdKeyValue = buildParentIdKeyValue(parentModel, parentId);
-  // const parentIdKeyValue = { parentId };
-  // const payload = { ...itemData, ...parentIdKeyValue };
-  const payload = { ...itemData, parentId };
-  return payload;
-}
-
-export function getItemDataForUpdate<T extends ItemClientToServerType>(item: T, lastModified?: Date) {
-  const fieldsToStrip = new Set<keyof T>([...fieldsToExcludeFromCreate] as Array<keyof T>);
-
-  const itemData = stripFieldsForDatabase(item, fieldsToStrip, lastModified);
-
-  const payload = { ...itemData };
-  return payload;
-}
-
-export function getItemDescendantStoreStateForServer<T extends ItemDescendantStore>(rootState: T) {
-  // Remove all properties that are not part of the item
-  const storeActions: Array<keyof T> = [
-    "updateLastModifiedOfModifiedItems",
-    "setItemData",
-    "markItemAsDeleted",
-    "restoreDeletedItem",
-    "getDescendants",
-    "setDescendantData",
-    "markDescendantAsDeleted",
-    "reArrangeDescendants",
-    "resetDescendantsOrderValues",
-    "getDescendantDraft",
-    "updateDescendantDraft",
-    "commitDescendantDraft",
-    "updateStoreWithServerData",
-  ];
-  const nonItemRootStateProperties: Array<keyof T> = ["descendantDraft"];
-
-  // Combine both sets of keys to remove
-  const propertiesToRemove = [...storeActions, ...nonItemRootStateProperties];
-
-  // const payload = stripFields(rootState, fieldsToStrip);
-  const payload = stripToType(rootState, propertiesToRemove);
-  return payload as ItemDescendantClientState;
-}
-
-export function createTypesafeLocalstorage(): PersistStorage<ItemDescendantStoreStateType> {
-  return {
-    getItem: (name) => {
-      const str = localStorage.getItem(name);
-      if (!str) return null;
-      return parse(str);
-    },
-    setItem: (name, value) => {
-      // localStorage.setItem(name, stringify(value));
-      // Create a deep clone of the value, excluding functions
-      const valueWithoutFunctions = JSON.parse(
-        JSON.stringify(value, (key, val) => (typeof val === "function" ? undefined : val)),
-      );
-      localStorage.setItem(name, stringify(valueWithoutFunctions));
-    },
-    removeItem: (name) => {
-      localStorage.removeItem(name);
-    },
-  };
-}
-
-export function createDateSafeLocalstorage(): PersistStorage<ItemDescendantStoreStateType> {
-  return {
-    getItem: (name) => {
-      const str = localStorage.getItem(name);
-      if (!str) return null;
-      const jsonTimestamp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-      return JSON.parse(str, (key, val) => (jsonTimestamp.test(val) ? new Date(val) : val));
-    },
-    setItem: (name, value) => {
-      // localStorage.setItem(name, stringify(value));
-      // Create a deep clone of the value, excluding functions
-      const valueWithoutFunctions = JSON.parse(
-        JSON.stringify(value, (key, val) => (typeof val === "function" ? undefined : val)),
-      );
-      localStorage.setItem(name, JSON.stringify(valueWithoutFunctions));
-    },
-    removeItem: (name) => {
-      localStorage.removeItem(name);
-    },
-  };
 }

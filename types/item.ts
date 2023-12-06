@@ -28,6 +28,13 @@ export type ClientIdType = IdSchemaType;
  */
 export enum ItemDisposition {
   /**
+   * Note: this state is only used for the initial server-side rendering of the component.
+   * Represents an item of which the server cannot know if the opposite party has seen it before and in what state the opposite party is.
+   * Items in this state are usually pending to be added to or updated in the client's data store.
+   */
+  Initial = "INITIAL",
+
+  /**
    * Represents a new item that the server or the opposite party in the sync
    * process has not seen before. Items in this state are usually pending
    * to be added to the server's data store.
@@ -50,8 +57,13 @@ export enum ItemDisposition {
 
   /**
    * Used for items that are marked for deletion. This status indicates that
-   * the item, once acknowledged by the server, should be removed from the
-   * persistent storage.
+   * the item should no longer be shown to the user
    */
   Deleted = "DELETED",
+
+  /**
+   * Used for items that have been removed. This status indicates to the client
+   * that the item should be removed from the persistent storage.
+   */
+  Obsoleted = "OBSOLETED",
 }

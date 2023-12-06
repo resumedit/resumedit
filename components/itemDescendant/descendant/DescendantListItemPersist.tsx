@@ -118,6 +118,8 @@ export default function DescendantListItemPersist({
         "border-shadow-light dark:border-dark-txt-1 bg-elem-light dark:bg-elem-dark-1 group flex flex-1 cursor-auto items-center justify-between rounded-md border-b",
         {
           "bg-background/50 text-muted-foreground bg-blend-soft-light": item.disposition !== ItemDisposition.Synced,
+          "outline-red-500": !inputIsValid,
+          "outline-none": inputIsValid,
           "basis-1/4": showListItemInternals,
         },
       )}
@@ -151,16 +153,16 @@ export default function DescendantListItemPersist({
         </div>
       ) : null}
       <div className="flex flex-1 flex-wrap justify-between gap-x-4 gap-y-2">
-        {itemFormFields.map((field, index) => (
+        {itemFormFields.map((field) => (
           <div
-            key={index}
+            key={field}
             className="text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4 flex-1"
           >
             <EditableFieldPersist
               key={field}
               fieldName={field}
               value={item[field as keyof ItemClientStateType] as string}
-              placeholder={`${field} for ${item.itemModel}`}
+              placeholder={`${field} for ${itemModel}`}
               onChange={handleChange}
               onSave={handleSave}
               canEdit={canEdit}

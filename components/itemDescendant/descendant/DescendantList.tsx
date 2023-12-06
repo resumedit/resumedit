@@ -3,10 +3,14 @@
 import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { ItemClientStateType, ItemDataType, ItemDataUntypedType } from "@/schemas/item";
-import { ItemDescendantClientStateType, ItemDescendantOrderableClientStateListType } from "@/schemas/itemDescendant";
+import {
+  ItemDescendantClientStateType,
+  ItemDescendantOrderableClientStateListType,
+  ItemDescendantOrderableClientStateType,
+} from "@/schemas/itemDescendant";
 import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
-import { findItemIndexByClientId } from "@/stores/itemDescendantStore/utils/descendantOrderValues";
 import { ClientIdType } from "@/types/item";
+import { findItemIndexByClientId } from "@/types/utils/itemDescendant";
 import {
   DndContext,
   DragEndEvent,
@@ -56,7 +60,7 @@ export default function DescendantList(props: DescendantListProps) {
 
   const getItems = (): ItemDescendantOrderableClientStateListType => {
     window.consoleLog(`DescendantInput:getItems(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
-    return getDescendants(ancestorClientIdChain);
+    return getDescendants(ancestorClientIdChain) as ItemDescendantOrderableClientStateListType;
   };
 
   const setItemData = (descendantData: ItemDataUntypedType, clientId: ClientIdType): void => {
@@ -127,12 +131,14 @@ export default function DescendantList(props: DescendantListProps) {
       const overIndex = findItemIndexByClientId(descendants, over!.id as string);
 
       // Return a new array
-      const updatedDescendants = descendants.map((descendant: ItemDescendantClientStateType, index: number) => {
-        if (index === activeIndex || index === overIndex) {
-          return { ...descendant };
-        }
-        return descendant;
-      });
+      const updatedDescendants = descendants.map(
+        (descendant: ItemDescendantOrderableClientStateType, index: number) => {
+          if (index === activeIndex || index === overIndex) {
+            return { ...descendant };
+          }
+          return descendant;
+        },
+      );
 
       // Update the state with the new array
       reArrangeItems(arrayMove(updatedDescendants, activeIndex, overIndex));

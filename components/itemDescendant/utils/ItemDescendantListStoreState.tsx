@@ -8,7 +8,7 @@ import { ItemDescendantServerStateType } from "@/schemas/itemDescendant";
 import { ItemDescendantModelAccessor } from "@/types/itemDescendant";
 
 interface ItemDescendantStoreStateTypeProps {
-  storeName: keyof ItemDescendantModelAccessor;
+  storeName: ItemDescendantModelNameType;
   serverState: ItemDescendantServerStateType;
 }
 

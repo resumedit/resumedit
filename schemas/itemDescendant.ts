@@ -6,10 +6,15 @@ import { idSchema } from "./id";
 import {
   ItemClientStateType,
   ItemDataUntypedType,
+  ItemOrderableClientStateType,
+  ItemOrderableServerStateType,
+  ItemServerOutputType,
   ItemServerStateType,
   ItemServerToClientType,
   itemClientStateSchema,
   itemOrderableClientStateSchema,
+  itemOrderableServerStateSchema,
+  itemServerOutputSchema,
   itemServerStateSchema,
   itemServerToClientSchema,
 } from "./item";
@@ -43,7 +48,7 @@ export const itemDescendantStoreStateSchema: z.ZodSchema<ItemDescendantStoreStat
 
 // Type used by client to maintain client state with orderable descendants
 export type ItemDescendantOrderableClientStateListType = Array<ItemDescendantOrderableClientStateType>;
-export type ItemDescendantOrderableClientStateType = ItemClientStateType & {
+export type ItemDescendantOrderableClientStateType = ItemOrderableClientStateType & {
   itemModel: ItemDescendantModelNameType;
   descendantModel: ItemDescendantModelNameType | null;
   descendants: ItemDescendantOrderableClientStateListType;
@@ -55,7 +60,7 @@ export const itemDescendantOrderableClientStateSchema: z.ZodSchema<ItemDescendan
 
 // The store state additionally includes a descendantDraft at the item level
 export type ItemDescendantOrderableStoreStateListType = Array<ItemDescendantOrderableStoreStateType>;
-export type ItemDescendantOrderableStoreStateType = ItemClientStateType & {
+export type ItemDescendantOrderableStoreStateType = ItemOrderableClientStateType & {
   itemModel: ItemDescendantModelNameType;
   descendantModel: ItemDescendantModelNameType | null;
   descendants: ItemDescendantOrderableStoreStateListType;
@@ -65,6 +70,17 @@ export const itemDescendantOrderableStoreStateSchema: z.ZodSchema<ItemDescendant
   itemOrderableClientStateSchema.extend({
     descendants: z.lazy(() => z.array(itemDescendantOrderableStoreStateSchema)), // Lazy to handle recursive structure
     descendantDraft: z.record(z.any()),
+  });
+
+// Define the ItemDescendantServerOutputType schema
+export type ItemDescendantServerOutputListType = Array<ItemDescendantServerOutputType>;
+export type ItemDescendantServerOutputType = ItemServerOutputType & {
+  descendants: ItemDescendantServerOutputListType;
+};
+export const itemDescendantServerOutputSchema: z.ZodSchema<ItemDescendantServerOutputType> =
+  itemServerOutputSchema.extend({
+    id: idSchema, // Need to redefine `id` without a default value as it is always included in server-to-client transmission
+    descendants: z.lazy(() => z.array(itemDescendantServerOutputSchema)), // Lazy to handle recursive structure
   });
 
 // Define the ItemDescendantServerToClientType schema
@@ -98,3 +114,19 @@ export const itemDescendantServerStateSchema: z.ZodSchema<ItemDescendantServerSt
     descendants: z.lazy(() => z.array(itemDescendantServerStateSchema)), // Lazy to handle recursive structure
   },
 );
+
+// Type used by server to maintain server state of items with orderable descenants
+export type ItemDescendantOrderableServerStateListType = Array<ItemDescendantOrderableServerStateType>;
+export type ItemDescendantOrderableServerStateType = ItemOrderableServerStateType & {
+  itemModel: ItemDescendantModelNameType;
+  descendantModel: ItemDescendantModelNameType | null;
+  descendants: ItemDescendantOrderableServerStateListType;
+};
+
+export const itemDescendantOrderableServerStateSchema: z.ZodSchema<ItemDescendantOrderableServerStateType> =
+  itemOrderableServerStateSchema.extend({
+    id: idSchema, // Need to redefine `id` without a default value as it is always included in server state
+    itemModel: z.enum(itemDescendantModelHierarchy),
+    descendantModel: z.union([z.enum(itemDescendantModelHierarchy), z.null()]),
+    descendants: z.lazy(() => z.array(itemDescendantOrderableServerStateSchema)), // Lazy to handle recursive structure
+  });

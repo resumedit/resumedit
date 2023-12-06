@@ -85,18 +85,18 @@ export default function Item(props: ItemProps) {
           "outline-none": inputIsValid,
         })}
       >
-        {itemFormFields.map((field, index) => (
+        {itemFormFields.map((field) => (
           <div
-            key={index}
+            key={field}
             className="text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4 flex-1"
           >
             <EditableFieldPersist
               key={field}
               fieldName={field}
-              placeholder={`${field} for ${itemModel}`}
               value={item[field as keyof ItemClientStateType] as string}
-              onSave={handleSave}
+              placeholder={`${field} for ${itemModel}`}
               onChange={handleChange}
+              onSave={handleSave}
               canEdit={canEdit}
             />
           </div>

@@ -6,12 +6,10 @@ import { ItemDescendantStoreProvider, useItemDescendantStore } from "@/contexts/
 import { ResumeActionProvider } from "@/contexts/ResumeActionContext";
 import { StoreNameProvider, useStoreName } from "@/contexts/StoreNameContext";
 import { getClientId } from "@/schemas/id";
-import { ItemDescendantServerStateType } from "@/schemas/itemDescendant";
+import { ItemClientStateType, ItemDataType, ItemDataUntypedType } from "@/schemas/item";
+import { ItemDescendantClientStateType, ItemDescendantServerStateType } from "@/schemas/itemDescendant";
 import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
-import { ItemDescendantClientStateType } from "@/schemas/itemDescendant";
 import { ClientIdType } from "@/types/item";
-import { ItemDataType, ItemDataUntypedType } from "@/schemas/item";
-import { ItemClientStateType } from "@/schemas/item";
 import { ItemDescendantModelNameType, getDescendantModel, getParentModel } from "@/types/itemDescendant";
 import { ResumeActionType } from "@/types/resume";
 import { Dispatch, ReactNode, SetStateAction, useEffect, useState } from "react";
@@ -96,7 +94,7 @@ function ItemDescendantListRender(props: ItemDescendantRenderProps): ReactNode {
                         item.descendantModel === leafItemModel
                       } !descendantDescendantModel=${!descendantDescendantModel}: Not showing <DescendantInput />`}</div>
                     ) : null
-                    <DescendantInput {...{ ...newProps, itemModel: descendantDescendantModel }} />
+                    <DescendantInput {...descendantProps} />
                   */}
                 </li>
               ))}
@@ -173,9 +171,8 @@ export interface ItemDescendantListContextProps {
 }
 
 export default function ItemDescendantListContext(props: ItemDescendantListContextProps) {
-  const { serverState, resumeAction } = props;
+  const { serverState, rootItemModel: itemModel, resumeAction } = props;
 
-  const itemModel = serverState.itemModel;
   const parentClientId = getClientId(getParentModel(itemModel));
   const clientId = getClientId(itemModel!);
   const parentId = serverState.parentId;

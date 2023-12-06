@@ -13,10 +13,11 @@ import {
   itemDescendantModelHierarchy,
 } from "@/types/itemDescendant";
 import { ResumeActionType } from "@/types/resume";
+import { augmentToItemDescendantServerState } from "@/types/utils/itemDescendant";
 import ItemDescendantScaffoldClientComponent from "./ItemDescendantScaffold.client";
 
 export interface ItemDescendantScaffoldServerComponentProps {
-  itemModel: keyof ItemDescendantModelAccessor;
+  itemModel: ItemDescendantModelNameType;
   id?: IdSchemaType;
   resumeAction?: ResumeActionType;
 }
@@ -25,7 +26,7 @@ async function RenderLevels({
   itemModel,
   levels,
 }: {
-  itemModel: keyof ItemDescendantModelAccessor;
+  itemModel: ItemDescendantModelNameType;
   levels: Array<Record<string, string>>;
 }) {
   return (
@@ -75,7 +76,7 @@ export default async function ItemDescendantScaffoldServerComponent({
     );
   }
 
-  let serverState,
+  let serverOutput,
     levels: Array<Record<string, string>> = [],
     leafItemModel = itemDescendantModelHierarchy[itemDescendantModelHierarchy.length - 1];
 
@@ -84,11 +85,11 @@ export default async function ItemDescendantScaffoldServerComponent({
     // direct descendants, which are currently using the model "resume"
     if (itemModel === itemDescendantModelHierarchy[0]) {
       leafItemModel = getDescendantModel(itemModel)!;
-      console.log(`itemModel=${itemModel} id=${id} itemModel=${itemModel} id=${id}`);
-      serverState = await getItemDescendantList(itemModel, id);
-      console.log(`ItemDescendantScaffoldServerComponent: serverState:`, serverState);
+      console.log(`itemModel=${itemModel} id=${id}`);
+      serverOutput = await getItemDescendantList(itemModel, id);
+      console.log(`ItemDescendantScaffoldServerComponent: serverOutput:`, serverOutput);
     } else {
-      serverState = await getItemDescendantList(itemModel, id);
+      serverOutput = await getItemDescendantList(itemModel, id);
     }
   } else {
     // Otherwise we look for the latest item of the given itemModel
@@ -126,15 +127,17 @@ export default async function ItemDescendantScaffoldServerComponent({
     }
 
     if (derivedItemModel && derivedItemId) {
-      serverState = await getItemDescendantList(derivedItemModel, derivedItemId);
+      serverOutput = await getItemDescendantList(derivedItemModel, derivedItemId);
 
-      console.log(`ItemDescendantScaffoldServerComponent: serverState:`, serverState);
+      console.log(`ItemDescendantScaffoldServerComponent: serverOutput:`, serverOutput);
     } else {
       throw Error(
         `ItemDescendantScaffoldServerComponent: getItemDescendantList(itemModel=${derivedItemModel}, derivedItemId=${derivedItemId}) returned nothing`,
       );
     }
   }
+
+  const serverState = augmentToItemDescendantServerState(serverOutput, itemModel);
 
   return !serverState ? null : (
     <>
