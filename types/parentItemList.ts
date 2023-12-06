@@ -9,6 +9,7 @@ import {
   ItemDataUntypedType,
   ItemDisposition,
   ItemOutputType,
+  OrderableItemClientStateType,
 } from "./item";
 import { ModificationTimestampType } from "./timestamp";
 
@@ -101,8 +102,9 @@ export type ParentItemListActions<T extends ItemClientStateType> = {
   setItemSynced: (clientId: ClientIdType, serverData: ItemOutputType) => void;
   setItemDeleted: (clientId: ClientIdType) => void;
   deleteItem: (clientId: ClientIdType) => void;
-  // setItemData: (clientId: ClientIdType, data: ItemDataType<T>) => void;
   setItemData: (clientId: ClientIdType, data: ItemDataUntypedType) => void;
+  reArrangeItemList: (reArrangedItems: OrderableItemClientStateType[]) => void;
+  resetItemListOrderValues: () => void;
   updateItemDraft: (itemData: ItemDataUntypedType) => void;
   commitItemDraft: () => void;
   updateStoreWithServerData: (serverState: ParentItemListType<ItemOutputType>) => void;
@@ -160,7 +162,7 @@ export function stripFieldsForDatabase<T extends ItemClientToServerType>(
   return strippedData;
 }
 
-const fieldsToExcludeFromCreate = ["id", "parentId", "clientId", "items", "moved", "disposition", "order"];
+const fieldsToExcludeFromCreate = ["id", "parentId", "clientId", "items", "moved", "disposition"];
 
 export function keepOnlyFieldsForCreate<T extends ItemClientToServerType>(
   item: T,

@@ -2,7 +2,8 @@
 import { useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { cn } from "@/lib/utils";
-import { getItemSchemaBasedOnStoreName, getSchemaFields } from "@/lib/utils/parentItemListUtils";
+import { getItemSchemaBasedOnStoreName, getSchemaFields, isNumberField } from "@/lib/utils/parentItemListUtils";
+import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { ItemDataUntypedFieldNameType } from "@/types/item";
 import { Dispatch, SetStateAction, useState } from "react";
 import { InputProps } from "react-editext";
@@ -27,14 +28,9 @@ const ParentItemListItemInput = ({ editingInput /*, setEditingInput */ }: Parent
 
   const [inputIsValid, setInputIsValid] = useState(false);
 
-  // Use a single state object to manage all fields
-  // const [fieldValues, setFieldValues] = useState(() => {
-  //   const initialValues = {} as Record<string, any>;
-  //   itemFields.forEach((fieldName) => {
-  //     initialValues[fieldName] = itemDraft[fieldName];
-  //   });
-  //   return initialValues;
-  // });
+  const settingsStore = useSettingsStore();
+  const { showParentItemListInternals } = settingsStore;
+  const showInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
 
   // Initialize local state for field values
   const [fieldValues, setFieldValues] = useState(
@@ -42,35 +38,51 @@ const ParentItemListItemInput = ({ editingInput /*, setEditingInput */ }: Parent
     itemFields.reduce((acc, field) => ({ ...acc, [field]: "" }), {} as Record<string, any>),
   );
 
+  const validate = (itemDraft: object) => {
+    const validationStatus = itemSchema.safeParse({ ...itemDraft });
+    return validationStatus;
+  };
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => {
     if (event.target.name) {
       const fieldName = event.target.name as ItemDataUntypedFieldNameType;
-      const newValue = event.target.value;
+      let newValue: string | number = event.target.value;
+      // Check if the field is a number and parse it
+      if (isNumberField(itemSchema, fieldName)) {
+        newValue = parseFloat(newValue) || 0; // Default to 0 if parsing fails
+      }
 
       setFieldValues((prev) => ({ ...prev, [fieldName]: newValue }));
       updateItemDraft({ ...itemDraft, [fieldName]: newValue });
     }
 
-    const validationStatus = itemSchema.safeParse({ ...itemDraft });
+    const validationStatus = validate({ ...itemDraft });
     setInputIsValid(validationStatus.success);
   };
 
   const handleSave = (value?: string, inputProps?: InputProps) => {
-    if (inputProps?.name) {
+    if (value && inputProps?.name) {
       // Update the item draft in the store
       const fieldName = inputProps.name as ItemDataUntypedFieldNameType;
-      // updateItemDraft({ ...itemDraft, [fieldName]: value });
+
+      let newValue: string | number = value;
+
+      // Check if the field is a number and parse it
+      if (isNumberField(itemSchema, fieldName)) {
+        newValue = parseFloat(newValue) || 0; // Default to 0 if parsing fails
+      }
+
       // Update the local state
-      setFieldValues((prev) => ({ ...prev, [fieldName]: value }));
+      setFieldValues((prev) => ({ ...prev, [fieldName]: newValue }));
       // Update the Zustand store
-      updateItemDraft({ ...fieldValues, [fieldName]: value });
+      updateItemDraft({ ...fieldValues, [fieldName]: newValue });
     }
     return commitToStore();
   };
 
   const commitToStore = (): boolean => {
     // Perform validation before committing
-    const validationStatus = itemSchema.safeParse({ ...itemDraft });
+    const validationStatus = validate({ ...itemDraft });
     setInputIsValid(validationStatus.success);
     if (validationStatus.success) {
       commitItemDraft();
@@ -116,7 +128,7 @@ const ParentItemListItemInput = ({ editingInput /*, setEditingInput */ }: Parent
         </div>
         <Button disabled={!inputIsValid} onClick={handleSubmitButton}>{`Create ${storeName}`}</Button>
       </div>
-      {process.env.NODE_ENV === "development" && (
+      {showInternals && (
         <div className={cn("my-2", { "bg-muted-foreground": editingInput })}>
           <span>itermDraft=</span>
           <code>{JSON.stringify(itemDraft)}</code>

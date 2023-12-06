@@ -42,6 +42,10 @@ export type ItemClientStateType = ItemClientToServerType & {
   clientId: IdSchemaType;
 };
 
+export type OrderableItemClientStateType = ItemClientStateType & {
+  order: number;
+};
+
 // Type used by server to maintain server state
 export type ItemServerStateType = ItemType;
 

@@ -6,7 +6,7 @@ import { organizationItemSchema, organizationSchema } from "@/schemas/organizati
 import { resumeItemSchema, resumeSchema } from "@/schemas/resume";
 import { roleItemSchema, roleSchema } from "@/schemas/role";
 import { ParentItemListStoreNameType } from "@/types/parentItemList";
-import { ZodTypeAny } from "zod";
+import { ZodNumber, ZodObject, ZodTypeAny } from "zod";
 
 export const getSchemaBasedOnStoreName = (storeName: ParentItemListStoreNameType) => {
   switch (storeName) {
@@ -41,4 +41,14 @@ export const getItemSchemaBasedOnStoreName = (storeName: ParentItemListStoreName
 export const getSchemaFields = (schema: ZodTypeAny): string[] => {
   const shape = schema._def.shape();
   return Object.keys(shape);
+};
+
+// Utility to check if a field is a number type in the schema
+export const isNumberField = (schema: ZodTypeAny, fieldName: string): boolean => {
+  // Ensure the schema is an object schema
+  if (schema instanceof ZodObject) {
+    const fieldSchema = schema.shape[fieldName];
+    return fieldSchema instanceof ZodNumber;
+  }
+  return false;
 };

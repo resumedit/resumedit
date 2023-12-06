@@ -25,21 +25,24 @@ const ParentItemListServerComponent = async (props: Props) => {
     } else {
       const resumeList = await getItemList("resume", userId);
       if (resumeList?.length > 0) {
+        const resumeId = resumeList[0].id;
         if (props.storeName === "organization") {
           // Parent of organization is resume
-          parentId = resumeList[0].id;
+          parentId = resumeId;
         } else {
-          const organizationList = await getItemList("organization", userId);
+          const organizationList = await getItemList("organization", resumeId);
           if (organizationList?.length > 0) {
+            const organizationId = organizationList[0].id;
             if (props.storeName === "role") {
               // Parent of role is organization
-              parentId = organizationList[0].id;
+              parentId = organizationId;
             } else {
-              const roleList = await getItemList("role", userId);
+              const roleList = await getItemList("role", organizationId);
               if (roleList?.length > 0) {
+                const roleId = roleList[0].id;
                 if (props.storeName === "achievement") {
                   // Parent of achievement is role
-                  parentId = roleList[0].id;
+                  parentId = roleId;
                 } else {
                   throw Error(`Invalid storeName=${props.storeName}`);
                 }

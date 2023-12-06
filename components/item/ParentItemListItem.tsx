@@ -14,6 +14,7 @@ import { useForm } from "react-hook-form";
 
 import { InputProps } from "react-editext";
 import EditableField from "./utils/EditableField";
+import useSettingsStore from "@/stores/settings/useSettingsStore";
 
 interface ListItemProps {
   storeName: ParentItemListStoreNameType;
@@ -41,6 +42,10 @@ const ParentItemListItem = ({ storeName, index, item, setItemDeleted }: ListItem
     resolver: zodResolver(itemSchema),
   });
 
+  const settingsStore = useSettingsStore();
+  const { showParentItemListInternals } = settingsStore;
+  const showInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
+
   // const storeName = useStoreName();
   const store = useParentItemListStore(storeName);
   const setItemData = store((state) => state.setItemData);
@@ -63,15 +68,16 @@ const ParentItemListItem = ({ storeName, index, item, setItemDeleted }: ListItem
     >
       <div
         className={cn(
-          "flex items-center gap-x-4 px-4 pb-4 group select-none bg-blend-soft-light bg-background/20 rounded-md",
+          "flex-1 flex items-center gap-x-4 px-4 pb-4 group select-none bg-blend-soft-light bg-background/20 rounded-md",
           {
             "text-muted-foreground": item.disposition !== ItemDisposition.Synced,
-            "hover:cursor-grab active:cursor-grabbing": storeName == "achievement",
-            "basis-1/4": process.env.NODE_ENV === "development",
+            "hover:cursor-grab active:cursor-grabbing": storeName === "achievement",
+            "basis-1/4": showInternals,
           },
         )}
         {...listeners}
       >
+        {storeName === "achievement" ? <div>Drag me</div> : <div>{storeName}</div>}
         <div className="w-full flex flex-col justify-between gap-y-2">
           {itemFields.map((field, index) => (
             <div
@@ -89,7 +95,7 @@ const ParentItemListItem = ({ storeName, index, item, setItemDeleted }: ListItem
           {/* TODO: Handle and display errors from formState.errors */}
         </div>
       </div>
-      {process.env.NODE_ENV === "development" && (
+      {showInternals && (
         <div className="basis-3/4 flex items-center gap-x-4 px-4 py-2 cursor-auto text-xs text-slate-600">
           <p className="h-full flex items-center px-2 text-lg bg-slate-200">{index}</p>
           <table>

@@ -4,7 +4,14 @@ import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 
 import { IdSchemaType, getItemId, isValidItemId } from "@/schemas/id";
-import { ItemClientStateType, ItemDataType, ItemDataUntypedType, ItemDisposition, ItemOutputType } from "@/types/item";
+import {
+  ItemClientStateType,
+  ItemDataType,
+  ItemDataUntypedType,
+  ItemDisposition,
+  ItemOutputType,
+  OrderableItemClientStateType,
+} from "@/types/item";
 import {
   ClientIdType,
   ParentItemListStore,
@@ -15,6 +22,7 @@ import {
 import { ModificationTimestampType } from "@/types/timestamp";
 import { Draft } from "immer";
 import { handleParentItemListFromServer } from "./utills/handleParentItemListFromServer";
+import { reBalanceListOrderValues, updateListOrderValues } from "./utills/itemOrderValues";
 
 export interface StoreConfigType {
   itemModel: keyof ParentItemModelAccessor;
@@ -142,6 +150,21 @@ export const createParentItemListStore = <T extends ItemClientStateType>(props: 
           const removeDisposition = disposition ? disposition : ItemDisposition.Deleted;
           set((state) => {
             state.items = state.items.filter((a) => a.disposition !== removeDisposition);
+            state.lastModified = new Date();
+          });
+        },
+        reArrangeItemList: (reArrangedItems: OrderableItemClientStateType[]): void => {
+          set((state) => {
+            state.items = updateListOrderValues(reArrangedItems) as unknown as Array<T> as Draft<T>[];
+            state.lastModified = new Date();
+          });
+        },
+        resetItemListOrderValues: (): void => {
+          set((state) => {
+            state.items = reBalanceListOrderValues(
+              state.items as unknown as OrderableItemClientStateType[],
+              true,
+            ) as unknown as Draft<T>[];
             state.lastModified = new Date();
           });
         },
