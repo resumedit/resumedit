@@ -206,10 +206,11 @@ function RenderBreadcrumbs({
 
   let actionMenuTitle;
   if (itemModel) {
-    actionMenuTitle = `Actions for ${itemModel} ${getPrefixFromId(lastItemTitle)}`;
+    actionMenuTitle = `${transformLabel ? transformLabel(itemModel) : itemModel} ${getPrefixFromId(lastItemTitle)}`;
   }
 
   const itemActionMenu = ItemActionMenu(pathname, actionMenuTitle);
+  const actionMenuClassName = activeItemClassName;
 
   return breadcrumbs.length === 0 || breadcrumbs[0].href === "/" ? null : (
     <nav style={containerStyle} className={containerClassName} aria-label="breadcrumbs">
@@ -234,11 +235,19 @@ function RenderBreadcrumbs({
             return (
               <li
                 key={breadcrumb.href}
-                className={i === breadcrumbs.length - 1 ? activeItemClassName : inactiveItemClassName}
+                className={
+                  itemActionMenu && i === breadcrumbs.length - 2
+                    ? actionMenuClassName
+                    : i === breadcrumbs.length - 1
+                      ? activeItemClassName
+                      : inactiveItemClassName
+                }
                 style={i === breadcrumbs.length - 1 ? activeItemStyle : inactiveItemStyle}
               >
                 {itemActionMenu && i === breadcrumbs.length - 2 ? (
-                  itemActionMenu
+                  <>
+                    {!separator?.beforeInactive ? null : separator.beforeInactive} {itemActionMenu}
+                  </>
                 ) : itemActionMenu && i === breadcrumbs.length - 1 ? null : (
                   <Link
                     href={breadcrumb.href}
