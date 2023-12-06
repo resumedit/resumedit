@@ -1,13 +1,20 @@
 import { z } from "zod";
 import { itemSchema } from "./item";
 
-export const achievementItemSchema = z.object({
+export const achievementFormSchema = z.object({
   content: z.string(),
-  value: z.number(),
+});
+
+export const achievementInternalSchema = z.object({
   order: z.number(),
 });
 
-export const achievementSchema = itemSchema.merge(achievementItemSchema);
+export const achievementSchema = {
+  form: achievementFormSchema,
+  display: achievementFormSchema,
+  internal: achievementInternalSchema,
+  store: itemSchema.store.merge(achievementInternalSchema.merge(achievementFormSchema)),
+};
 
-export type AchievementOutputType = z.output<typeof achievementSchema>;
-export type AchievementInputType = z.input<typeof achievementSchema>;
+export type AchievementInputType = z.input<typeof achievementSchema.store>;
+export type AchievementOutputType = z.output<typeof achievementSchema.store>;

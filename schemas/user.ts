@@ -9,8 +9,8 @@ export const userSchema = z.object({
   email: z.string().email().optional(),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  organizations: z.array(organizationSchema).default(Array<OrganizationOutputType>),
-  resumes: z.array(resumeSchema).default(Array<ResumeOutputType>),
+  organizations: z.array(organizationSchema.store).default(Array<OrganizationOutputType>),
+  resumes: z.array(resumeSchema.store).default(Array<ResumeOutputType>),
 });
 
 export type UserSchemaInput = z.input<typeof userSchema>;

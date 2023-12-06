@@ -35,7 +35,7 @@ const ParentItemList = () => {
 
   const settingsStore = useSettingsStore();
   const { showParentItemListInternals } = settingsStore;
-  const showInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
+  const showListItemInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
 
   const itemsAreDragable = storeName === "achievement" ? true : false;
 
@@ -70,7 +70,7 @@ const ParentItemList = () => {
       className="bg-elem-light dark:bg-elem-dark-1 mt-5 mb-5 rounded-md shadow-2xl shadow-shadow-light
      dark:shadow-black overflow-hidden"
     >
-      {(resumeAction === "edit" && showInternals) ?? (
+      {(resumeAction === "edit" && showListItemInternals) ?? (
         <>
           <button
             className="px-1 border-2 text-primary rounded-md"

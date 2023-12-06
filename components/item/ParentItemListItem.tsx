@@ -3,7 +3,7 @@
 import { useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
 import { cn } from "@/lib/utils";
 import { DateTimeFormat, DateTimeSeparator, dateToISOLocal } from "@/lib/utils/formatDate";
-import { getItemSchemaBasedOnStoreName, getSchemaFields } from "@/lib/utils/parentItemListUtils";
+import { getItemSchema, getSchemaFields } from "@/lib/utils/parentItemListUtils";
 import { IdSchemaType } from "@/schemas/id";
 import { ItemClientStateType, ItemDataUntypedType, ItemDisposition } from "@/types/item";
 import { ParentItemListStoreNameType } from "@/types/parentItemList";
@@ -45,19 +45,19 @@ const ParentItemListItem = ({
     transition,
   };
 
-  const itemSchema = getItemSchemaBasedOnStoreName(storeName);
-  const itemFields = getSchemaFields(itemSchema);
+  const itemFormSchema = getItemSchema(storeName, "form");
+  const itemFormFields = getSchemaFields(storeName, "display");
   const {
     // register,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(itemSchema),
+    resolver: zodResolver(itemFormSchema),
   });
 
   const settingsStore = useSettingsStore();
   const { showParentItemListInternals } = settingsStore;
-  const showInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
+  const showListItemInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
 
   // const storeName = useStoreName();
   const store = useParentItemListStore(storeName);
@@ -81,10 +81,10 @@ const ParentItemListItem = ({
     >
       <div
         className={cn(
-          "flex-1 flex items-center gap-x-4 px-4 pb-4 group cursor-auto bg-blend-soft-light bg-background/20 rounded-md",
+          "flex-1 flex items-center gap-x-4 px-4 group cursor-auto bg-blend-soft-light bg-background/20 rounded-md",
           {
             "text-muted-foreground bg-background/50": item.disposition !== ItemDisposition.Synced,
-            "basis-1/4": showInternals,
+            "basis-1/4": showListItemInternals,
           },
         )}
       >
@@ -97,7 +97,7 @@ const ParentItemListItem = ({
             </Link>
           </div>
         ) : null}
-        {itemsAreDragable ? (
+        {resumeAction === "edit" && itemsAreDragable ? (
           <div
             className={cn("h-full flex items-center", { "hover:cursor-grab active:cursor-grabbing": itemsAreDragable })}
             {...listeners}
@@ -105,8 +105,8 @@ const ParentItemListItem = ({
             <Grip />
           </div>
         ) : null}
-        <div className="w-full flex flex-col justify-between gap-y-2">
-          {itemFields.map((field, index) => (
+        <div className="w-full flex-1 flex gap-y-2 justify-between">
+          {itemFormFields.map((field, index) => (
             <div
               key={index}
               className="w-full text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4"
@@ -122,7 +122,7 @@ const ParentItemListItem = ({
           ))}
           {/* TODO: Handle and display errors from formState.errors */}
         </div>
-        {showInternals && (
+        {showListItemInternals && (
           <div className="basis-3/4 flex items-center gap-x-4 px-4 py-2 cursor-auto text-xs text-slate-600">
             <p className="h-full flex items-center px-2 text-lg bg-slate-200">{index}</p>
             <table>
@@ -172,25 +172,27 @@ const ParentItemListItem = ({
             </table>
           </div>
         )}
-        <div className="flex items-center gap-x-4 px-4 pb-4 group">
-          {/* /Delete Button */}
-          <button
-            className="text-light-txt-2 dark:text-light-txt-1 basis-1/12 flex place-name-center opacity-100 md:group-hover:opacity-100 transition-all duration-150"
-            title="Delete Item"
-            onClick={() => setItemDeleted(item.clientId)}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-6 h-6"
+        {resumeAction === "edit" ? (
+          <div className="flex items-center gap-x-4 px-4 group">
+            {/* /Delete Button */}
+            <button
+              className="text-light-txt-2 dark:text-light-txt-1 basis-1/12 flex place-name-center opacity-100 md:group-hover:opacity-100 transition-all duration-150"
+              title="Delete Item"
+              onClick={() => setItemDeleted(item.clientId)}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        ) : null}
       </div>
     </li>
   );

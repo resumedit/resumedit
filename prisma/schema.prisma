@@ -31,10 +31,8 @@ model Resume {
   parentId     String         @db.Uuid // User that owns this resume
   parent       User           @relation(fields: [parentId], references: [id], onDelete: Cascade)
   items        Organization[] // Reference to organizations at which the the user had a role
-  published    Boolean        @default(false)
-  name         String         @default("")
-  description  String         @default("")
-  content      String         @default("[]")
+  name         String         @db.Text
+  description  String         @default("") @db.Text
 
   @@index([parentId]) // Index for faster lookups on parentId
 }
@@ -72,7 +70,6 @@ model Achievement {
   parentId     String   @db.Uuid
   parent       Role     @relation(fields: [parentId], references: [id], onDelete: Cascade)
   content      String   @db.Text
-  value        Float    @db.DoublePrecision
   order        Float    @db.DoublePrecision
 
   @@unique([order, parentId, lastModified])

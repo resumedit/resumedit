@@ -1,44 +1,41 @@
 // @/lib/utils/parentItemListUtils.ts
 
-import { achievementItemSchema, achievementSchema } from "@/schemas/achievement";
+import { achievementSchema } from "@/schemas/achievement";
 import { itemSchema } from "@/schemas/item";
-import { organizationItemSchema, organizationSchema } from "@/schemas/organization";
-import { resumeItemSchema, resumeSchema } from "@/schemas/resume";
-import { roleItemSchema, roleSchema } from "@/schemas/role";
+import { organizationSchema } from "@/schemas/organization";
+import { resumeSchema } from "@/schemas/resume";
+import { roleSchema } from "@/schemas/role";
 import { ParentItemListStoreNameType } from "@/types/parentItemList";
 import { ZodNumber, ZodObject, ZodTypeAny } from "zod";
 
-export const getSchemaBasedOnStoreName = (storeName: ParentItemListStoreNameType) => {
+export type SchemaKindType = keyof Record<"form" | "display", ZodTypeAny>;
+
+export const getItemSchema = (storeName: ParentItemListStoreNameType, schemaKind: SchemaKindType) => {
+  let schema: Record<SchemaKindType, ZodTypeAny>;
+
   switch (storeName) {
     case "resume":
-      return resumeSchema;
+      schema = resumeSchema;
+      break;
     case "organization":
-      return organizationSchema;
+      schema = organizationSchema;
+      break;
     case "role":
-      return roleSchema;
+      schema = roleSchema;
+      break;
     case "achievement":
-      return achievementSchema;
+      schema = achievementSchema;
+      break;
     default:
-      return itemSchema;
+      schema = itemSchema;
+      break;
   }
+
+  return schema[schemaKind];
 };
 
-export const getItemSchemaBasedOnStoreName = (storeName: ParentItemListStoreNameType) => {
-  switch (storeName) {
-    case "resume":
-      return resumeItemSchema;
-    case "organization":
-      return organizationItemSchema;
-    case "role":
-      return roleItemSchema;
-    case "achievement":
-      return achievementItemSchema;
-    default:
-      return itemSchema;
-  }
-};
-
-export const getSchemaFields = (schema: ZodTypeAny): string[] => {
+export const getSchemaFields = (storeName: ParentItemListStoreNameType, schemaKind: SchemaKindType): string[] => {
+  const schema = getItemSchema(storeName, schemaKind);
   const shape = schema._def.shape();
   return Object.keys(shape);
 };

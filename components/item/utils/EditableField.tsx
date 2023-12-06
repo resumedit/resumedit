@@ -10,32 +10,39 @@ interface EditableFieldProps extends EdiTextProps {
   onSave: (val: any, inputProps?: InputProps) => void;
 }
 
+export const EditableFieldEdiTextProps = {
+  inputProps: {
+    placeholder: "",
+    className: "p-2 flex-1 rounded-md outline-none min-w-auto",
+  },
+  viewProps: {
+    className: "w-full h-full min-h-[2.5rem] p-2 rounded-md",
+  },
+  rootProps: {
+    viewContainerClassName:
+      "w-full h-full p-0 rounded-md flex hover:outline-dotted hover:outline-slate-300 active:outline-2 hover:active:outline-2",
+    editOnViewClick: true,
+    startEditingOnFocus: true,
+    submitOnEnter: true,
+    saveButtonClassName: "invisible",
+    editButtonClassName: "hidden",
+    cancelButtonClassName: "hidden",
+    mainContainerClassName: "p-0",
+    editContainerClassName: "p-0 rounded-md gap-x-2",
+  },
+};
+
 const EditableField = ({ fieldName, value, onSave, ...rest }: EditableFieldProps) => {
   return (
     <EdiText
       type="text"
       value={value}
       onSave={onSave}
-      // inputProps={{ name: fieldName }}
-      inputProps={{
-        name: fieldName,
-        // onChange: onChange,
-        className: "p-2 flex-1 rounded-md outline-none min-w-auto",
-      }}
-      // viewContainerClassName="flex gap-x-2"
-      viewContainerClassName="w-full p-0 flex rounded-md hover:outline-dotted hover:outline-slate-300 active:outline-2 hover:active:outline-2"
-      // viewProps={{ className: "flex-1" }}
-      viewProps={{ className: "w-full p-2 rounded-md" }}
-      editOnViewClick
-      startEditingOnFocus
-      submitOnEnter
+      inputProps={{ ...EditableFieldEdiTextProps.inputProps, name: fieldName, placeholder: fieldName }}
+      viewProps={{ ...EditableFieldEdiTextProps.viewProps }}
+      {...EditableFieldEdiTextProps.rootProps}
       submitOnUnfocus
       cancelOnEscape
-      saveButtonClassName="hidden"
-      editButtonClassName="hidden"
-      cancelButtonClassName="hidden"
-      mainContainerClassName="p-0"
-      editContainerClassName="p-0 rounded-md gap-x-2 bg-red-200"
       {...rest}
     />
   );

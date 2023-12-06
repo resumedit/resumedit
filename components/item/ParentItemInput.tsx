@@ -5,14 +5,14 @@
 import { Button } from "@/components/ui/button";
 import { useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
-import { getItemSchemaBasedOnStoreName, getSchemaFields } from "@/lib/utils/parentItemListUtils";
+import { getItemSchema, getSchemaFields } from "@/lib/utils/parentItemListUtils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 
 const ParentItemListInput = () => {
   const storeName = useStoreName();
-  const itemSchema = getItemSchemaBasedOnStoreName(storeName);
-  const itemFields = getSchemaFields(itemSchema);
+  const itemFormSchema = getItemSchema(storeName, "form");
+  const itemDisplayFields = getSchemaFields(storeName, "display");
 
   const {
     register,
@@ -20,7 +20,7 @@ const ParentItemListInput = () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(itemSchema),
+    resolver: zodResolver(itemFormSchema),
   });
 
   const store = useParentItemListStore(storeName);
@@ -37,7 +37,7 @@ const ParentItemListInput = () => {
       className="px-4 py-2 mt-8 bg-elem-light dark:bg-elem-dark-1 flex items-center gap-x-3 rounded-md"
       onSubmit={handleSubmit(onSubmit)}
     >
-      {itemFields.map((field) => (
+      {itemDisplayFields.map((field) => (
         <input
           key={field}
           {...register(field)}

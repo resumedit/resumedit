@@ -56,35 +56,33 @@ export default async function NestedParentItemListServerComponent(props: NestedP
   const serverState = await fetchServerState(rootStoreName, rootParentId);
 
   // Fetch children and recursively generate components for each child
-  if (itemStoreName) {
+  if (rootStoreName && itemStoreName) {
+    const validRootStoreName = rootStoreName;
     const validItemStoreName = itemStoreName;
     const itemServerComponents = serverState.items.map((item: ItemServerStateType, index: number) => {
+      const rootItems = serverState.items.filter((rootItem) => rootItem.id === item.id);
+      const rootServerState = { ...serverState, items: rootItems };
       return (
-        <NestedParentItemListServerComponent
-          key={index}
-          storeName={validItemStoreName}
-          resumeAction={resumeAction}
-          parentId={item.id}
-        />
+        <div key={item.id}>
+          <ParentItemListClientComponent
+            storeName={validRootStoreName}
+            serverState={rootServerState}
+            resumeAction={resumeAction}
+          />
+
+          <NestedParentItemListServerComponent
+            key={index}
+            storeName={validItemStoreName}
+            resumeAction={resumeAction}
+            parentId={item.id}
+          />
+        </div>
       );
     });
-    return (
-      <div>
-        AAA ParentItemListClientComponent ({`storeName=${rootStoreName} serverState=${serverState.parentId}`})
-        <ParentItemListClientComponent
-          storeName={rootStoreName}
-          serverState={serverState}
-          resumeAction={resumeAction}
-        />
-        <p>Begin itemServerComponents</p>
-        {itemServerComponents}
-        <p>End itemServerComponents</p>
-      </div>
-    );
+    return <div className="bg-slate-100">{itemServerComponents}</div>;
   } else {
     return (
       <div>
-        XXX ParentItemListClientComponent({`storeName=${storeName} serverState=${serverState.parentId}`})
         <ParentItemListClientComponent storeName={storeName} serverState={serverState} resumeAction={resumeAction} />
       </div>
     );

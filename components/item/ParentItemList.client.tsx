@@ -27,8 +27,9 @@ const ParentItemListClientContext = (props: ParentItemListClientContextProps) =>
   const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
 
   const settingsStore = useSettingsStore();
-  const { showParentItemListInternals, showParentItemListSynchronization } = settingsStore;
-  const showInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
+  const { showParentItemIdentifiers, showParentItemListInternals, showParentItemListSynchronization } = settingsStore;
+  const showIdentifiers = process.env.NODE_ENV === "development" && showParentItemIdentifiers;
+  const showListItemInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
   const showSynchronization = process.env.NODE_ENV === "development" && showParentItemListSynchronization;
 
   const { serverState } = props;
@@ -42,19 +43,21 @@ const ParentItemListClientContext = (props: ParentItemListClientContextProps) =>
 
   return (
     <>
-      <h2 className="text-xl mb-2">
-        <span className="capitalize">{storeName}s</span> of {parentModel} <code>{parentId}</code>
-      </h2>
+      {showIdentifiers ? (
+        <h2 className="text-xl mb-2">
+          <span className="capitalize">{storeName}s</span> of {parentModel} <code>{parentId}</code>
+        </h2>
+      ) : null}
       <div className="space-y-1">
-        {showSynchronization ? <ParentItemListSynchronization /> : null}
+        {props.resumeAction === "edit" && showSynchronization ? <ParentItemListSynchronization /> : null}
         <ParentItemList />
-        {showInternals ?? (
+        {showListItemInternals ? (
           <ParentItemListStoreState
             storeName={storeName}
             parentId={serverState.parentId || idDefault}
             serverModified={serverState.lastModified}
           />
-        )}
+        ) : null}
       </div>
     </>
   );

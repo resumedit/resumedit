@@ -1,6 +1,7 @@
 // @/components/item/utils/EditableInputField.tsx
 
 import EdiText, { EdiTextProps } from "react-editext";
+import { EditableFieldEdiTextProps } from "./EditableField";
 
 interface EditableInputFieldProps extends EdiTextProps {
   fieldName: string;
@@ -13,24 +14,16 @@ const EditableInputField = ({ fieldName, placeholder, onChange, inputProps, ...r
   return (
     <EdiText
       type="text"
+      {...EditableFieldEdiTextProps.rootProps}
       inputProps={{
+        ...EditableFieldEdiTextProps.inputProps,
         ...inputProps,
         name: fieldName,
         placeholder: placeholder || "",
         onChange: onChange,
-        className: "p-2 flex-1 bg-slate-100 rounded-md outline-none min-w-auto",
-        // ref: inputRef as RefObject<HTMLInputElement> & RefObject<HTMLTextAreaElement>,
+        className: "p-2 flex-1 rounded-md outline-none min-w-auto",
       }}
-      viewProps={{ placeholder: placeholder || "", className: "w-full p-2 rounded-md" }}
-      editOnViewClick
-      startEditingOnFocus
-      submitOnEnter
-      saveButtonClassName="hidden"
-      editButtonClassName="hidden"
-      cancelButtonClassName="hidden"
-      mainContainerClassName="p-0"
-      viewContainerClassName="w-full p-0 flex hover:bg-blue-50 rounded-md outline-2"
-      editContainerClassName="p-0 rounded-md gap-x-2 bg-red-200"
+      viewProps={{ ...EditableFieldEdiTextProps.viewProps, placeholder: placeholder || "" }}
       {...rest}
     />
   );

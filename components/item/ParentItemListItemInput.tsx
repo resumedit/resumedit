@@ -2,9 +2,10 @@
 import { useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { cn } from "@/lib/utils";
-import { getItemSchemaBasedOnStoreName, getSchemaFields, isNumberField } from "@/lib/utils/parentItemListUtils";
+import { getItemSchema, getSchemaFields, isNumberField } from "@/lib/utils/parentItemListUtils";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { ItemDataUntypedFieldNameType } from "@/types/item";
+import { Plus } from "lucide-react";
 import { Dispatch, SetStateAction, useState } from "react";
 import { InputProps } from "react-editext";
 import { Button } from "../ui/button";
@@ -23,14 +24,14 @@ const ParentItemListItemInput = ({ editingInput /*, setEditingInput */ }: Parent
   const updateItemDraft = store((state) => state.updateItemDraft);
   const commitItemDraft = store((state) => state.commitItemDraft);
 
-  const itemSchema = getItemSchemaBasedOnStoreName(storeName);
-  const itemFields = getSchemaFields(itemSchema);
+  const itemFormSchema = getItemSchema(storeName, "form");
+  const itemFields = getSchemaFields(storeName, "display");
 
   const [inputIsValid, setInputIsValid] = useState(false);
 
   const settingsStore = useSettingsStore();
   const { showParentItemListInternals } = settingsStore;
-  const showInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
+  const showListItemInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
 
   // Initialize local state for field values
   const [fieldValues, setFieldValues] = useState(
@@ -39,7 +40,7 @@ const ParentItemListItemInput = ({ editingInput /*, setEditingInput */ }: Parent
   );
 
   const validate = (itemDraft: object) => {
-    const validationStatus = itemSchema.safeParse({ ...itemDraft });
+    const validationStatus = itemFormSchema.safeParse({ ...itemDraft });
     return validationStatus;
   };
 
@@ -53,7 +54,7 @@ const ParentItemListItemInput = ({ editingInput /*, setEditingInput */ }: Parent
       const fieldName = extractFieldName(event.target.name);
       let newValue: string | number = event.target.value;
       // Check if the field is a number and parse it
-      if (isNumberField(itemSchema, fieldName)) {
+      if (isNumberField(itemFormSchema, fieldName)) {
         newValue = parseFloat(newValue) || 0; // Default to 0 if parsing fails
       }
 
@@ -73,7 +74,7 @@ const ParentItemListItemInput = ({ editingInput /*, setEditingInput */ }: Parent
       let newValue: string | number = value;
 
       // Check if the field is a number and parse it
-      if (isNumberField(itemSchema, fieldName)) {
+      if (isNumberField(itemFormSchema, fieldName)) {
         newValue = parseFloat(newValue) || 0; // Default to 0 if parsing fails
       }
 
@@ -118,22 +119,25 @@ const ParentItemListItemInput = ({ editingInput /*, setEditingInput */ }: Parent
   return (
     <div className="my-2  px-4 flex flex-col gap-y-2">
       <div className="flex gap-x-2">
-        <div className="flex-1 flex flex-col gap-y-2" /* onMouseEnter={handleFocus} onMouseLeave={handleBlur} */>
+        <div className="flex-1 flex gap-y-2" /* onMouseEnter={handleFocus} onMouseLeave={handleBlur} */>
           {itemFields.map((fieldName) => (
             <EditableInputField
               key={fieldName}
               fieldName={`${storeName}-${fieldName}`}
               value={fieldValues[fieldName]}
-              placeholder={`Type ${storeName} ${fieldName}`}
+              placeholder={`${fieldName}`}
               onChange={handleChange}
               onSave={handleSave}
               editing={editingInput}
+              className="flex-1"
             />
           ))}
         </div>
-        <Button disabled={!inputIsValid} onClick={handleSubmitButton}>{`Create ${storeName}`}</Button>
+        <Button variant="ghost" disabled={!inputIsValid} onClick={handleSubmitButton} title={`Create ${storeName}`}>
+          {<Plus />}
+        </Button>
       </div>
-      {showInternals && (
+      {showListItemInternals && (
         <div className={cn("my-2", { "bg-muted-foreground": editingInput })}>
           <span>itermDraft=</span>
           <code>{JSON.stringify(itemDraft)}</code>

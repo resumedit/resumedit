@@ -3,13 +3,17 @@
 import { z } from "zod";
 import { itemSchema } from "./item";
 
-export const resumeItemSchema = z.object({
+export const resumeFormSchema = z.object({
   name: z.string().min(4),
   description: z.string().optional(),
-  content: z.string().optional(),
 });
 
-export const resumeSchema = itemSchema.merge(resumeItemSchema);
+export const resumeSchema = {
+  form: resumeFormSchema,
+  display: resumeFormSchema,
+  internal: resumeFormSchema,
+  store: itemSchema.store.merge(resumeFormSchema),
+};
 
-export type ResumeInputType = z.input<typeof resumeSchema>;
-export type ResumeOutputType = z.output<typeof resumeSchema>;
+export type ResumeInputType = z.input<typeof resumeSchema.store>;
+export type ResumeOutputType = z.output<typeof resumeSchema.store>;

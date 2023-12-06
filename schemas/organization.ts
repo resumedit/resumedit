@@ -1,12 +1,19 @@
+// @/schemas/organization.ts
+
 import { z } from "zod";
 import { itemSchema } from "./item";
 
-export const organizationItemSchema = z.object({
+export const organizationFormSchema = z.object({
   name: z.string().min(1),
-  location: z.string().min(0),
+  location: z.string().optional().default(""),
 });
 
-export const organizationSchema = itemSchema.merge(organizationItemSchema);
+export const organizationSchema = {
+  form: organizationFormSchema,
+  display: organizationFormSchema,
+  internal: organizationFormSchema,
+  store: itemSchema.store.merge(organizationFormSchema),
+};
 
-export type OrganizationInputType = z.input<typeof organizationSchema>;
-export type OrganizationOutputType = z.output<typeof organizationSchema>;
+export type OrganizationInputType = z.input<typeof organizationSchema.store>;
+export type OrganizationOutputType = z.output<typeof organizationSchema.store>;
