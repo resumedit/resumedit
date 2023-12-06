@@ -6,8 +6,10 @@ import { ItemClientStateType } from "@/types/item";
 import ParentItemListItem from "./ParentItemListItem";
 import ParentItemListItemInput from "./ParentItemListItemInput";
 import ParentItemSortableWrapper from "./utils/ParentItemSortableWrapper";
+import { useState } from "react";
 
 const ParentItemList = () => {
+  const [editingInput, setEditingInput] = useState(true);
   const storeName = useStoreName();
   const store = useParentItemListStore(storeName);
   const items = store((state) => state.items);
@@ -34,7 +36,7 @@ const ParentItemList = () => {
       {
         <ul className="flex flex-col bg-elem-light dark:bg-elem-dark-1 overflow-auto">
           <ParentItemSortableWrapper items={items}>
-            <ParentItemListItemInput />
+            <ParentItemListItemInput editingInput={editingInput} setEditingInput={setEditingInput} />
             {items.map((item, index) => {
               return (
                 <ParentItemListItem

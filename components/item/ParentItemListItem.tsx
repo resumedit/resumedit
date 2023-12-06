@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { DateTimeFormat, DateTimeSeparator, dateToISOLocal } from "@/lib/utils/formatDate";
 import { getItemSchemaBasedOnStoreName, getSchemaFields } from "@/lib/utils/parentItemListUtils";
 import { IdSchemaType } from "@/schemas/id";
-import { ItemClientStateType, ItemDisposition } from "@/types/item";
+import { ItemClientStateType, ItemDataUntypedType, ItemDisposition } from "@/types/item";
 import { ParentItemListStoreNameType } from "@/types/parentItemList";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -48,7 +48,7 @@ const ParentItemListItem = ({ storeName, index, item, setItemDeleted }: ListItem
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSave = (val: any, inputProps?: InputProps) => {
     if (inputProps?.name) {
-      setItemData(item.clientId, { [inputProps.name]: val });
+      setItemData(item.clientId, { [inputProps.name]: val } as ItemDataUntypedType);
     } else {
       console.log(`ParentItemListitem: missing field name in handleSave(value=`, val, `, inputProps=`, inputProps, `)`);
     }
@@ -63,10 +63,11 @@ const ParentItemListItem = ({ storeName, index, item, setItemDeleted }: ListItem
     >
       <div
         className={cn(
-          "basis-1/4 flex items-center gap-x-4 px-4 pb-4 group select-none bg-blend-soft-light bg-background/20 rounded-md",
+          "flex items-center gap-x-4 px-4 pb-4 group select-none bg-blend-soft-light bg-background/20 rounded-md",
           {
             "text-muted-foreground": item.disposition !== ItemDisposition.Synced,
             "hover:cursor-grab active:cursor-grabbing": storeName == "achievement",
+            "basis-1/4": process.env.NODE_ENV === "development",
           },
         )}
         {...listeners}
@@ -77,21 +78,6 @@ const ParentItemListItem = ({ storeName, index, item, setItemDeleted }: ListItem
               key={index}
               className="w-full text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4"
             >
-              {/* <EdiText
-                key={field}
-                type="textarea"
-                value={item[field as keyof ItemClientStateType] as string}
-                onSave={handleSave}
-                inputProps={{ name: field, className: "text-wrap" }}
-                viewContainerClassName="flex gap-x-2"
-                viewProps={{ className: "flex-1" }}
-                showButtonsOnHover
-                editOnViewClick
-                startEditingOnFocus
-                submitOnEnter
-                submitOnUnfocus
-                cancelOnEscape
-              /> */}
               <EditableField
                 key={field}
                 fieldName={field}
@@ -103,57 +89,56 @@ const ParentItemListItem = ({ storeName, index, item, setItemDeleted }: ListItem
           {/* TODO: Handle and display errors from formState.errors */}
         </div>
       </div>
-      <div className="basis-3/4 flex items-center gap-x-4 px-4 py-2 cursor-auto text-xs text-slate-600">
-        <p className="h-full flex items-center px-2 text-lg bg-slate-200">{index}</p>
-        <table>
-          <tbody>
-            <tr>
-              {/* <td className="py-0">disposition</td> */}
-              <td className="py-0">{item.disposition}</td>
-            </tr>
-          </tbody>
-        </table>
-        <table className="w-auto">
-          <tbody>
-            <tr>
-              {/* <td className="py-0">lastModified</td> */}
-              <td
-                className={cn("py-0", {
-                  "text-red-500": item.disposition !== ItemDisposition.Synced,
-                })}
-              >
-                <span className="text-xs text-muted-foreground">modified</span>:&nbsp;
-                <span className="py-0">
-                  {dateToISOLocal(item.lastModified, DateTimeFormat.MonthDayTime, DateTimeSeparator.Newline)}
-                </span>
-              </td>
-            </tr>
-            <tr>
-              {/* <td className="py-0">createdAt</td> */}
-              <td className={"py-0"}>
-                <span className="text-xs text-muted-foreground">created</span>:&nbsp;
-                {dateToISOLocal(item.createdAt, DateTimeFormat.MonthDayTime, DateTimeSeparator.Newline)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <table className="w-auto">
-          <tbody>
-            <tr>
-              <td className="py-0">
-                <span className="text-xs text-muted-foreground">client</span>&nbsp;
-                <code>{item.clientId?.substring(0, 8)}&hellip;</code>
-              </td>
-            </tr>
-            <tr>
-              <td className="py-0">
-                <span className="text-xs text-muted-foreground">server</span>&nbsp;
-                <code>{item.id?.substring(0, 8)}&hellip;</code>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      {process.env.NODE_ENV === "development" && (
+        <div className="basis-3/4 flex items-center gap-x-4 px-4 py-2 cursor-auto text-xs text-slate-600">
+          <p className="h-full flex items-center px-2 text-lg bg-slate-200">{index}</p>
+          <table>
+            <tbody>
+              <tr>
+                <td className="py-0">{item.disposition}</td>
+              </tr>
+            </tbody>
+          </table>
+          <table className="w-auto">
+            <tbody>
+              <tr>
+                <td
+                  className={cn("py-0", {
+                    "text-red-500": item.disposition !== ItemDisposition.Synced,
+                  })}
+                >
+                  <span className="text-xs text-muted-foreground">modified</span>:&nbsp;
+                  <span className="py-0">
+                    {dateToISOLocal(item.lastModified, DateTimeFormat.MonthDayTime, DateTimeSeparator.Newline)}
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td className={"py-0"}>
+                  <span className="text-xs text-muted-foreground">created</span>:&nbsp;
+                  {dateToISOLocal(item.createdAt, DateTimeFormat.MonthDayTime, DateTimeSeparator.Newline)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <table className="w-auto">
+            <tbody>
+              <tr>
+                <td className="py-0">
+                  <span className="text-xs text-muted-foreground">client</span>&nbsp;
+                  <code>{item.clientId?.substring(0, 8)}&hellip;</code>
+                </td>
+              </tr>
+              <tr>
+                <td className="py-0">
+                  <span className="text-xs text-muted-foreground">server</span>&nbsp;
+                  <code>{item.id?.substring(0, 8)}&hellip;</code>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
       <div className="flex items-center gap-x-4 px-4 pb-4 group">
         {/* /Delete Button */}
         <button

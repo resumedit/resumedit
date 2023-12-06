@@ -60,12 +60,13 @@ const ParentItemListSynchronization = () => {
   async function setSyncInterval(value: string) {
     const interval = Number(value);
 
-    if (typeof interval === "number" && interval > 0) {
+    if (typeof interval === "number") {
       setSynchronizationInterval(interval);
-
-      if (syncIntervalInputRef.current) {
-        syncIntervalInputRef.current.className = "text-bold";
-        syncIntervalInputRef.current.value = displayInterval(interval);
+      if (interval > 0) {
+        if (syncIntervalInputRef.current) {
+          syncIntervalInputRef.current.className = "text-bold";
+          syncIntervalInputRef.current.value = displayInterval(interval);
+        }
       }
     }
   }

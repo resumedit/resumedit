@@ -4,6 +4,7 @@ import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 
 import { IdSchemaType, getItemId, isValidItemId } from "@/schemas/id";
+import { ItemClientStateType, ItemDataType, ItemDataUntypedType, ItemDisposition, ItemOutputType } from "@/types/item";
 import {
   ClientIdType,
   ParentItemListStore,
@@ -11,7 +12,6 @@ import {
   ParentItemModelAccessor,
   getParentModel,
 } from "@/types/parentItemList";
-import { ItemClientStateType, ItemDisposition, ItemOutputType } from "@/types/item";
 import { ModificationTimestampType } from "@/types/timestamp";
 import { Draft } from "immer";
 import { handleParentItemListFromServer } from "./utills/handleParentItemListFromServer";
@@ -35,6 +35,7 @@ export const createParentItemListStore = <T extends ItemClientStateType>(props: 
         parentId: null,
         itemModel: itemModel,
         items: [],
+        itemDraft: {} as ItemDataType<T>,
         lastModified: new Date(0),
         serverModified: new Date(0),
         synchronizationInterval: 0,
@@ -57,7 +58,7 @@ export const createParentItemListStore = <T extends ItemClientStateType>(props: 
         },
         // addItem: (newItem: Omit<ItemInputType, "order">) => {
         // addItem: (newItem: T) => {
-        addItem: (newItem: Omit<T, keyof ItemClientStateType>) => {
+        addItem: (itemData: ItemDataType<T>) => {
           const clientId = getItemId();
           // Add the extra fields for type `ItemClientType`
           const data = {
@@ -65,7 +66,7 @@ export const createParentItemListStore = <T extends ItemClientStateType>(props: 
             createdAt: new Date(),
             lastModified: new Date(),
             disposition: ItemDisposition.New,
-            ...newItem,
+            ...itemData,
           } as unknown as Draft<T>;
           set((state) => {
             // Append it to the end of the store's `items` array
@@ -113,7 +114,19 @@ export const createParentItemListStore = <T extends ItemClientStateType>(props: 
             state.lastModified = new Date();
           });
         },
-        setItemData: (clientId: ClientIdType, itemData: object): void => {
+        setItemData: (clientId: ClientIdType, itemData: ItemDataUntypedType): void => {
+          // Update the state with the new content for the specified item
+          set((state) => {
+            state.items = state.items.map((item) => {
+              if (item.clientId === clientId) {
+                return { ...item, ...itemData, disposition: ItemDisposition.Modified };
+              }
+              return item;
+            });
+            state.lastModified = new Date();
+          });
+        },
+        setItemDataUntyped: (clientId: ClientIdType, itemData: ItemDataUntypedType): void => {
           // Update the state with the new content for the specified item
           set((state) => {
             state.items = state.items.map((item) => {
@@ -132,7 +145,49 @@ export const createParentItemListStore = <T extends ItemClientStateType>(props: 
             state.lastModified = new Date();
           });
         },
+        updateItemDraft: (itemData: ItemDataUntypedType) =>
+          set((state) => {
+            state.itemDraft = { ...(state.itemDraft as ItemDataType<T>), ...(itemData as ItemDataType<T>) } as Draft<
+              ItemDataType<T>
+            >;
+            state.lastModified = new Date();
+          }),
+        commitItemDraft: () => {
+          // Generate a new clientId
+          const clientId = getItemId();
 
+          set((state) => {
+            // // Create a copy of the draft
+            // const itemData = { ...(state.itemDraft as ItemDataType<T>) } as ItemDataType<T>;
+            // // Use the existing addItem function to add the draft as a new item
+            // const addItemFunction = get().addItem;
+            // addItemFunction(itemData);
+
+            // // Reset the draft
+            // state.itemDraft = {} as Draft<ItemDataType<T>>;
+
+            // Create a copy of the draft
+            const itemData = { ...(state.itemDraft as ItemDataType<T>) } as ItemDataType<T>;
+
+            // Construct the new item
+            const newItem = {
+              clientId,
+              createdAt: new Date(),
+              lastModified: new Date(),
+              disposition: ItemDisposition.New,
+              ...itemData,
+            } as unknown as Draft<T>;
+
+            // Append it to the end of the store's `items` array
+            state.items.push(newItem);
+
+            // Update the modification timestamp
+            state.lastModified = new Date();
+
+            // Reset the draft
+            state.itemDraft = {} as Draft<ItemDataType<T>>;
+          });
+        },
         updateStoreWithServerData: (serverState: ParentItemListType<ItemOutputType>) => {
           console.log(
             `useParentItemListStore/updateStoreWithServerData: parentId=${get().parentId} serverState.parentId=${

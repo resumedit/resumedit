@@ -5,10 +5,9 @@
 import { ParentItemListStoreProvider, useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
 import { StoreNameProvider, useStoreName } from "@/contexts/StoreNameContext";
 import { idDefault } from "@/schemas/id";
-import { ParentItemListType, ParentItemModelAccessor } from "@/types/parentItemList";
 import { ItemServerStateType } from "@/types/item";
+import { ParentItemListType, ParentItemModelAccessor } from "@/types/parentItemList";
 import { useEffect } from "react";
-import ParentItemListInput from "./ParentItemInput";
 import ParentItemList from "./ParentItemList";
 import ParentItemListStoreState from "./ParentItemListStoreState";
 import ParentItemListSynchronization from "./ParentItemListSynchronization";
@@ -39,7 +38,7 @@ const ParentItemListClientContext = ({ serverState }: Props) => {
       <div className="space-y-1">
         <ParentItemListSynchronization />
         <ParentItemList />
-        <ParentItemListInput />
+        {/* <ParentItemListInput /> */}
         <ParentItemListStoreState
           storeName={storeName}
           parentId={serverState.parentId || idDefault}

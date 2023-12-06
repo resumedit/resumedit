@@ -2,7 +2,14 @@
 import { stripFields } from "@/lib/utils/misc";
 import { IdSchemaType } from "@/schemas/id";
 import { PrismaClient } from "@prisma/client";
-import { ItemClientStateType, ItemClientToServerType, ItemDisposition, ItemOutputType } from "./item";
+import {
+  ItemClientStateType,
+  ItemClientToServerType,
+  ItemDataType,
+  ItemDataUntypedType,
+  ItemDisposition,
+  ItemOutputType,
+} from "./item";
 import { ModificationTimestampType } from "./timestamp";
 
 export type ClientIdType = IdSchemaType;
@@ -78,6 +85,7 @@ export type ParentItemListState<T extends ItemClientStateType> = {
   parentId: IdSchemaType | null;
   itemModel: keyof ParentItemModelAccessor;
   items: T[];
+  itemDraft: ItemDataType<T>;
   lastModified: ModificationTimestampType;
   serverModified: ModificationTimestampType;
   synchronizationInterval: number;
@@ -89,11 +97,14 @@ export type ParentItemListActions<T extends ItemClientStateType> = {
   getItemList: () => T[];
   setItemList: (items: T[]) => void;
   deleteItemsByDisposition: (disposition?: ItemDisposition) => void;
-  addItem: (payload: Omit<T, keyof ItemClientStateType>) => ClientIdType;
+  addItem: (payload: ItemDataType<T>) => ClientIdType;
   setItemSynced: (clientId: ClientIdType, serverData: ItemOutputType) => void;
   setItemDeleted: (clientId: ClientIdType) => void;
   deleteItem: (clientId: ClientIdType) => void;
-  setItemData: (clientId: ClientIdType, content: object) => void;
+  // setItemData: (clientId: ClientIdType, data: ItemDataType<T>) => void;
+  setItemData: (clientId: ClientIdType, data: ItemDataUntypedType) => void;
+  updateItemDraft: (itemData: ItemDataUntypedType) => void;
+  commitItemDraft: () => void;
   updateStoreWithServerData: (serverState: ParentItemListType<ItemOutputType>) => void;
   setLastModified: (timestamp: ModificationTimestampType) => void;
   getLastModified: () => ModificationTimestampType;

@@ -8,8 +8,8 @@ export enum ItemDisposition {
   Deleted = "DELETED",
   Synced = "SYNCED",
 }
-// Basic type
 
+// Basic type
 export type ItemType = {
   id: IdSchemaType;
   parentId: IdSchemaType;
@@ -41,6 +41,20 @@ export type ItemServerToClientType = ItemOutputType;
 export type ItemClientStateType = ItemClientToServerType & {
   clientId: IdSchemaType;
 };
-// Type used by server to maintain server state
 
+// Type used by server to maintain server state
 export type ItemServerStateType = ItemType;
+
+// An object with fields that are specific to the item, i.e., excluding all the fields shared
+// between `Resume`, `Organization`, `Role` and `Achievement`
+export type ItemDataType<T extends ItemClientStateType> = Omit<T, keyof ItemClientStateType>;
+export type ItemDataFieldNameType<T extends ItemClientStateType> = keyof ItemDataType<T>;
+
+// FIXME: The following two types don't add much type safety but
+// are currently used to be able to work with components without a type parameter
+// export type ItemDataUntypedType = Omit<Record<string, unknown>, keyof ItemClientStateType>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// export type ItemDataUntypedType = Omit<Record<string, any>, keyof ItemClientStateType> & Partial<ItemClientStateType>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ItemDataUntypedType = Omit<Record<string, any>, keyof ItemClientStateType>;
+export type ItemDataUntypedFieldNameType = keyof ItemDataUntypedType;
