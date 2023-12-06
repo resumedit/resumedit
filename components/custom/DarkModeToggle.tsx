@@ -1,35 +1,38 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Icons } from "@/components/custom/Icons";
 import { Button } from "@/components/ui/button";
 
 export function DarkModeToggle() {
-  const themeIcons = {
-    system: <Icons.laptop className="absolute transition-all" />,
-    dark: <Icons.moon className="absolute rotate-90 transition-all dark:rotate-0 dark:scale-100" />,
-    light: <Icons.sun className="rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />,
+  const defaultTheme = "system";
+  const themes = {
+    system: { icon: <Icons.sunMoon className="absolute transition-all" />, label: "auto" },
+    dark: {
+      icon: <Icons.moon className="absolute rotate-90 transition-all dark:rotate-0 dark:scale-100" />,
+      label: "dark",
+    },
+    light: {
+      icon: <Icons.sun className="rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />,
+      label: "light",
+    },
   };
-  const themeKeys = Object.keys(themeIcons).slice(1);
+  const themeKeys = Object.keys(themes).slice(1);
 
   const { theme, setTheme } = useTheme();
   // const [currentThemeIcon, setCurrentThemeIcon] = useState(themeIcons[theme as keyof typeof themeIcons]);
-  const [currentThemeIcon, setCurrentThemeIcon] = useState(null);
+  const [currentTheme, setCurrentTheme] = useState(themes[defaultTheme]);
 
   function switchTheme(targetTheme = theme || "system") {
-    const targetThemeTyped = targetTheme as keyof typeof themeIcons;
+    const targetThemeTyped = targetTheme as keyof typeof themes;
     setThemeIcon(targetThemeTyped);
     setTheme(targetTheme);
   }
 
-  function setThemeIcon(targetTheme: keyof typeof themeIcons) {
-    const targetIcon: ReactNode | undefined = themeIcons[targetTheme] as ReactNode;
-    if (targetIcon) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setCurrentThemeIcon(targetIcon as any);
-    }
+  function setThemeIcon(targetTheme: keyof typeof themes) {
+    setCurrentTheme(themes[targetTheme]);
   }
 
   function toggleTheme(event: React.MouseEvent) {
@@ -53,7 +56,7 @@ export function DarkModeToggle() {
         } else {
           const themeIndex = themeKeys.indexOf(theme);
           const targetThemeIndex = (themeIndex + 1) % themeKeys.length;
-          targetTheme = themeKeys[targetThemeIndex] as keyof typeof themeIcons;
+          targetTheme = themeKeys[targetThemeIndex] as keyof typeof themes;
         }
         switchTheme(targetTheme);
       }
@@ -66,8 +69,9 @@ export function DarkModeToggle() {
   }, []);
 
   return (
-    <Button variant="ghost" onClick={toggleTheme} size="sm" className="h-8 w-8 px-0">
-      {currentThemeIcon}
+    <Button variant="ghost" onClick={toggleTheme} size="sm" className="relative h-8 w-8 px-0 group">
+      {currentTheme.icon}
+      <div className="hidden absolute group-hover:block -bottom-6 uppercase text-2xs">{currentTheme.label}</div>
     </Button>
   );
 }
