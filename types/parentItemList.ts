@@ -29,41 +29,6 @@ export type ParentItemListType<T> = {
   items: T[];
 };
 
-// Define types for Prisma model methods
-type PrismaModelMethods = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  delete: (args: any) => Promise<any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  update: (args: any) => Promise<any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  create: (args: any) => Promise<any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  findUnique: (args: any) => Promise<any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  findMany: (args: any) => Promise<any>;
-};
-
-export type ModelAccessor = {
-  achievement: typeof PrismaClient.prototype.achievement;
-  role: typeof PrismaClient.prototype.role;
-  organization: typeof PrismaClient.prototype.organization;
-  resume: typeof PrismaClient.prototype.resume;
-  user: typeof PrismaClient.prototype.user;
-  // Add other models as needed in both ModelAccessor and getModelAccessor
-};
-
-export function getModelAccessor(model: ParentItemListStoreNameType, prisma: PrismaClient): PrismaModelMethods {
-  const modelAccessors: ModelAccessor = {
-    achievement: prisma.achievement,
-    role: prisma.role,
-    organization: prisma.organization,
-    resume: prisma.resume,
-    user: prisma.user,
-    // Add other models as needed in both ModelAccessor and getModelAccessor
-  };
-  return modelAccessors[model as keyof ModelAccessor] as PrismaModelMethods;
-}
-
 export const parentItemModelHierarchy = ["user", "resume", "organization", "role", "achievement"];
 
 /**
@@ -113,6 +78,34 @@ export function getItemModel(model: keyof ParentItemModelAccessor): keyof Parent
   throw new Error(`getItemModel(model=${model}): model not found`);
 }
 
+// Define a type that maps model names to Prisma model method types
+// Define types for Prisma model methods
+type PrismaModelMethodType = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  delete: (args: any) => Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  update: (args: any) => Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  create: (args: any) => Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  findUnique: (args: any) => Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  findMany: (args: any) => Promise<any>;
+};
+
+type ParentItemModelNameType = (typeof parentItemModelHierarchy)[number];
+type PrismaModelMethods = {
+  [K in ParentItemModelNameType]: PrismaModelMethodType;
+};
+
+export function getModelAccessor(
+  model: ParentItemModelNameType,
+  prisma: PrismaClient,
+): PrismaModelMethods[ParentItemModelNameType] {
+  // This function dynamically accesses the prisma model methods based on the model name
+  // The as PrismaModelMethodType cast is safe as long as PrismaClient's API remains consistent with PrismaModelMethodType
+  return prisma[model as keyof PrismaClient] as PrismaModelMethodType;
+}
 /**
  * Generates a set of keys for parent IDs based on the model hierarchy.
  * @returns A set of strings representing parent ID keys.

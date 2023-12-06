@@ -62,6 +62,7 @@ export function DarkModeToggle() {
 
   useEffect(() => {
     switchTheme(theme);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
