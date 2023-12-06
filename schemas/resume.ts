@@ -4,7 +4,7 @@ import { z } from "zod";
 import { itemSchema } from "./item";
 
 export const resumeFormSchema = z.object({
-  name: z.string().min(4),
+  name: z.string().min(1),
   description: z.string().optional(),
 });
 

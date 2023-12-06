@@ -2,7 +2,7 @@
 
 import { useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
-import { findItemIndexByClientId } from "@/stores/parentItemList/utills/itemOrderValues";
+import { findItemIndexByClientId } from "@/stores/parentItemList/utils/itemOrderValues";
 import { ItemClientStateType, OrderableItemClientStateType } from "@/types/item";
 import {
   DndContext,

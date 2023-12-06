@@ -21,9 +21,9 @@ import { Draft } from "immer";
 import { create } from "zustand";
 import { PersistStorage, persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import { reBalanceListOrderValues, updateListOrderValues } from "./utills/itemOrderValues";
-import { logUpdateStoreWithServerData } from "./utills/logParentItemListStore";
-import { handleParentItemListFromServer } from "./utills/syncParentItemList";
+import { reBalanceListOrderValues, updateListOrderValues } from "./utils/itemOrderValues";
+import { logUpdateStoreWithServerData } from "./utils/logParentItemListStore";
+import { handleParentItemListFromServer } from "./utils/syncParentItemList";
 
 function createTypesafeLocalstorage<P extends ItemClientStateType, I extends ItemClientStateType>(): PersistStorage<
   ParentItemListState<P, I>

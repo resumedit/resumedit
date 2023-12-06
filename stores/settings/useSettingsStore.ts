@@ -9,6 +9,9 @@ type SettingsStateType = {
 
   // Flags have an effect only in development environment
   // TODO: Make sure those flags are not exposed in settings in production
+  showNestedItemInternals: boolean;
+  showNestedItemIdentifiers: boolean;
+  showNestedItemSynchronization: boolean;
   showParentItemListInternals: boolean;
   showParentItemIdentifiers: boolean;
   showParentItemListSynchronization: boolean;
@@ -32,6 +35,9 @@ const useSettingsStore = create(
   persist(
     immer<SettingsStoreType>((set /*, get */) => ({
       synchronizationInterval: 0,
+      showNestedItemInternals: false,
+      showNestedItemIdentifiers: false,
+      showNestedItemSynchronization: false,
       showParentItemListInternals: false,
       showParentItemIdentifiers: false,
       showParentItemListSynchronization: false,
