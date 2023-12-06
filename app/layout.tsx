@@ -8,6 +8,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
+import Navbar from "./(layout)/(navigation)/Navbar";
 
 const font = Inter({ subsets: ["latin"] });
 
@@ -31,10 +32,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* 2023-11-19: importing radix-ui/themes leads to errors regarding `Slot` not being exportet
            <Theme accentColor="indigo" grayColor="slate" panelBackground="solid" scaling="100%" radius="medium"> */}
           <div className="relative bg-background">
-            <div className="absolute z-5 top-0 left-0 w-full h-screen bg-gradient-to-br rounded-md filter blur-3xl opacity-50 from-green-100 to-indigo-200 dark:from-green-950 dark:to-indigo-950"></div>
-            <div className="relative z-10 flex flex-col min-h-screen min-w-full max-h-screen justify-between">
+            <div className="fixed z-5 top-0 left-0 w-full h-screen bg-gradient-to-br rounded-md filter blur-3xl opacity-50 from-neutral-300 to-indigo-300 dark:from-neutral-600 dark:to-indigo-900"></div>
+            <div className="relative z-10 flex flex-col min-w-full justify-between">
               <ClerkAuthProvider>
-                <div className="container mb-auto">{children}</div>
+                <header className="container">
+                  <Navbar />
+                </header>
+                <main className="container min-h-screen my-auto">{children}</main>
               </ClerkAuthProvider>
               <SiteFooter />
               <Toaster />

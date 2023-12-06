@@ -22,13 +22,9 @@ const EditableInputField = ({ fieldName, placeholder, onChange, inputProps, ...r
         // ref: inputRef as RefObject<HTMLInputElement> & RefObject<HTMLTextAreaElement>,
       }}
       viewProps={{ placeholder: placeholder || "", className: "w-full p-2 rounded-md" }}
-      // showButtonsOnHover
       editOnViewClick
       startEditingOnFocus
       submitOnEnter
-      // submitOnUnfocus
-      // cancelOnEscape
-      // buttonContainerClassName="hidden"
       saveButtonClassName="hidden"
       editButtonClassName="hidden"
       cancelButtonClassName="hidden"

@@ -4,6 +4,7 @@ import * as z from "zod";
 export const settingsSchema = z.object({
   allowDeleteAllItems: z.boolean(),
   showParentItemListInternals: z.boolean(),
+  showParentItemListSynchronization: z.boolean(),
   showParentItemIdentifiers: z.boolean(),
   impersonatingUserAuthProviderId: z.string().uuid().nullable(),
 });

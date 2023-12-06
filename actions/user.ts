@@ -13,9 +13,20 @@ export const getCurrentUserOrNull = async (): Promise<PrismaUser | null> => {
   try {
     return await getCurrentUser();
   } catch (error) {
-    console.log(`actions/user.ts:getCurrentUserOrNull(): exception in getCurrentUser(): `, error);
+    console.log(`actions/user:getCurrentUserOrNull(): exception in getCurrentUser(): `, error);
     return null;
   }
+};
+
+export const getCurrentUserIdOrNull = async (): Promise<IdSchemaType | null> => {
+  let currentUserId = null;
+  try {
+    const currentUser = await getCurrentUser();
+    currentUserId = currentUser?.id;
+  } catch (error) {
+    console.log(`actions/user:getCurrentUserIdOrNull(): exception in getCurrentUser(): `, error);
+  }
+  return currentUserId;
 };
 
 export const getCurrentUser = async (): Promise<PrismaUser> => {
@@ -37,7 +48,7 @@ export const getCurrentUser = async (): Promise<PrismaUser> => {
       authUser = {
         id: developomentAuthProviderId,
         primaryEmailAddressId: "primary",
-        emailAddresses: [{ id: "primary", emailAddress: "test@resumedit.app" }],
+        emailAddresses: [{ id: "primary", emailAddress: "development.user@resumedit.com" }],
         firstName,
         lastName,
         ...otherProps,

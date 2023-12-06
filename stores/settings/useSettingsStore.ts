@@ -7,6 +7,7 @@ type SettingsStateType = {
   allowDeleteAllItems: boolean;
   showParentItemListInternals: boolean;
   showParentItemIdentifiers: boolean;
+  showParentItemListSynchronization: boolean;
   impersonatingUserAuthProviderId: string | null;
 };
 
@@ -25,8 +26,9 @@ const useSettingsStore = create(
   persist(
     immer<SettingsStoreType>((set /*, get */) => ({
       allowDeleteAllItems: false,
-      showParentItemListInternals: true,
+      showParentItemListInternals: false,
       showParentItemIdentifiers: false,
+      showParentItemListSynchronization: false,
       impersonatingUserAuthProviderId: null,
 
       setSettings: (newSettings): void => {

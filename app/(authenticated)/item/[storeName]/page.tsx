@@ -1,21 +1,22 @@
-// @/app/(authenticated)/item-resume/page.tsx
-
 "use server";
 
 import ParentItemListServerComponent from "@/components/item/ParentItemList.server";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ParentItemListStoreNameType } from "@/types/parentItemList";
 import { Suspense } from "react";
 
-const UserResumeListPage = async () => {
+export interface ParentItemListPageProps {
+  params: { storeName: ParentItemListStoreNameType };
+}
+
+export default async function ParentItemListPage({ params: { storeName } }: ParentItemListPageProps) {
   return (
     <Suspense fallback={<ParentItemListSkeleton />}>
-      <ParentItemListServerComponent storeName="resume" />
+      <ParentItemListServerComponent storeName={storeName} />
     </Suspense>
   );
-};
+}
 
 function ParentItemListSkeleton() {
   return <Skeleton className="border-2 border-primary-/20 h-48 w-full shadow-lg" />;
 }
-
-export default UserResumeListPage;

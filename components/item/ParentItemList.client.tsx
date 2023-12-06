@@ -12,6 +12,8 @@ import { useEffect } from "react";
 import ParentItemList from "./ParentItemList";
 import { ParentItemListServerComponentProps } from "./ParentItemList.server";
 import ParentItemListStoreState from "./ParentItemListStoreState";
+import { ResumeActionProvider } from "@/contexts/ResumeActionContext";
+import { ResumeActionType } from "@/types/resume";
 import ParentItemListSynchronization from "./ParentItemListSynchronization";
 
 export interface ParentItemListClientContextProps extends ParentItemListClientComponentProps {}
@@ -25,8 +27,9 @@ const ParentItemListClientContext = (props: ParentItemListClientContextProps) =>
   const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
 
   const settingsStore = useSettingsStore();
-  const { showParentItemListInternals } = settingsStore;
+  const { showParentItemListInternals, showParentItemListSynchronization } = settingsStore;
   const showInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
+  const showSynchronization = process.env.NODE_ENV === "development" && showParentItemListSynchronization;
 
   const { serverState } = props;
 
@@ -43,7 +46,7 @@ const ParentItemListClientContext = (props: ParentItemListClientContextProps) =>
         <span className="capitalize">{storeName}s</span> of {parentModel} <code>{parentId}</code>
       </h2>
       <div className="space-y-1">
-        <ParentItemListSynchronization />
+        {showSynchronization ? <ParentItemListSynchronization /> : null}
         <ParentItemList />
         {showInternals ?? (
           <ParentItemListStoreState
@@ -58,24 +61,28 @@ const ParentItemListClientContext = (props: ParentItemListClientContextProps) =>
 };
 
 export interface ParentItemListClientComponentProps extends ParentItemListServerComponentProps {
+  resumeAction?: ResumeActionType;
   serverState: ParentItemListType<ItemServerStateType>;
 }
 
 const ParentItemListClientComponent = (props: ParentItemListClientComponentProps) => {
   const storeVersion = 2;
+  const resumeAction = props?.resumeAction ? props.resumeAction : "view";
   return (
-    <StoreNameProvider storeName={props.storeName}>
-      <ParentItemListStoreProvider
-        configs={[
-          { itemModel: "resume", storeVersion },
-          { itemModel: "organization", storeVersion },
-          { itemModel: "role", storeVersion },
-          { itemModel: "achievement", storeVersion },
-        ]}
-      >
-        <ParentItemListClientContext {...props} />
-      </ParentItemListStoreProvider>
-    </StoreNameProvider>
+    <ResumeActionProvider resumeAction={resumeAction}>
+      <StoreNameProvider storeName={props.storeName}>
+        <ParentItemListStoreProvider
+          configs={[
+            { itemModel: "resume", storeVersion },
+            { itemModel: "organization", storeVersion },
+            { itemModel: "role", storeVersion },
+            { itemModel: "achievement", storeVersion },
+          ]}
+        >
+          <ParentItemListClientContext {...props} />
+        </ParentItemListStoreProvider>
+      </StoreNameProvider>
+    </ResumeActionProvider>
   );
 };
 

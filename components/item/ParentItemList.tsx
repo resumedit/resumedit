@@ -20,9 +20,11 @@ import ParentItemListItem from "./ParentItemListItem";
 import ParentItemListItemInput from "./ParentItemListItemInput";
 import ParentItemSortableWrapper from "./utils/ParentItemSortableWrapper";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
+import { useResumeAction } from "@/contexts/ResumeActionContext";
 
 const ParentItemList = () => {
-  const [editingInput, setEditingInput] = useState(true);
+  const resumeAction = useResumeAction();
+  const [editingInput, setEditingInput] = useState(resumeAction === "edit");
   const storeName = useStoreName();
   const store = useParentItemListStore(storeName);
   const items = store((state) => state.items);
@@ -34,6 +36,8 @@ const ParentItemList = () => {
   const settingsStore = useSettingsStore();
   const { showParentItemListInternals } = settingsStore;
   const showInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
+
+  const itemsAreDragable = storeName === "achievement" ? true : false;
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -66,7 +70,7 @@ const ParentItemList = () => {
       className="bg-elem-light dark:bg-elem-dark-1 mt-5 mb-5 rounded-md shadow-2xl shadow-shadow-light
      dark:shadow-black overflow-hidden"
     >
-      {showInternals ?? (
+      {(resumeAction === "edit" && showInternals) ?? (
         <>
           <button
             className="px-1 border-2 text-primary rounded-md"
@@ -100,14 +104,18 @@ const ParentItemList = () => {
           onDragEnd={handleDragEnd}
         >
           <ul className="flex flex-col bg-elem-light dark:bg-elem-dark-1 overflow-auto">
-            <ParentItemSortableWrapper items={items}>
-              <ParentItemListItemInput editingInput={editingInput} setEditingInput={setEditingInput} />
+            <ParentItemSortableWrapper items={items} disabled={!itemsAreDragable}>
+              {resumeAction === "edit" ? (
+                <ParentItemListItemInput editingInput={editingInput} setEditingInput={setEditingInput} />
+              ) : null}
               {items.map((item, index) => {
                 return (
                   <ParentItemListItem
-                    storeName={storeName}
                     key={item.clientId}
                     index={index}
+                    storeName={storeName}
+                    resumeAction={resumeAction}
+                    itemsAreDragable={itemsAreDragable}
                     item={item as ItemClientStateType}
                     setItemDeleted={setItemDeleted}
                   />

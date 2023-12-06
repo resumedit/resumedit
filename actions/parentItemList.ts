@@ -39,7 +39,7 @@ export async function getItemList(
   // Retrieve the items
   const items = await prismaItemModelInstance.findMany({
     where: { parentId },
-    orderBy: { lastModified: "desc" },
+    orderBy: { createdAt: "asc" },
   });
 
   return items;

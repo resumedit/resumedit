@@ -33,9 +33,9 @@ export interface StoreConfigType {
 const storeNameSuffix = `list.devel.resumedit.local`;
 const storeVersion = 2;
 export const createParentItemListStore = <T extends ItemClientStateType>(props: StoreConfigType) => {
-  const parentModel: keyof ParentItemModelAccessor = getParentModel(props.itemModel);
+  const parentModel: keyof ParentItemModelAccessor | null = getParentModel(props.itemModel);
   const itemModel = props.itemModel;
-  const storeName = `${parentModel}-${itemModel}-${storeNameSuffix}`;
+  const storeName = `${itemModel}-${storeNameSuffix}`;
   return create(
     persist(
       immer<ParentItemListStore<T>>((set, get) => ({

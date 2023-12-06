@@ -2,21 +2,19 @@
 
 "use server";
 
-import ParentItemListServerComponent from "@/components/item/ParentItemList.server";
+import NestedParentItemListServerComponent from "@/components/item/NestedParentItemList.server";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IdSchemaType } from "@/schemas/id";
 import { Suspense } from "react";
 
-export type ResumePageAction = "view" | "edit";
-
-export interface ResumePageProps {
-  params: { action: ResumePageAction; id: IdSchemaType };
+export interface ResumeViewPageProps {
+  params: { id: IdSchemaType };
 }
 
-export default async function ResumePage({ params: { action, id } }: ResumePageProps) {
+export default async function ResumeViewPage({ params: { id } }: ResumeViewPageProps) {
   return (
     <Suspense fallback={<ParentItemListSkeleton />}>
-      <ParentItemListServerComponent storeName="resume" action={action} id={id} />
+      <NestedParentItemListServerComponent storeName="resume" resumeAction={"view"} id={id} />
     </Suspense>
   );
 }

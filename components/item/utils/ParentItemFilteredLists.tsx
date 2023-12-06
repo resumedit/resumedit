@@ -3,14 +3,14 @@
 import { useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { ItemClientStateType } from "@/types/item";
-import ParentItemListItem from "../ParentItemListItem";
+import ParentItemListItem, { ParentItemListItemProps } from "../ParentItemListItem";
 import SortableWrapper from "./ParentItemSortableWrapper";
 
-interface Props {
+interface ParentItemFilteredListProps extends ParentItemListItemProps {
   items: ItemClientStateType[];
 }
 
-const ParentItemFilteredLists = ({ items }: Props) => {
+const ParentItemFilteredList = ({ resumeAction, itemsAreDragable, items }: ParentItemFilteredListProps) => {
   const storeName = useStoreName();
   const store = useParentItemListStore(storeName);
   const setItemDeleted = store((state) => state.setItemDeleted);
@@ -21,6 +21,8 @@ const ParentItemFilteredLists = ({ items }: Props) => {
         return (
           <ParentItemListItem
             storeName={storeName}
+            resumeAction={resumeAction}
+            itemsAreDragable={itemsAreDragable}
             index={index}
             key={item.clientId}
             item={item}
@@ -32,4 +34,4 @@ const ParentItemFilteredLists = ({ items }: Props) => {
   );
 };
 
-export default ParentItemFilteredLists;
+export default ParentItemFilteredList;

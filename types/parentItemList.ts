@@ -64,7 +64,7 @@ export function getModelAccessor(model: ParentItemListStoreNameType, prisma: Pri
   return modelAccessors[model as keyof ModelAccessor] as PrismaModelMethods;
 }
 
-const parentItemModelHierarchy = ["user", "resume", "organization", "role", "achievement"];
+export const parentItemModelHierarchy = ["user", "resume", "organization", "role", "achievement"];
 
 /**
  * Type representing each model's parent and item in the hierarchy.
@@ -136,7 +136,7 @@ type ParentIdKey = `${keyof ParentItemModelAccessor}Id`;
 export type ParentItemListStoreNameType = keyof ParentItemModelAccessor;
 
 export type ParentItemListState<T extends ItemClientStateType> = {
-  parentModel: keyof ParentItemModelAccessor;
+  parentModel: keyof ParentItemModelAccessor | null;
   parentId: IdSchemaType | null;
   itemModel: keyof ParentItemModelAccessor;
   items: T[];

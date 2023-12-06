@@ -6,6 +6,8 @@ import { ModificationTimestampType } from "./timestamp";
 
 export type ClientIdType = IdSchemaType;
 
+export type ResumeActionType = "view" | "edit";
+
 export interface ResumeItemType extends ItemType {
   parentId: ItemType["parentId"];
   name: string;
