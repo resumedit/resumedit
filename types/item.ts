@@ -19,13 +19,16 @@ export type ItemType = ItemOutputType;
 // So when creating new items, or even descendants of new items, it will assign
 //
 export type ItemClientToServerType = Omit<ItemOutputType, "id" | "parentId"> & {
+  clientId?: IdSchemaType;
   id?: IdSchemaType;
   parentId?: IdSchemaType;
   disposition: ItemDisposition;
 };
 
 // Type returned by server in response to items received from client to merge with server's state
-export type ItemServerToClientType = ItemOutputType;
+export type ItemServerToClientType = ItemOutputType & {
+  clientId?: IdSchemaType;
+};
 
 // Type used by client to maintain client state
 export type ItemClientStateType = ItemClientToServerType & {

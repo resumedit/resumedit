@@ -52,6 +52,13 @@ export type ItemDescendantServerStateOrderableType<I, C> = ItemServerStateType &
   descendants: ItemServerStateDescendantOrderableListType<I, C>;
 };
 
+export type ItemServerToClientDescendantListType<I, C> = Array<ItemDescendantServerToClientType<I, C>>;
+export type ItemDescendantServerToClientType<I, C> = ItemServerToClientType & {
+  itemModel: ItemDescendantModelNameType;
+  descendantModel: ItemDescendantModelNameType | null;
+  descendants: ItemServerToClientDescendantListType<I, C>;
+};
+
 export type ItemDescendantStoreState<
   I extends ItemClientStateType,
   C extends ItemClientStateType,

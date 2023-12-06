@@ -9,7 +9,7 @@ import {
   ItemDescendantClientStateType,
   ItemDescendantServerStateType,
   ItemDescendantStore,
-  ItemServerStateDescendantListType,
+  ItemServerToClientDescendantListType,
 } from "@/stores/itemDescendantStore/createItemDescendantStore";
 import { ItemClientStateType, ItemClientToServerType, ItemServerToClientType } from "@/types/item";
 import {
@@ -89,10 +89,14 @@ export async function handleItemDescendantListFromClient(
               data: keepOnlyFieldsForUpdate<ItemClientToServerType>(existingItem, currentTimestamp),
             });
           }
-          let descendantsAfterUpdate: ItemServerStateDescendantListType<
-            ItemServerToClientType,
-            ItemServerToClientType
-          > = clientDescendants as ItemServerStateDescendantListType<ItemServerToClientType, ItemServerToClientType>;
+          let descendantsAfterUpdate: ItemServerToClientDescendantListType<
+              ItemServerToClientType,
+              ItemServerToClientType
+            >,
+            descendantsCreatedByThisClient: ItemServerToClientDescendantListType<
+              ItemServerToClientType,
+              ItemServerToClientType
+            > = [];
 
           if (descendantModel) {
             const prismaDescendantModelInstance = getModelAccessor(descendantModel, prisma as PrismaClient);
@@ -159,8 +163,10 @@ export async function handleItemDescendantListFromClient(
                     const createdItem = await prismaDescendantModelInstance.create({
                       data,
                     });
-                    console.log(`handleItemDescendantListFromClient: createdItem:`, createdItem);
                     ++serverItemsCreated;
+                    const clientResponseItem = { ...createdItem, clientId: descendantWithParentId.clientId };
+                    console.log(`handleItemDescendantListFromClient: clientResponseItem:`, clientResponseItem);
+                    descendantsCreatedByThisClient = [...descendantsCreatedByThisClient, clientResponseItem];
                     return createdItem;
                   }
                 } catch (error) {
@@ -179,6 +185,13 @@ export async function handleItemDescendantListFromClient(
 
             // Fetch updated descendants to ensure we include only existing ones
             descendantsAfterUpdate = await getItemsByParentId(descendantModel, id, prisma as PrismaClient);
+
+            // Replace the descendants created by the client to include the clientId
+            descendantsAfterUpdate = descendantsAfterUpdate.map((descendant) => {
+              return (
+                descendantsCreatedByThisClient.find((newDescendant) => newDescendant.id === descendant.id) || descendant
+              );
+            });
 
             console.log(
               `handleItemDescendantListFromClient: client update with clientTimestamp=${dateToISOLocal(
@@ -251,6 +264,8 @@ export async function handleItemDescendantListFromClient(
       return updatedItemDescendantState;
     } else if (clientLastModified < serverLastModified) {
       return getItemDescendantList(itemModel, existingItem.id!);
+    } else {
+      return null;
     }
   } else {
     // Create item
@@ -262,6 +277,4 @@ export async function handleItemDescendantListFromClient(
       itemData,
     });
   }
-
-  return null;
 }
