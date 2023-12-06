@@ -13,9 +13,11 @@ export const getCurrentUserOrNull = async (): Promise<PrismaUser | null> => {
   try {
     return await getCurrentUser();
   } catch (error) {
-    console.log(`actions/user:getCurrentUserOrNull(): exception in getCurrentUser(): `, error);
-    return null;
+    if (process.env.NODE_ENV === "development") {
+      console.log(`actions/user:getCurrentUserOrNull(): exception in getCurrentUser(): `, error);
+    }
   }
+  return null;
 };
 
 export const getCurrentUserIdOrNull = async (): Promise<IdSchemaType | null> => {
@@ -24,7 +26,9 @@ export const getCurrentUserIdOrNull = async (): Promise<IdSchemaType | null> => 
     const currentUser = await getCurrentUser();
     currentUserId = currentUser?.id;
   } catch (error) {
-    console.log(`actions/user:getCurrentUserIdOrNull(): exception in getCurrentUser(): `, error);
+    if (process.env.NODE_ENV === "development") {
+      console.log(`actions/user:getCurrentUserIdOrNull(): exception in getCurrentUser(): `, error);
+    }
   }
   return currentUserId;
 };
@@ -63,7 +67,9 @@ export const getCurrentUser = async (): Promise<PrismaUser> => {
   } else {
     authUser = await currentUser();
     if (!authUser) {
-      console.log(`actions/user: currentUser() returned authUser=`, authUser);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`actions/user: currentUser() returned authUser=`, authUser);
+      }
       throw new InvalidAuthUserErr(`Invalid authUser=${authUser}`);
     }
   }
@@ -85,7 +91,9 @@ export const getCurrentUser = async (): Promise<PrismaUser> => {
     lastName: authUser.lastName,
   };
 
-  console.log(`actions/user:getCurrentUser: userData:`, userData);
+  if (process.env.NODE_ENV === "development") {
+    console.log(`actions/user:getCurrentUser: userData:`, userData);
+  }
 
   const user = await prisma.user.upsert({
     where: { authProviderId: authUser.id },

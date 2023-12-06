@@ -7,13 +7,13 @@
     "url": "https://simon.heimlicher.com"
   },
   "scripts": {
-    "dev-orig": "next dev",
-    "dev": "sudo ifconfig lo0 alias devel.resumedit.local up && next dev --hostname devel.resumedit.local -p 3000",
+    "dev": "next dev",
+    "dev-local": "sudo ifconfig lo0 alias devel.resumedit.local up && next dev --hostname devel.resumedit.local -p 3000",
     "prisma-migrate": "(set -a; source .env.local && npx prisma format && npx prisma migrate dev)",
     "prisma-studio": "(set -a; source .env.local && npx prisma studio)",
     "build": "next build",
-    "start-orig": "next start",
-    "start": "next start --hostname devel.resumedit.local -p 3000",
+    "start": "next start",
+    "start-local": "next start --hostname devel.resumedit.local -p 3000",
     "lint": "next lint",
     "preview-email": "email dev -p 3030",
     "postinstall": "prisma generate && prisma migrate deploy"

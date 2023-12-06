@@ -8,7 +8,7 @@
       "name": "Next.js: debug server-side",
       "type": "node-terminal",
       "request": "launch",
-      "command": "kill -9 $(lsof -i tcp:3000 | awk '/LISTEN/{print $2}') >/dev/null 2>&1 || true; npm run dev"
+      "command": "kill -9 $(lsof -i tcp:3000 | awk '/LISTEN/{print $2}') >/dev/null 2>&1 || true; npm run dev-local"
     },
     {
       "name": "Next.js: debug client-side",
@@ -20,7 +20,7 @@
       "name": "Next.js: debug full stack",
       "type": "node-terminal",
       "request": "launch",
-      "command": "npm run dev",
+      "command": "npm run dev-local",
       "serverReadyAction": {
         "pattern": "started server on .+, url: (https?://.+)",
         "uriFormat": "%s",
