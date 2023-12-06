@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { getItemModelFromId, getPrefixFromId } from "@/schemas/id";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { ReactNode, useEffect, useState } from "react";
@@ -195,7 +196,7 @@ function RenderBreadcrumbs({
     return null;
   }
 
-  return (
+  return breadcrumbs.length === 0 || breadcrumbs[0].href === "/" ? null : (
     <nav style={containerStyle} className={containerClassName} aria-label="breadcrumbs">
       <ol style={listStyle} className={useDefaultStyle ? "_2jvtI" : listClassName}>
         {!omitRootLabel && (
@@ -238,7 +239,17 @@ function RenderBreadcrumbs({
 }
 
 export default function Breadcrumbs() {
+  const transformLabel = (title: string) => {
+    let prettyTitle = title;
+    const itemModel = getItemModelFromId(title);
+    if (itemModel) {
+      prettyTitle = itemModel + " " + getPrefixFromId(title);
+    }
+    return prettyTitle.charAt(0).toUpperCase() + prettyTitle.slice(1);
+  };
+
   const breadcrumbsProps: BreadcrumbsProps = {
+    transformLabel: transformLabel,
     containerClassName: "flex px-4 py-1 mt-2 mb-8 text-muted-foreground bg-muted-foreground/5 rounded-md",
     listClassName: "inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse",
     inactiveItemClassName: "inline-flex items-center",
@@ -265,13 +276,7 @@ export default function Breadcrumbs() {
           fill="none"
           viewBox="0 0 6 10"
         >
-          <path
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="m1 9 4-4-4-4"
-          />
+          <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4" />
         </svg>
       ),
     },

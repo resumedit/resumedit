@@ -14,6 +14,7 @@ interface ItemDescendantFilteredListProps extends DescendantListItemProps {
 export default function ItemDescendantFilteredLists({
   rootItemModel,
   itemModel,
+  resumeAction,
   canEdit,
   itemIsDragable,
   descendants,
@@ -33,6 +34,7 @@ export default function ItemDescendantFilteredLists({
             rootItemModel={rootItemModel}
             itemModel={itemModel}
             item={item}
+            resumeAction={resumeAction}
             setItemData={setDescendantData}
             markItemAsDeleted={markDescendantAsDeleted}
             canEdit={canEdit}

@@ -2,8 +2,17 @@
 import { resumeSchema } from "@/schemas/resume";
 import { ItemClientStateType, ItemClientToServerType, ItemServerToClientType, ItemType } from "./item";
 import z from "zod";
+import { Edit, View } from "lucide-react";
 
-export type ResumeActionType = "view" | "edit";
+export const resumeActionTypes = ["view", "edit"] as const;
+
+export const resumeActionButtonIcons = {
+  edit: <Edit />,
+  view: <View />,
+};
+
+// Step 2: Define the type using the array
+export type ResumeActionType = (typeof resumeActionTypes)[number];
 
 export interface ResumeItemType extends z.input<typeof resumeSchema.form>, ItemType {}
 

@@ -19,6 +19,7 @@ import { Edit, Grip } from "lucide-react";
 import Link from "next/link";
 import { InputProps } from "react-editext";
 import { Button } from "../../ui/button";
+import { ItemActionButton } from "../ItemDescendantList.client";
 import EditableField from "../utils/EditableField";
 
 export interface DescendantListItemProps {
@@ -26,6 +27,7 @@ export interface DescendantListItemProps {
   rootItemModel: ItemDescendantModelNameType;
   itemModel: ItemDescendantModelNameType;
   item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>;
+  resumeAction: ResumeActionType;
   setItemData: (data: ItemDataUntypedType, clientId: string) => void;
   markItemAsDeleted: (clientId: IdSchemaType) => void;
   itemIsDragable: boolean;
@@ -34,6 +36,7 @@ export interface DescendantListItemProps {
 
 export default function DescendantListItem({
   canEdit,
+  resumeAction = "view",
   itemIsDragable,
   index,
   rootItemModel,
@@ -64,7 +67,7 @@ export default function DescendantListItem({
   const { showItemDescendantInternals } = settingsStore;
   const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
 
-  // Construct the relative URL
+  // Construct the URL to edit this item
   const pathname = usePathname();
   const getItemActionURL = (action: ResumeActionType) =>
     `${pathname.replace(rootItemModel, itemModel)}/${item.id}/${action}`;
@@ -98,7 +101,7 @@ export default function DescendantListItem({
       style={styles}
       {...attributes}
     >
-      {canEdit && rootItemModel === "user" && item.id !== undefined ? (
+      {canEdit && rootItemModel === "user" ? (
         <div className="h-full">
           <Link
             title={`Edit resume ${(item as unknown as ResumeItemClientStateType).name}`}
@@ -109,6 +112,9 @@ export default function DescendantListItem({
             </Button>
           </Link>
         </div>
+      ) : null}
+      {process.env.NODE_ENV === "development" && canEdit && item.id ? (
+        <ItemActionButton pathname={pathname} item={item} action={resumeAction} />
       ) : null}
       {canEdit && itemIsDragable ? (
         <div

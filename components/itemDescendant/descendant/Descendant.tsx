@@ -23,6 +23,7 @@ export default function Descendant(props: ItemDescendantRenderProps) {
       rootItemModel={rootItemModel}
       itemModel={itemModel}
       item={item}
+      resumeAction={resumeAction}
       setItemData={setDescendantData}
       markItemAsDeleted={markDescendantAsDeleted}
       itemIsDragable={false}

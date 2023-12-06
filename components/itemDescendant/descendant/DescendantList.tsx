@@ -117,6 +117,7 @@ export default function DescendantList(props: ItemDescendantListProps) {
                     rootItemModel={rootItemModel}
                     itemModel={descendantModel}
                     item={item as ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>}
+                    resumeAction={resumeAction}
                     setItemData={setDescendantData}
                     markItemAsDeleted={markDescendantAsDeleted}
                     itemIsDragable={descendantsAreDragable}
