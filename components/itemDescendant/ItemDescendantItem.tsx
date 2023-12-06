@@ -6,7 +6,7 @@ import { ItemDescendantRenderProps } from "./ItemDescendant.client";
 import ItemDescendantListItem from "./ItemDescendantListItem";
 
 export default function ItemDescendantItem(props: ItemDescendantRenderProps) {
-  const { item, index, resumeAction } = props;
+  const { rootItemModel, item, index, resumeAction } = props;
   // const [editingInput, setEditingInput] = useState(resumeAction === "edit");
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);
@@ -20,6 +20,7 @@ export default function ItemDescendantItem(props: ItemDescendantRenderProps) {
   return (
     <ItemDescendantListItem
       index={index}
+      rootItemModel={rootItemModel}
       itemModel={itemModel}
       item={item}
       setItemData={setDescendantData}

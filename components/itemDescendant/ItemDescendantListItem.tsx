@@ -22,6 +22,7 @@ import EditableField from "./utils/EditableField";
 
 export interface ItemDescendantListItemProps {
   index: number;
+  rootItemModel: ItemDescendantModelNameType;
   itemModel: ItemDescendantModelNameType;
   item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>;
   setItemData: (data: ItemDataUntypedType, clientId: string) => void;
@@ -34,6 +35,7 @@ export default function ItemDescendantListItem({
   canEdit,
   itemIsDragable,
   index,
+  rootItemModel,
   itemModel,
   item: item,
   setItemData,
@@ -90,7 +92,7 @@ export default function ItemDescendantListItem({
           "basis-1/4": showListItemInternals,
         })}
       >
-        {canEdit && itemModel === "resume" && item.id !== undefined ? (
+        {canEdit && rootItemModel === "user" && item.id !== undefined ? (
           <div className="h-full">
             <Link
               title={`Edit resume ${(item as unknown as ResumeItemClientStateType).name}`}

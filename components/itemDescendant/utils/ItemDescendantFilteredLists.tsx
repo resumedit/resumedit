@@ -12,6 +12,7 @@ interface ItemDescendantFilteredListProps extends ItemDescendantListItemProps {
 }
 
 export default function ItemDescendantFilteredLists({
+  rootItemModel,
   itemModel,
   canEdit,
   itemIsDragable,
@@ -29,6 +30,7 @@ export default function ItemDescendantFilteredLists({
           <ItemDescendantListItem
             index={index}
             key={item.clientId}
+            rootItemModel={rootItemModel}
             itemModel={itemModel}
             item={item}
             setItemData={setDescendantData}

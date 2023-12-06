@@ -25,7 +25,7 @@ import ItemDescendantListItemInput from "./ItemDescendantListItemInput";
 import ItemDescendantSortableWrapper from "./utils/ItemDescendantSortableWrapper";
 
 interface ItemDescendantListProps extends ItemDescendantRenderProps {}
-export default function ItemDescendantList({ item, resumeAction }: ItemDescendantListProps) {
+export default function ItemDescendantList({ rootItemModel, item, resumeAction }: ItemDescendantListProps) {
   const canEdit = resumeAction === "edit";
   const [editingInput, setEditingInput] = useState(canEdit);
   const settingsStore = useSettingsStore();
@@ -117,6 +117,7 @@ export default function ItemDescendantList({ item, resumeAction }: ItemDescendan
                     <ItemDescendantListItem
                       key={item.clientId}
                       index={index}
+                      rootItemModel={rootItemModel}
                       itemModel={descendantModel}
                       item={item as ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>}
                       setItemData={setDescendantData}
