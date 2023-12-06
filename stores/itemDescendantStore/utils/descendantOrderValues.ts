@@ -1,22 +1,14 @@
 import { IdSchemaType } from "@/schemas/id";
-import { ItemClientStateType, ItemDisposition } from "@/types/item";
-import {
-  ItemDescendantClientStateOrderableType,
-  ItemClientStateDescendantListType,
-  ItemClientStateDescendantOrderableListType,
-} from "../createItemDescendantStore";
+import { ItemClientStateType, ItemDisposition, ItemOrderableClientStateType } from "@/types/item";
 
 /**
- * Helper function for finding index of item object in given array
+ * Helper function for finding index of descendant object in given array
  * @param {ItemClientStateType[]} arr - Array of Items
- * @param {string} id - id of item object
- * @returns Index of item object in the items array
+ * @param {string} id - id of descendant object
+ * @returns Index of descendant object in the descendants array
  */
-export const findItemIndexByClientId = (
-  arr: ItemClientStateDescendantListType<ItemClientStateType, ItemClientStateType>,
-  id: IdSchemaType,
-): number => {
-  return arr.findIndex((item) => item.clientId === id);
+export const findItemIndexByClientId = (arr: Array<ItemClientStateType>, id: IdSchemaType): number => {
+  return arr.findIndex((descendant) => descendant.clientId === id);
 };
 
 type OrderParams = {
@@ -33,8 +25,8 @@ type OrderParams = {
 };
 
 // Define upper and lower bounds for order values
-function getOrderParams<I, C>(items: ItemClientStateDescendantListType<I, C>) {
-  // Delta between items to make optimial use of target range
+function getOrderParams<ItemOrderableClientStateType>(descendants: Array<ItemOrderableClientStateType>) {
+  // Delta between descendants to make optimial use of target range
   const targetDelta = 1;
 
   let minimalDelta = 1000000 * Number.EPSILON;
@@ -42,8 +34,8 @@ function getOrderParams<I, C>(items: ItemClientStateDescendantListType<I, C>) {
   let randomOffsetMax = minimalDelta / 2;
 
   // Target values determine the result of the compression
-  // Capacity: at least 128 or twice the smallest power of 2 that can contain all items
-  let targetCapacity = Math.max(128, Math.pow(2, 4 + Math.ceil(Math.log2(items.length))));
+  // Capacity: at least 128 or twice the smallest power of 2 that can contain all descendants
+  let targetCapacity = Math.max(128, Math.pow(2, 4 + Math.ceil(Math.log2(descendants.length))));
 
   let acceptableRangeScaleFactor = 8;
 
@@ -51,7 +43,7 @@ function getOrderParams<I, C>(items: ItemClientStateDescendantListType<I, C>) {
   if (process.env.NODE_ENV === "development") {
     minimalDelta = 0.2;
     randomOffsetMax = 0;
-    targetCapacity = Math.pow(2, Math.ceil(Math.log2(items.length)));
+    targetCapacity = Math.pow(2, Math.ceil(Math.log2(descendants.length)));
     acceptableRangeScaleFactor = 2;
   }
 
@@ -66,7 +58,7 @@ function getOrderParams<I, C>(items: ItemClientStateDescendantListType<I, C>) {
   const acceptableLowerBound = Math.max(-acceptableHalfRange, -Number.MAX_VALUE / 2);
   const acceptableUpperBound = Math.min(acceptableHalfRange, Number.MAX_VALUE / 2);
 
-  const orderBase = Math.ceil(targetLowerBound + (targetCapacity - (items.length + randomOffsetMax) / 2));
+  const orderBase = Math.ceil(targetLowerBound + (targetCapacity - (descendants.length + randomOffsetMax) / 2));
 
   const minimalOffset = minimalDelta + randomOffsetMax;
 
@@ -84,14 +76,14 @@ function getOrderParams<I, C>(items: ItemClientStateDescendantListType<I, C>) {
   };
 }
 
-export function getOrderValueForAppending<I, C>(items: ItemClientStateDescendantOrderableListType<I, C>): number {
-  if (items.length === 0) {
+export function getOrderValueForAppending(descendants: Array<ItemOrderableClientStateType>): number {
+  if (descendants.length === 0) {
     return 0; // Start with a default value if the list is empty
   }
 
-  const { targetDelta, randomOffsetMax } = getOrderParams(items);
-  const maxOrder = items.reduce((max, item) => {
-    return item.order > max ? item.order : max;
+  const { targetDelta, randomOffsetMax } = getOrderParams(descendants);
+  const maxOrder = descendants.reduce((max, descendant) => {
+    return descendant.order > max ? descendant.order : max;
   }, 0);
 
   // Add a small random offset
@@ -105,22 +97,23 @@ export function randomizeOrderValue(order: number, { randomOffsetMax }: OrderPar
   return randomizedOrder;
 }
 
-export function reBalanceListOrderValues<I, C>(
-  items: ItemClientStateDescendantOrderableListType<I, C>,
+export function reBalanceListOrderValues(
+  descendants: Array<ItemOrderableClientStateType>,
   force?: boolean,
-): ItemClientStateDescendantOrderableListType<I, C> {
-  const { targetDelta, randomOffsetMax, acceptableLowerBound, acceptableUpperBound, orderBase } = getOrderParams(items);
+): Array<ItemOrderableClientStateType> {
+  const { targetDelta, randomOffsetMax, acceptableLowerBound, acceptableUpperBound, orderBase } =
+    getOrderParams(descendants);
 
-  const orders = items.map((a) => a.order);
+  const orders = descendants.map((a) => a.order);
   const maxOrder = Math.max(...orders);
   const minOrder = Math.min(...orders);
 
   if (!force && maxOrder < acceptableUpperBound && minOrder > acceptableLowerBound) {
-    return items; // No compression needed
+    return descendants; // No compression needed
   }
 
   // Normalize orders to a new range
-  const itemsWithOrderValuesReset = items.map((item, index) => {
+  const itemsWithOrderValuesReset = descendants.map((descendant, index) => {
     // Add random offset to reduce probability of collisions
     const randomOffset = Math.random() * randomOffsetMax;
     const newOrder = orderBase + index * targetDelta + randomOffset;
@@ -128,17 +121,18 @@ export function reBalanceListOrderValues<I, C>(
     // Ensure that the `order` and `disposition` properties are added first,
     // so they are displayed first.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { order, disposition: disposition, ...otherProps } = item;
+    const { order, disposition: disposition, ...otherProps } = descendant;
     const orderedItem = {
       order: newOrder,
-      disposition: item.disposition === ItemDisposition.Synced ? ItemDisposition.Modified : item.disposition,
+      disposition:
+        descendant.disposition === ItemDisposition.Synced ? ItemDisposition.Modified : descendant.disposition,
       ...otherProps,
     };
 
     return orderedItem;
   });
 
-  return itemsWithOrderValuesReset;
+  return itemsWithOrderValuesReset as Array<ItemOrderableClientStateType>;
 }
 
 const getFirstOrderValue = (nextValidOrder: number | undefined, orderParams: OrderParams) => {
@@ -174,8 +168,8 @@ function getLastOrderValue(prevOrder: number, orderParams: OrderParams) {
   return lastOrderValue;
 }
 
-function getAdjustedOrderValue<I, C>(
-  item: ItemDescendantClientStateOrderableType<I, C>,
+function getAdjustedOrderValue(
+  descendant: ItemOrderableClientStateType,
   orderParams: OrderParams,
   index: number,
   prevOrder: number | undefined,
@@ -184,7 +178,7 @@ function getAdjustedOrderValue<I, C>(
 ): number {
   const { targetDelta, minimalDelta, minimalOffset } = orderParams;
 
-  let newOrder = item.order;
+  let newOrder = descendant.order;
 
   const deltaPrev = prevOrder === undefined ? targetDelta : newOrder - prevOrder;
 
@@ -217,22 +211,22 @@ function getAdjustedOrderValue<I, C>(
       : undefined;
 
   if (prevOrder === undefined) {
-    // This is the first item and can be shifted lower as long as
+    // This is the first descendant and can be shifted lower as long as
     // it remains within acceptableLowerBound
     newOrder = getFirstOrderValue(prevNextValidOrder, orderParams);
   } else {
     if (deltaPrev > minimalDelta) {
       if (afterNextOrder === undefined) {
-        // This is the second last item.
-        // As it has sufficient distance from the previous one and the last item
-        // may shift arbitrarily, there is no need to adjust this item
+        // This is the second last descendant.
+        // As it has sufficient distance from the previous one and the last descendant
+        // may shift arbitrarily, there is no need to adjust this descendant
       } else if (nextOrder === undefined) {
-        // This is the last item and it has enough distance, hence no need to adjust it
+        // This is the last descendant and it has enough distance, hence no need to adjust it
       } else {
-        // Common case: The item has at least two successors and we have the following
+        // Common case: The descendant has at least two successors and we have the following
         // three order values to consider:
-        //     [current item: newOrder] [next item: nextOrder] [item after next: afterNextOrder]
-        // The range within which we can operate without affecting items beyond these three
+        //     [current descendant: newOrder] [next descendant: nextOrder] [descendant after next: afterNextOrder]
+        // The range within which we can operate without affecting descendants beyond these three
         // is given by:
         //     usableRange = ( prevOrder + minimalDelta, max(nextOrder, afterNextOrder) - minimalDelta)
 
@@ -243,16 +237,16 @@ function getAdjustedOrderValue<I, C>(
           deltaNextAfterNextValid !== undefined
         ) {
           if (deltaNextValid < minimalDelta) {
-            // The distance from current to next item is not sufficient, hence we need to adjust
-            // either this or the next item
+            // The distance from current to next descendant is not sufficient, hence we need to adjust
+            // either this or the next descendant
             // To determine, which one to adjust, we consider two relative distances:
-            // deltaPrevNextValid: the distance from the item before this to the one closest
-            //     after it. This is the interval within which we could place this item
-            // deltaAfterNextvalid: the distance from this item to the one of the two successors
-            //     that is farther away. This is the interval within which the next item could be
+            // deltaPrevNextValid: the distance from the descendant before this to the one closest
+            //     after it. This is the interval within which we could place this descendant
+            // deltaAfterNextvalid: the distance from this descendant to the one of the two successors
+            //     that is farther away. This is the interval within which the next descendant could be
             //     placed if we left the current one as is
             if (deltaPrevNextValid > deltaAfterNextValid) {
-              // Determine if it is feasible and sufficent to shift this item toward the previous item
+              // Determine if it is feasible and sufficent to shift this descendant toward the previous descendant
               newOrder = getCenteredOrderValue(prevOrder, prevNextValidOrder, orderParams);
             }
           }
@@ -263,13 +257,13 @@ function getAdjustedOrderValue<I, C>(
         }
       }
     } else {
-      // As this item does not have sufficient distance (or even negative distance)
+      // As this descendant does not have sufficient distance (or even negative distance)
       // to the previous one, it needs to be modified
       if (nextOrder === undefined) {
-        // This is the last item and can be shifted arbitrarily
+        // This is the last descendant and can be shifted arbitrarily
         newOrder = getLastOrderValue(prevOrder, orderParams);
       } else {
-        // Determine if it is sufficent to shift this item toward the smaller of the next two items
+        // Determine if it is sufficent to shift this descendant toward the smaller of the next two descendants
         newOrder = getCenteredOrderValue(prevOrder, prevNextValidOrder, orderParams);
       }
     }
@@ -277,75 +271,73 @@ function getAdjustedOrderValue<I, C>(
   return newOrder;
 }
 
-function adjustListOrderValues<I, C>(
-  items: ItemClientStateDescendantOrderableListType<I, C>,
-): ItemClientStateDescendantOrderableListType<I, C> {
-  const orderParams = getOrderParams(items);
+function adjustListOrderValues(descendants: Array<ItemOrderableClientStateType>): Array<ItemOrderableClientStateType> {
+  const orderParams = getOrderParams(descendants);
   const { randomOffsetMax } = orderParams;
 
   /* Invariants:
    * I1: The order values are strictly monotonically increasing
    * I2: The distance between each pair is greater than minimalDelta
    *
-   * We want to modify the minimal number of items needed to satisfy all invariants.
+   * We want to modify the minimal number of descendants needed to satisfy all invariants.
    */
-  // Maintain an up-to-date reference of the previous item's order value
-  // Substitute the current item's - targetDelta to initialize
-  // const minOrderValue = items.reduce((minOrder, item) => {
-  //   return item.order < minOrder ? item.order : minOrder;
+  // Maintain an up-to-date reference of the previous descendant's order value
+  // Substitute the current descendant's - targetDelta to initialize
+  // const minOrderValue = descendants.reduce((minOrder, descendant) => {
+  //   return descendant.order < minOrder ? descendant.order : minOrder;
   // }, 0);
   let prevOrder: number | undefined = undefined;
-  // The order of the next item might be undefined
-  let nextOrder = items[1].order;
-  // The order of the item after the next might be undefined
-  let afterNextOrder = items[2]?.order;
+  // The order of the next descendant might be undefined
+  let nextOrder = descendants[1].order;
+  // The order of the descendant after the next might be undefined
+  let afterNextOrder = descendants[2]?.order;
 
-  return items.map((item, index): ItemDescendantClientStateOrderableType<I, C> => {
-    const newOrder = getAdjustedOrderValue(item, orderParams, index, prevOrder, nextOrder, afterNextOrder);
+  return descendants.map((descendant, index) => {
+    const newOrder = getAdjustedOrderValue(descendant, orderParams, index, prevOrder, nextOrder, afterNextOrder);
 
     // Update only if modified
-    if (newOrder !== item.order) {
+    if (newOrder !== descendant.order) {
       // Add random offset to reduce probability of collisions
       const randomOffset = Math.random() * randomOffsetMax;
-      item = {
-        ...item,
+      descendant = {
+        ...descendant,
         order: newOrder + randomOffset,
         disposition: ItemDisposition.Modified,
       };
     }
 
     prevOrder = newOrder; // Update prevOrder for the next iteration
-    nextOrder = items[index + 2]?.order; // Update nextOrder for the next iteration
-    afterNextOrder = items[index + 3]?.order; // Update afterNextOrder for the next iteration
+    nextOrder = descendants[index + 2]?.order; // Update nextOrder for the next iteration
+    afterNextOrder = descendants[index + 3]?.order; // Update afterNextOrder for the next iteration
 
-    return item;
+    return descendant;
   });
 }
 
-function validateListOrderValues<I, C>(items: ItemClientStateDescendantOrderableListType<I, C>): boolean {
-  const { minimalDelta } = getOrderParams(items);
-  for (let i = 1; i < items.length; i++) {
-    if (!(items[i].order >= items[i - 1].order + minimalDelta)) {
+function validateListOrderValues(descendants: Array<ItemOrderableClientStateType>): boolean {
+  const { minimalDelta } = getOrderParams(descendants);
+  for (let i = 1; i < descendants.length; i++) {
+    if (!(descendants[i].order >= descendants[i - 1].order + minimalDelta)) {
       return false;
     }
   }
   return true;
 }
 
-export function updateListOrderValues<I, C>(
-  items: ItemClientStateDescendantOrderableListType<I, C>,
-): ItemClientStateDescendantOrderableListType<I, C> {
-  if (items.length <= 1) return items;
+export function updateListOrderValues(
+  descendants: Array<ItemOrderableClientStateType>,
+): Array<ItemOrderableClientStateType> {
+  if (descendants.length <= 1) return descendants;
 
   // Update order values with minimal changes to reflect sequence
-  // of items in `items` array
-  const updatedItems = adjustListOrderValues(items);
+  // of descendants in `descendants` array
+  const updatedItems = adjustListOrderValues(descendants);
 
   // Use compressOrderValues after updateOrderValues if necessary
   const finalItems = reBalanceListOrderValues(updatedItems);
 
   if (!validateListOrderValues(finalItems)) {
-    return items;
+    return descendants;
   }
 
   return finalItems;

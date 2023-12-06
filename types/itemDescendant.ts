@@ -128,6 +128,7 @@ const fieldsToExcludeFromCreate = [
   "descendantModel",
   "descendants",
   "disposition",
+  "descendantDraft",
 ];
 
 export function keepOnlyFieldsForCreate<T extends ItemClientToServerType>(

@@ -2,10 +2,7 @@
 
 import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
-import {
-  ItemClientStateDescendantListType,
-  ItemDescendantClientStateType,
-} from "@/stores/itemDescendantStore/createItemDescendantStore";
+import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
 import { findItemIndexByClientId } from "@/stores/itemDescendantStore/utils/descendantOrderValues";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { ItemClientStateType } from "@/types/item";
@@ -73,13 +70,7 @@ export default function ItemDescendantList({ item, resumeAction }: ItemDescendan
       );
 
       // Update the state with the new array
-      reArrangeDescendants(
-        arrayMove(
-          updatedDescendants as ItemClientStateDescendantListType<ItemClientStateType, ItemClientStateType>,
-          activeIndex,
-          overIndex,
-        ),
-      );
+      reArrangeDescendants(arrayMove(updatedDescendants, activeIndex, overIndex));
     }
   };
 

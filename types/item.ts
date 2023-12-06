@@ -36,7 +36,7 @@ export type ItemClientStateType = ItemClientToServerType & {
   parentClientId: IdSchemaType;
 };
 
-export type ItemClientStateOrderableType = ItemClientStateType & {
+export type ItemOrderableClientStateType = ItemClientStateType & {
   order: number;
 };
 
@@ -46,8 +46,8 @@ export type ItemServerStateType = ItemOutputType;
 
 // An object with fields that are specific to the item, i.e., excluding all the fields shared
 // between `Resume`, `Organization`, `Role` and `Achievement`
-export type ItemDataType<T extends ItemClientStateType> = Omit<T, keyof ItemClientStateType>;
-export type ItemDataFieldNameType<T extends ItemClientStateType> = keyof ItemDataType<T>;
+export type ItemDataType<T> = Omit<T, keyof ItemClientStateType>;
+export type ItemDataFieldNameType<T> = keyof ItemDataType<T>;
 
 // FIXME: The following two types don't add much type safety but
 // are currently used to be able to work with components without a type parameter

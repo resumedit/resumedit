@@ -6,6 +6,7 @@ import {
   ItemDataType,
   ItemDataUntypedType,
   ItemDisposition,
+  ItemOrderableClientStateType,
   ItemServerStateType,
   ItemServerToClientType,
 } from "@/types/item";
@@ -18,24 +19,45 @@ import { reBalanceListOrderValues, updateListOrderValues } from "./utils/descend
 import { logUpdateStoreWithServerData } from "./utils/logItemDescendantStore";
 import { handleItemDescendantListFromServer } from "./utils/syncItemDescendant";
 
+// Type used by client to maintain client state
 export type ItemClientStateDescendantListType<I, C> = Array<ItemDescendantClientStateType<I, C>>;
 
-// Type used by client to maintain client state
 export type ItemDescendantClientStateType<I, C> = ItemClientStateType & {
   itemModel: ItemDescendantModelNameType;
   descendantModel: ItemDescendantModelNameType | null;
   descendants: ItemClientStateDescendantListType<I, C>;
 };
 
-export type ItemServerStateDescendantListType<I, C> = Array<ItemDescendantServerStateType<I, C>>;
+// The store state additionally includes a descendantDraft at the item level
+export type ItemStoreStateDescendantListType<I, C> = Array<ItemDescendantStoreState<I, C>>;
 
-export type ItemClientStateDescendantOrderableListType<I, C> = Array<ItemDescendantClientStateOrderableType<I, C>>;
-export type ItemDescendantClientStateOrderableType<I, C> = ItemClientStateType & {
-  order: number;
+export type ItemDescendantStoreState<I, C> = ItemClientStateType & {
   itemModel: ItemDescendantModelNameType;
   descendantModel: ItemDescendantModelNameType | null;
-  descendants: ItemClientStateDescendantOrderableListType<I, C>;
+  descendants: ItemClientStateDescendantListType<I, C>;
+  descendantDraft: ItemDataType<C>;
 };
+
+// Type used by client to maintain client state with orderable descendants
+export type ItemOrderableClientStateDescendantListType<I, C> = Array<ItemOrderableDescendantClientStateType<I, C>>;
+
+export type ItemOrderableDescendantClientStateType<I, C> = ItemClientStateType & {
+  itemModel: ItemDescendantModelNameType;
+  descendantModel: ItemDescendantModelNameType | null;
+  descendants: ItemOrderableClientStateDescendantListType<I, C>;
+};
+
+// The store state additionally includes a descendantDraft at the item level
+export type ItemOrderableStoreStateDescendantListType<I, C> = Array<ItemOrderableDescendantStoreStateType<I, C>>;
+
+export type ItemOrderableDescendantStoreStateType<I, C> = ItemClientStateType & {
+  itemModel: ItemDescendantModelNameType;
+  descendantModel: ItemDescendantModelNameType | null;
+  descendants: ItemOrderableClientStateDescendantListType<I, C>;
+  descendantDraft: ItemDataType<C>;
+};
+
+export type ItemServerStateDescendantListType<I, C> = Array<ItemDescendantServerStateType<I, C>>;
 
 // Type used by server to maintain server state
 export type ItemDescendantServerStateType<I, C> = ItemServerStateType & {
@@ -45,6 +67,7 @@ export type ItemDescendantServerStateType<I, C> = ItemServerStateType & {
 };
 
 export type ItemServerStateDescendantOrderableListType<I, C> = Array<ItemDescendantServerStateOrderableType<I, C>>;
+
 export type ItemDescendantServerStateOrderableType<I, C> = ItemServerStateType & {
   order: number;
   itemModel: ItemDescendantModelNameType;
@@ -52,18 +75,13 @@ export type ItemDescendantServerStateOrderableType<I, C> = ItemServerStateType &
   descendants: ItemServerStateDescendantOrderableListType<I, C>;
 };
 
+// Type used by server to send its state to the client
 export type ItemServerToClientDescendantListType<I, C> = Array<ItemDescendantServerToClientType<I, C>>;
+
 export type ItemDescendantServerToClientType<I, C> = ItemServerToClientType & {
   itemModel: ItemDescendantModelNameType;
   descendantModel: ItemDescendantModelNameType | null;
   descendants: ItemServerToClientDescendantListType<I, C>;
-};
-
-export type ItemDescendantStoreState<
-  I extends ItemClientStateType,
-  C extends ItemClientStateType,
-> = ItemDescendantClientStateType<I, C> & {
-  descendantDraft: ItemDataType<C>;
 };
 
 export type ItemDescendantStoreActions<I extends ItemClientStateType, C extends ItemClientStateType> = {
@@ -72,7 +90,7 @@ export type ItemDescendantStoreActions<I extends ItemClientStateType, C extends 
   setDescendantData: (data: ItemDataUntypedType, clientId: ClientIdType) => void;
   addDescendant: (descendantData: ItemDataType<C>) => void;
   markDescendantAsDeleted: (clientId: ClientIdType) => void;
-  reArrangeDescendants: (reArrangedItems: ItemClientStateDescendantListType<I, C>) => void;
+  reArrangeDescendants: (reArrangedDescendants: ItemClientStateDescendantListType<I, C>) => void;
   resetDescendantsOrderValues: () => void;
   updateDescendantDraft: (descendantData: ItemDataUntypedType) => void;
   commitDescendantDraft: () => void;
@@ -206,10 +224,11 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
               ...descendantData,
               descendantModel: descendantOfDescendantModel,
               descendants: [],
-            } as Draft<ItemDescendantClientStateType<C, C>>;
+              descendantDraft: {} as Draft<ItemDataType<C>>,
+            } as Draft<ItemDescendantStoreState<C, C>>;
             state.descendants = state.descendants.length
               ? [...state.descendants, newItem]
-              : ([newItem] as Draft<ItemDescendantClientStateType<C, C>>[]);
+              : ([newItem] as Draft<ItemDescendantStoreState<C, C>>[]);
           });
         },
         markDescendantAsDeleted: (clientId: ClientIdType): void => {
@@ -228,11 +247,11 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
             state.lastModified = new Date();
           });
         },
-        reArrangeDescendants: (reArrangedItems: ItemClientStateDescendantListType<I, C>): void => {
+        reArrangeDescendants: (reArrangedDescendants: ItemClientStateDescendantListType<I, C>): void => {
           set((state) => {
             state.descendants = updateListOrderValues(
-              reArrangedItems as ItemClientStateDescendantOrderableListType<I, C>,
-            ) as Draft<ItemClientStateDescendantOrderableListType<I, C>>;
+              reArrangedDescendants as unknown as Array<ItemOrderableClientStateType>,
+            ) as unknown as Draft<ItemOrderableStoreStateDescendantListType<I, C>>;
             // Update the modification timestamp
             state.lastModified = new Date();
           });
@@ -240,9 +259,9 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
         resetDescendantsOrderValues: (): void => {
           set((state) => {
             state.descendants = reBalanceListOrderValues(
-              state.descendants as ItemClientStateDescendantOrderableListType<I, C>,
+              state.descendants as unknown as Array<ItemOrderableClientStateType>,
               true,
-            ) as ItemClientStateDescendantOrderableListType<I, C>;
+            ) as unknown as Draft<ItemOrderableStoreStateDescendantListType<I, C>>;
             // Update the modification timestamp
             state.lastModified = new Date();
           });
@@ -278,12 +297,11 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
               ...descendantData,
               descendantModel: descendantOfDescendantModel,
               descendants: [],
-            } as Draft<ItemDescendantClientStateType<C, C>>;
+              descendantDraft: {} as Draft<ItemDataType<C>>,
+            } as Draft<ItemDescendantStoreState<C, C>>;
 
             // Append it to the end of the store's `descendants` array
-            state.descendants = state.descendants.length
-              ? [...state.descendants, newItem]
-              : ([newItem] as Draft<ItemDescendantClientStateType<C, C>>[]);
+            state.descendants = state.descendants.length ? [...state.descendants, newItem] : [newItem];
             // Update the modification timestamp
             state.lastModified = new Date();
 
