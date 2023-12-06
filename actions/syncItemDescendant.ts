@@ -89,14 +89,14 @@ export async function handleItemDescendantListFromClient(
               data: keepOnlyFieldsForUpdate<ItemClientToServerType>(existingItem, currentTimestamp),
             });
           }
-          let descendantsAfterUpdate: ItemServerToClientDescendantListType<
-              ItemServerToClientType,
-              ItemServerToClientType
-            >,
-            descendantsCreatedByThisClient: ItemServerToClientDescendantListType<
-              ItemServerToClientType,
-              ItemServerToClientType
-            > = [];
+          let descendantsAfterUpdate = clientDescendants as ItemServerToClientDescendantListType<
+            ItemServerToClientType,
+            ItemServerToClientType
+          >;
+          let descendantsCreatedByThisClient: ItemServerToClientDescendantListType<
+            ItemServerToClientType,
+            ItemServerToClientType
+          > = [];
 
           if (descendantModel) {
             const prismaDescendantModelInstance = getModelAccessor(descendantModel, prisma as PrismaClient);
