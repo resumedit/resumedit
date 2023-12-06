@@ -1,14 +1,17 @@
 // @/stores/itemDescendant/createItemDescendantStore.ts
-import { IdSchemaType, getItemId } from "@/schemas/id";
-import { ItemDescendantServerStateType } from "@/schemas/itemDescendant";
+import { IdSchemaType, getClientId } from "@/schemas/id";
+import { ItemClientStateType, ItemDataType, ItemDataUntypedType, ItemOrderableClientStateType } from "@/schemas/item";
 import {
-  ClientIdType,
-  ItemClientStateType,
-  ItemDataType,
-  ItemDataUntypedType,
-  ItemDisposition,
-  ItemOrderableClientStateType,
-} from "@/types/item";
+  ItemDescendantClientStateListType,
+  ItemDescendantOrderableStoreStateType,
+  ItemDescendantServerStateType,
+  ItemDescendantOrderableClientStateListType,
+  ItemDescendantOrderableStoreStateListType,
+  ItemDescendantStoreStateListType,
+  itemDescendantOrderableStoreStateSchema,
+  itemDescendantStoreStateSchema,
+} from "@/schemas/itemDescendant";
+import { ClientIdType, ItemDisposition } from "@/types/item";
 import { ItemDescendantModelNameType, createDateSafeLocalstorage, getDescendantModel } from "@/types/itemDescendant";
 import { Draft } from "immer";
 import { create } from "zustand";
@@ -19,115 +22,84 @@ import {
   reBalanceListOrderValues,
   updateListOrderValues,
 } from "./utils/descendantOrderValues";
-import { handleItemDescendantFromServer } from "./utils/syncItemDescendantStore";
+import { handleNestedItemDescendantListFromServer } from "./utils/syncItemDescendantStore";
+import { siteConfig } from "@/config/site";
 
-// Type used by client to maintain client state
-export type ItemClientStateDescendantListType<I, C> = Array<ItemDescendantClientStateType<I, C>>;
-
-export type ItemDescendantClientStateType<I, C> = ItemClientStateType & {
-  itemModel: ItemDescendantModelNameType;
-  descendantModel: ItemDescendantModelNameType | null;
-  descendants: ItemClientStateDescendantListType<I, C>;
+// NOTE: This type must be kept in sync with `ItemClientStateType`, which is
+// inferred using the Zod schemas in `@/schemas/itemDescendant`
+export type ItemClientState = {
+  createdAt: Date;
+  lastModified: Date;
+  deletedAt: Date | null;
+  parentClientId: ClientIdType;
+  clientId: ClientIdType;
+  id?: IdSchemaType;
+  parentId?: IdSchemaType;
+  disposition: ItemDisposition;
 };
 
-// The store state additionally includes a descendantDraft at the item level
-export type ItemStoreStateDescendantListType<I, C> = Array<ItemDescendantStoreState<I, C>>;
-
-export type ItemDescendantStoreState<I, C> = ItemClientStateType & {
+// NOTE: This type must be kept in sync with `ItemDescendantClientStateListType`, which is
+// inferred using the Zod schemas in `@/schemas/itemDescendant`
+export type ItemDescendantClientStateList = Array<ItemDescendantClientState>;
+export type ItemDescendantClientState = ItemClientStateType & {
   itemModel: ItemDescendantModelNameType;
   descendantModel: ItemDescendantModelNameType | null;
-  descendants: ItemClientStateDescendantListType<I, C>;
-  descendantDraft: ItemDataType<C>;
+  descendants: ItemDescendantClientStateList;
 };
 
-// Type used by client to maintain client state with orderable descendants
-export type ItemOrderableClientStateDescendantListType<I, C> = Array<ItemOrderableDescendantClientStateType<I, C>>;
-export type ItemOrderableDescendantClientStateType<I, C> = ItemClientStateType & {
+// NOTE: This type must be kept in sync with `ItemDescendantStoreStateType`, which is
+// inferred using the Zod schemas in `@/schemas/itemDescendant`
+export type ItemDescendantStoreState = {
+  createdAt: Date;
+  lastModified: Date;
+  deletedAt: Date | null;
+  parentClientId: ClientIdType;
+  clientId: ClientIdType;
+  id?: string | undefined;
+  parentId?: string | undefined;
+  disposition: ItemDisposition;
   itemModel: ItemDescendantModelNameType;
   descendantModel: ItemDescendantModelNameType | null;
-  descendants: ItemOrderableClientStateDescendantListType<I, C>;
+  descendants: ItemDescendantClientStateListType;
+  descendantDraft: ItemDataUntypedType;
 };
 
-// The store state additionally includes a descendantDraft at the item level
-export type ItemOrderableStoreStateDescendantListType<I, C> = Array<ItemOrderableDescendantStoreStateType<I, C>>;
-export type ItemOrderableDescendantStoreStateType<I, C> = ItemClientStateType & {
-  itemModel: ItemDescendantModelNameType;
-  descendantModel: ItemDescendantModelNameType | null;
-  descendants: ItemOrderableClientStateDescendantListType<I, C>;
-  descendantDraft: ItemDataType<C>;
-};
-
-// // Type used by server to maintain server state
-// export type ItemServerStateDescendantListType<I, C> = Array<ItemDescendantServerStateType<I, C>>;
-// export type ItemDescendantServerStateType<I, C> = ItemServerStateType & {
-//   itemModel: ItemDescendantModelNameType;
-//   descendantModel: ItemDescendantModelNameType | null;
-//   descendants: ItemServerStateDescendantListType<I, C>;
-// };
-
-// Type used by server to maintain server state with orderable descendants
-// export type ItemServerStateDescendantOrderableListType<I, C> = Array<ItemDescendantServerStateOrderableType<I, C>>;
-// export type ItemDescendantServerStateOrderableType<I, C> = ItemServerStateType & {
-//   order: number;
-//   itemModel: ItemDescendantModelNameType;
-//   descendantModel: ItemDescendantModelNameType | null;
-//   descendants: ItemServerStateDescendantOrderableListType<I, C>;
-// };
-
-// Type used by server to send its state to the client
-// export type ItemServerToClientDescendantListType<I, C> = Array<ItemDescendantServerToClientType<I, C>>;
-
-// export type ItemDescendantServerToClientType<I, C> = ItemServerToClientType & {
-//   itemModel: ItemDescendantModelNameType;
-//   descendantModel: ItemDescendantModelNameType | null;
-//   descendants: ItemServerToClientDescendantListType<I, C>;
-// };
-
-export type ItemDescendantStoreActions<I extends ItemClientStateType, C extends ItemClientStateType> = {
+export type ItemDescendantStoreActions = {
   setItemData: (data: ItemDataUntypedType, clientId: ClientIdType) => void;
   markItemAsDeleted: (clientId: ClientIdType) => void;
   restoreDeletedItem: (clientId: ClientIdType) => void;
-  getDescendants: (
-    ancestorClientIds: Array<ClientIdType>,
-  ) => ItemClientStateDescendantListType<ItemClientStateType, ItemClientStateType>;
+  getDescendants: (ancestorClientIds: Array<ClientIdType>) => ItemDescendantClientStateListType;
   setDescendantData: (
     descendantData: ItemDataUntypedType,
     clientId: ClientIdType,
     ancestorClientIds: Array<ClientIdType>,
   ) => void;
-  // addDescendant: (descendantData: ItemDataType<C>) => void; // FIXME: Untested
+  // addDescendant: (descendantData: ItemDataUntypedType) => void; // FIXME: Untested
   markDescendantAsDeleted: (clientId: ClientIdType, ancestorClientIds: Array<ClientIdType>) => void;
   reArrangeDescendants: (
-    reArrangedDescendants: ItemClientStateDescendantListType<I, C>,
+    reArrangedDescendants: ItemDescendantClientStateListType,
     ancestorClientIds: Array<ClientIdType>,
   ) => void;
   resetDescendantsOrderValues: (ancestorClientIds: Array<ClientIdType>) => void;
-  getDescendantDraft: (ancestorClientIds: Array<ClientIdType>) => ItemDataType<C>;
+  getDescendantDraft: (ancestorClientIds: Array<ClientIdType>) => ItemDataUntypedType;
   updateDescendantDraft: (descendantData: ItemDataUntypedType, ancestorClientIds: Array<ClientIdType>) => void;
   commitDescendantDraft: (ancestorClientIds: Array<ClientIdType>) => void;
   updateStoreWithServerData: (serverState: ItemDescendantServerStateType) => void;
 };
 
-export type ItemDescendantStore<
-  I extends ItemClientStateType,
-  C extends ItemClientStateType,
-> = ItemDescendantStoreState<I, C> & ItemDescendantStoreActions<I, C>;
+export type ItemDescendantStore = ItemDescendantStoreState & ItemDescendantStoreActions;
 
 // Selector type is used to type the return type when using the store with a selector
-type ItemDescendantSelectorType<I extends ItemClientStateType, C extends ItemClientStateType, T> = (
-  state: ItemDescendantStore<I, C>,
-) => T;
+type ItemDescendantSelectorType<T> = (state: ItemDescendantStore) => T;
 
 // Hook type is used as a return type when using the store
-export type ItemDescendantHookType = <I extends ItemClientStateType, C extends ItemClientStateType, T>(
-  selector?: ItemDescendantSelectorType<I, C, T>,
-) => T;
+export type ItemDescendantHookType<T> = (selector?: ItemDescendantSelectorType<T>) => T;
 
 export interface ItemDescendantStoreConfigType {
   itemModel: ItemDescendantModelNameType;
 
-  parentClientId: IdSchemaType;
-  clientId: IdSchemaType;
+  parentClientId: ClientIdType;
+  clientId: ClientIdType;
 
   parentId: IdSchemaType | undefined;
   id: IdSchemaType | undefined;
@@ -136,62 +108,61 @@ export interface ItemDescendantStoreConfigType {
   storeName?: string;
 }
 export const storeVersion = 1;
-export const storeNameSuffix = "descendant-store.devel.resumedit.local";
+const storeNameSuffix =
+  process.env.NODE_ENV === "development" ? `devel.${siteConfig.canonicalDomainName}` : siteConfig.canonicalDomainName;
 
 export function getDescendantFromAncestorChain(
-  ancestorStateChain: ItemStoreStateDescendantListType<ItemClientStateType, ItemClientStateType>,
+  ancestorStateChain: ItemDescendantStoreStateListType,
   ancestorClientIdChain: Array<ClientIdType>,
   lastModified?: Date,
-): ItemStoreStateDescendantListType<ItemClientStateType, ItemClientStateType> {
-  /*
+): ItemDescendantStoreStateListType {
   console.log(
     "getDescendantFromAncestorChain:\n",
     `ancestorStateChain: ${ancestorStateChain.map((item) => item.clientId).join("->")}`,
     "\n",
     `ancestorClientIdChain: ${ancestorClientIdChain.join("->")}`,
   );
-  */
   // Descend from the `state` all the way down to the descendant based on the `ancestorClientIdChain` array
+  const state = ancestorStateChain[0];
+  if (lastModified) {
+    state.lastModified = lastModified;
+    state.disposition = ItemDisposition.Modified;
+  }
   if (ancestorClientIdChain.length === 0) {
-    if (lastModified) {
-      ancestorStateChain[0].lastModified = lastModified;
-      ancestorStateChain[0].disposition = ItemDisposition.Modified;
-    }
     return ancestorStateChain;
   }
-  const ancestorClientId = ancestorClientIdChain[0];
-  const state = ancestorStateChain[ancestorStateChain.length - 1];
+  const ancestorClientId = ancestorClientIdChain[ancestorClientIdChain.length - 2];
   const ancestorState = state.descendants.find(
     (descendant) => descendant.clientId === ancestorClientId,
-  ) as ItemDescendantStoreState<ItemClientStateType, ItemClientStateType>;
+  ) as ItemDescendantStoreState;
   if (ancestorState) {
     if (lastModified) {
       ancestorState.lastModified = lastModified;
       ancestorState.disposition = ItemDisposition.Modified;
     }
     return getDescendantFromAncestorChain(
-      [...ancestorStateChain, ancestorState],
-      ancestorClientIdChain.slice(1),
+      [ancestorState, ...ancestorStateChain],
+      ancestorClientIdChain.slice(0, -1),
       lastModified,
     );
   }
   return ancestorStateChain;
 }
 
-export const createItemDescendantStore = <I extends ItemClientStateType, C extends ItemClientStateType>({
+export const createItemDescendantStore = ({
   parentClientId,
   clientId,
   parentId,
   id,
   itemModel,
-  storeVersion,
-  ...rest
+  storeVersion = 1,
+  storeName: customStoreName,
 }: ItemDescendantStoreConfigType) => {
-  const storeName = rest.storeName ? rest.storeName : `${itemModel}-${storeNameSuffix}`;
+  const storeName = customStoreName ? customStoreName : `${itemModel}-${storeNameSuffix}`;
 
   return create(
     persist(
-      immer<ItemDescendantStore<I, C>>((set, get) => ({
+      immer<ItemDescendantStore>((set, get) => ({
         parentClientId,
         clientId,
         parentId,
@@ -204,7 +175,7 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
         itemModel: itemModel,
         descendantModel: getDescendantModel(itemModel),
         descendants: [],
-        descendantDraft: {} as ItemDataType<C>,
+        descendantDraft: {} as ItemDataUntypedType,
 
         setItemData: (descendantData: ItemDataUntypedType): void => {
           set((state) => {
@@ -229,10 +200,11 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
             // NOTE: The below assignment with the spread operator does not work due to the use of `immer`
             // state = { ...state, disposition: ItemDisposition.Modified, deletedAt: new Date() };
             state.disposition = ItemDisposition.Modified;
-            state.deletedAt = new Date();
+            const now = new Date();
+            state.deletedAt = new Date(now);
 
             // Update the modification timestamp
-            state.lastModified = new Date();
+            state.lastModified = new Date(now);
           });
         },
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -247,11 +219,9 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
             state.lastModified = new Date();
           });
         },
-        getDescendants: (
-          ancestorClientIds: Array<ClientIdType>,
-        ): ItemClientStateDescendantListType<ItemClientStateType, ItemClientStateType> => {
+        getDescendants: (ancestorClientIds: Array<ClientIdType>): ItemDescendantClientStateListType => {
           const ancestorStateChain = getDescendantFromAncestorChain([get()], ancestorClientIds);
-          const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
+          const ancestorState = ancestorStateChain[0];
           return ancestorState.descendants;
         },
         setDescendantData: (
@@ -259,9 +229,10 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
           clientId: ClientIdType,
           ancestorClientIds: Array<ClientIdType>,
         ): void => {
+          const now = new Date();
           set((state) => {
-            const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds, new Date());
-            const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
+            const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds, new Date(now));
+            const ancestorState = ancestorStateChain[0];
             // Update the state with the deletedAt timestamp for the specified descendant
             ancestorState.descendants = ancestorState.descendants.map((descendant) => {
               if (descendant.clientId === clientId) {
@@ -269,106 +240,75 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
                   ...descendant,
                   ...descendantData,
                   disposition: ItemDisposition.Modified,
-                  lastModified: new Date(),
+                  lastModified: new Date(now),
                 };
               }
               return descendant;
             });
           });
         },
-        /* FIXME: Untested
-        addDescendant: (descendantData: ItemDataType<C>, ancestorClientIds: Array<ClientIdType>) => {
-          set((state) => {
-            const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds, new Date());
-            for (const ancestorState of ancestorStateChain) {
-              const descendantClientId = getItemId(ancestorState.descendantModel);
-              const descendantOfDescendantModel = getDescendantModel(ancestorState.descendantModel!);
-              const newItem = {
-                itemModel: ancestorState.descendantModel,
-                clientId: descendantClientId,
-                parentClientId: clientId,
-                createdAt: new Date(),
-                lastModified: new Date(),
-                disposition: ItemDisposition.New,
-                ...descendantData,
-                descendantModel: descendantOfDescendantModel,
-                descendants: [],
-                descendantDraft: {} as Draft<ItemDataType<C>>,
-              } as Draft<ItemDescendantStoreState<C, C>>;
-              ancestorState.descendants = ancestorState.descendants.length
-                ? [...ancestorState.descendants, newItem]
-                : ([newItem] as Draft<ItemDescendantStoreState<C, C>>[]);
-              // Update the modification timestamp of the ancestor
-              ancestorState.lastModified = new Date();
-            }
-          });
-        }*/
         markDescendantAsDeleted: (clientId: ClientIdType, ancestorClientIds: Array<ClientIdType>): void => {
+          const now = new Date();
           set((state) => {
-            const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds, new Date());
-            const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
+            const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds, new Date(now));
+            const ancestorState = ancestorStateChain[0];
             // Update the state with the deletedAt timestamp for the specified descendant
             ancestorState.descendants = ancestorState.descendants.map((descendant) => {
               if (descendant.clientId === clientId) {
-                return { ...descendant, disposition: ItemDisposition.Modified, deletedAt: new Date() };
+                return { ...descendant, disposition: ItemDisposition.Modified, deletedAt: new Date(now) };
               }
               return descendant;
             });
-
-            for (const ancestorState of ancestorStateChain) {
-              // Update the modification timestamp of the ancestor
-              ancestorState.lastModified = new Date();
-            }
           });
         },
         reArrangeDescendants: (
-          reArrangedDescendants: ItemOrderableClientStateDescendantListType<I, C>,
+          reArrangedDescendants: ItemDescendantOrderableClientStateListType,
           ancestorClientIds: Array<ClientIdType>,
         ): void => {
           set((state) => {
             const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds, new Date());
-            const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
+            const ancestorState = ancestorStateChain[0];
             // Update the state with the re-ordered descendants
             ancestorState.descendants = updateListOrderValues(
               reArrangedDescendants as unknown as Array<ItemOrderableClientStateType>,
-            ) as unknown as Draft<ItemOrderableStoreStateDescendantListType<I, C>>;
+            ) as unknown as Draft<ItemDescendantOrderableStoreStateListType>;
           });
         },
         resetDescendantsOrderValues: (ancestorClientIds: Array<ClientIdType>): void => {
           set((state) => {
             const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds, new Date());
-            const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
+            const ancestorState = ancestorStateChain[0];
             // Update the state with the descendants having balanced order values
             ancestorState.descendants = reBalanceListOrderValues(
               ancestorState.descendants as unknown as Array<ItemOrderableClientStateType>,
               true,
-            ) as unknown as Draft<ItemOrderableStoreStateDescendantListType<I, C>>;
+            ) as unknown as Draft<ItemDescendantOrderableStoreStateListType>;
           });
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         getDescendantDraft: (ancestorClientIds: Array<ClientIdType>): ItemDataType<any> => {
           const ancestorStateChain = getDescendantFromAncestorChain([get()], ancestorClientIds);
-          const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
+          const ancestorState = ancestorStateChain[0];
           return ancestorState.descendantDraft;
         },
         updateDescendantDraft: (descendantData: ItemDataUntypedType, ancestorClientIds: Array<ClientIdType>) => {
           set((state) => {
             const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds);
             // Update the state with the new draft descendant data
-            ancestorStateChain[ancestorStateChain.length - 1].descendantDraft = {
-              ...(state.descendantDraft as ItemDataType<C>),
-              ...(descendantData as ItemDataType<C>),
-            } as Draft<ItemDataType<C>>;
+            ancestorStateChain[0].descendantDraft = {
+              ...(state.descendantDraft as ItemDataUntypedType),
+              ...(descendantData as ItemDataUntypedType),
+            } as Draft<ItemDataUntypedType>;
           });
         },
         commitDescendantDraft: (ancestorClientIds: Array<ClientIdType>) => {
           set((state) => {
             const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds, new Date());
-            const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
+            const ancestorState = ancestorStateChain[0];
             const descendantOfDescendantModel = ancestorState.descendantModel
               ? getDescendantModel(ancestorState.descendantModel)
               : null;
-            const descendantClientId = getItemId(ancestorState.descendantModel);
+            const descendantClientId = getClientId(ancestorState.descendantModel);
 
             if (!ancestorState.descendantModel) {
               throw Error(
@@ -386,10 +326,11 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
               parentId: ancestorState.id,
               createdAt: new Date(),
               lastModified: new Date(),
+              deletedAt: null,
               disposition: ItemDisposition.New,
               descendantModel: descendantOfDescendantModel,
               descendants: [],
-              descendantDraft: {} as Draft<ItemDataType<C>>,
+              descendantDraft: {} as Draft<ItemDataUntypedType>,
             };
 
             let newDescendant;
@@ -400,9 +341,11 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
                 order: getOrderValueForAppending(
                   ancestorState.descendants as unknown as ItemOrderableClientStateType[],
                 ),
-              } as Draft<ItemOrderableDescendantStoreStateType<C, C>>;
+              } as Draft<ItemDescendantOrderableStoreStateType>;
+              itemDescendantOrderableStoreStateSchema.parse(newDescendant);
             } else {
-              newDescendant = descendantData as Draft<ItemDescendantStoreState<C, C>>;
+              newDescendant = descendantData;
+              itemDescendantStoreStateSchema.parse(newDescendant);
             }
 
             // Append it to the end of the store's `descendants` array
@@ -411,7 +354,7 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
               : [newDescendant];
 
             // Reset the draft
-            ancestorState.descendantDraft = {} as Draft<ItemDataType<C>>;
+            ancestorState.descendantDraft = {} as Draft<ItemDataUntypedType>;
             for (const ancestorState of ancestorStateChain) {
               // Update the modification timestamp of the ancestor
               ancestorState.lastModified = new Date();
@@ -421,19 +364,19 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
         updateStoreWithServerData: (serverState: ItemDescendantServerStateType) => {
           // if (logUpdateFromServer) {
           //   logUpdateStoreWithServerData(
-          //     get() as ItemDescendantStore<ItemClientStateType, ItemClientStateType>,
+          //     get() as ItemDescendantStore,
           //     serverState,
           //   );
           // }
           set((state) => {
-            handleItemDescendantFromServer(state, serverState);
+            handleNestedItemDescendantListFromServer(state, serverState);
           });
         },
       })),
       {
         name: storeName,
         version: storeVersion,
-        storage: createDateSafeLocalstorage<I, C>() /*, storage: createTypesafeLocalstorage<I, C>()*/,
+        storage: createDateSafeLocalstorage() /*, storage: createTypesafeLocalstorage()*/,
       },
     ),
   );

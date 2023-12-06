@@ -1,15 +1,13 @@
-// @/types/itemDescendant.sx
-import { stripFields } from "@/lib/utils/misc";
+// @/types/itemDescendant.tsx
+
+import { stripFields, stripToType } from "@/lib/utils/misc";
 import { IdSchemaType } from "@/schemas/id";
-import {
-  ItemDescendantClientStateType,
-  ItemDescendantStore,
-  ItemDescendantStoreState,
-} from "@/stores/itemDescendantStore/createItemDescendantStore";
+import { ItemClientToServerType } from "@/schemas/item";
+import { ItemDescendantStoreStateType } from "@/schemas/itemDescendant";
+import { ItemDescendantClientState, ItemDescendantStore } from "@/stores/itemDescendantStore/createItemDescendantStore";
 import { PrismaClient } from "@prisma/client";
 import { parse, stringify } from "devalue";
 import { PersistStorage } from "zustand/middleware";
-import { ItemClientStateType, ItemClientToServerType } from "./item";
 
 // Ensure the below is a tuple by adding `as const`
 export const itemDescendantModelHierarchy = ["user", "resume", "organization", "role", "achievement"] as const;
@@ -109,11 +107,10 @@ const fieldsToExcludeFromCreate = [
   "clientId",
   "parentId",
   "id",
+  "disposition",
   "itemModel",
-  "itemData",
   "descendantModel",
   "descendants",
-  "disposition",
   "descendantDraft",
 ];
 
@@ -146,10 +143,33 @@ export function getItemDataForUpdate<T extends ItemClientToServerType>(item: T, 
   return payload;
 }
 
-export function createTypesafeLocalstorage<
-  I extends ItemClientStateType,
-  C extends ItemClientStateType,
->(): PersistStorage<ItemDescendantStoreState<I, C>> {
+export function getItemDescendantStoreStateForServer<T extends ItemDescendantStore>(rootState: T) {
+  // Remove all properties that are not part of the item
+  const storeActions: Array<keyof T> = [
+    "setItemData",
+    "markItemAsDeleted",
+    "restoreDeletedItem",
+    "getDescendants",
+    "setDescendantData",
+    "markDescendantAsDeleted",
+    "reArrangeDescendants",
+    "resetDescendantsOrderValues",
+    "getDescendantDraft",
+    "updateDescendantDraft",
+    "commitDescendantDraft",
+    "updateStoreWithServerData",
+  ];
+  const nonItemRootStateProperties: Array<keyof T> = ["descendantDraft"];
+
+  // Combine both sets of keys to remove
+  const propertiesToRemove = [...storeActions, ...nonItemRootStateProperties];
+
+  // const payload = stripFields(rootState, fieldsToStrip);
+  const payload = stripToType(rootState, propertiesToRemove);
+  return payload as ItemDescendantClientState;
+}
+
+export function createTypesafeLocalstorage(): PersistStorage<ItemDescendantStoreStateType> {
   return {
     getItem: (name) => {
       const str = localStorage.getItem(name);
@@ -170,10 +190,7 @@ export function createTypesafeLocalstorage<
   };
 }
 
-export function createDateSafeLocalstorage<
-  I extends ItemClientStateType,
-  C extends ItemClientStateType,
->(): PersistStorage<ItemDescendantStoreState<I, C>> {
+export function createDateSafeLocalstorage(): PersistStorage<ItemDescendantStoreStateType> {
   return {
     getItem: (name) => {
       const str = localStorage.getItem(name);
@@ -193,30 +210,4 @@ export function createDateSafeLocalstorage<
       localStorage.removeItem(name);
     },
   };
-}
-export function keepOnlyStateForServer<T extends ItemDescendantStore<ItemClientStateType, ItemClientStateType>>(
-  rootState: T,
-) {
-  // Remove all properties that are not part of the item
-  const storeActions: Array<keyof T> = [
-    "setItemData",
-    "markItemAsDeleted",
-    "restoreDeletedItem",
-    "getDescendants",
-    "setDescendantData",
-    "markDescendantAsDeleted",
-    "reArrangeDescendants",
-    "resetDescendantsOrderValues",
-    "getDescendantDraft",
-    "updateDescendantDraft",
-    "commitDescendantDraft",
-    "updateStoreWithServerData",
-  ];
-  const nonItemRootStateProperties: Array<keyof T> = ["descendantDraft"];
-
-  // Combine both sets of keys to remove
-  const fieldsToStrip = new Set<keyof T>([...storeActions, ...nonItemRootStateProperties]);
-
-  const payload = stripFields(rootState, fieldsToStrip);
-  return payload as ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>;
 }

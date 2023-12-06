@@ -4,11 +4,15 @@ import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { cn } from "@/lib/utils";
 import { DateTimeFormat, DateTimeSeparator, dateToISOLocal } from "@/lib/utils/formatDate";
-import { getItemSchema, getSchemaFields, isNumberField } from "@/lib/utils/itemDescendantListUtils";
+import {
+  getItemSchema,
+  getSchemaFields,
+  getUpdateFromEdiTextField,
+  getUpdateFromEvent,
+} from "@/lib/utils/itemDescendantListUtils";
+import { ItemClientStateType } from "@/schemas/item";
 import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
-import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { ItemClientStateType, ItemDataUntypedFieldNameType, ItemDisposition } from "@/types/item";
-import { ItemDescendantModelNameType } from "@/types/itemDescendant";
+import { ItemDisposition } from "@/types/item";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { InputProps } from "react-editext";
@@ -16,20 +20,18 @@ import { useForm } from "react-hook-form";
 import { ItemDescendantRenderProps } from "./ItemDescendantList.client";
 import EditableFieldPersist from "./utils/EditableFieldPersist";
 
-export interface ItemProps extends ItemDescendantRenderProps {
-  rootItemModel: ItemDescendantModelNameType;
-  itemModel: ItemDescendantModelNameType;
-  item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>;
-}
+export interface ItemProps extends ItemDescendantRenderProps {}
 export default function Item(props: ItemProps) {
-  const { item, index, resumeAction } = props;
+  const { itemModel, item, index, resumeAction } = props;
   // const [editingInput, setEditingInput] = useState(resumeAction === "edit");
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);
   const setItemData = store((state) => state.setItemData);
   const markItemAsDeleted = store((state) => state.markItemAsDeleted);
 
-  const itemModel = item.itemModel;
+  const settingsStore = useAppSettingsStore();
+  const { showItemDescendantInternals } = settingsStore;
+  const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
 
   const canEdit = itemModel === "user" ? false : resumeAction === "edit";
 
@@ -43,28 +45,8 @@ export default function Item(props: ItemProps) {
     resolver: zodResolver(itemFormSchema),
   });
 
-  // Convert array to union type
-  type ItemFormFieldKeys = (typeof itemFormFields)[number];
-
-  // Define updatedKeyValue type
-  type FormKeyValueType = {
-    key: ItemFormFieldKeys;
-    value: string | number;
-  };
-
-  const settingsStore = useAppSettingsStore();
-  const { showItemDescendantInternals } = settingsStore;
-  const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
-
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [inputIsValid, setInputIsValid] = useState(true);
-
-  // Initialize local state for field values
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [fieldValues, setFieldValues] = useState(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    itemFormFields.reduce((acc, field) => ({ ...acc, [field]: "" }), {} as Record<string, any>),
-  );
 
   const updateValidationStatus = () => {
     const validationStatus = itemFormSchema.safeParse({ ...item });
@@ -72,62 +54,25 @@ export default function Item(props: ItemProps) {
     return validationStatus;
   };
 
-  function extractFieldName(input: string): ItemDataUntypedFieldNameType {
-    const parts = input.split("-");
-    return parts[parts.length - 1];
-  }
-
-  function getUpdatedKeyValueFromEvent(
-    event: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>,
-  ): FormKeyValueType | undefined {
-    if (event && event.target?.name) {
-      const updatedKeyValue = {
-        key: extractFieldName(event.target.name),
-        value: event.target.value,
-      };
-      return updatedKeyValue;
-    }
-  }
-
-  function getUpdatedKeyValueFromEdiTextField(value?: string, inputProps?: InputProps): FormKeyValueType | undefined {
-    if (value && inputProps?.name) {
-      const updatedKeyValue = {
-        key: extractFieldName(inputProps.name),
-        value,
-      };
-      return updatedKeyValue;
-    }
-  }
-
-  function handleUpdatedKeyValue(updatedKeyValue: FormKeyValueType | undefined) {
-    if (typeof updatedKeyValue === "undefined") return;
-    // Check if the field is a number and parse it
-    if (isNumberField(itemFormSchema, updatedKeyValue.key)) {
-      if (typeof updatedKeyValue.value !== "number") {
-        // Default to 0 if parsing fails
-        updatedKeyValue = { ...updatedKeyValue, value: parseFloat(updatedKeyValue.value) || 0 };
-      }
-    }
-
-    setFieldValues((prev) => ({ ...prev, ...updatedKeyValue }));
-    updateValidationStatus();
-    return updatedKeyValue;
-  }
-
   const handleChange = (event: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => {
-    // updateItemDraft({ ...itemDraft, [fieldName]: newValue });
-    const update = handleUpdatedKeyValue(getUpdatedKeyValueFromEvent(event));
-    if (update !== undefined) {
+    // const update = handleUpdatedKeyValue(getUpdatedKeyValueFromEvent(event));
+    const update = getUpdateFromEvent(itemFormSchema, event);
+    if (update) {
       // Update the Zustand store
-      setItemData({ [update.key]: update.value }, item.clientId);
+      setItemData(update, item.clientId);
+      // Update form state
+      updateValidationStatus();
     }
   };
 
   const handleSave = (value?: string, inputProps?: InputProps) => {
-    const update = handleUpdatedKeyValue(getUpdatedKeyValueFromEdiTextField(value, inputProps));
+    // const update = handleUpdatedKeyValue(getUpdatedKeyValueFromEdiTextField(value, inputProps));
+    const update = getUpdateFromEdiTextField(itemFormSchema, value, inputProps);
     if (update) {
       // Update the Zustand store
-      setItemData({ [update.key]: update.value }, item.clientId);
+      setItemData(update, item.clientId);
+      // Update form state
+      updateValidationStatus();
     }
   };
 

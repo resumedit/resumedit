@@ -2,20 +2,11 @@
 
 import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
-import { IdSchemaType } from "@/schemas/id";
-import {
-  ItemDescendantClientStateType,
-  ItemOrderableClientStateDescendantListType,
-} from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { findItemIndexByClientId } from "@/stores/itemDescendantStore/utils/descendantOrderValues";
+import { ItemClientStateType, ItemDataType, ItemDataUntypedType } from "@/schemas/item";
+import { ItemDescendantClientStateType, ItemDescendantOrderableClientStateListType } from "@/schemas/itemDescendant";
 import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
-import {
-  ClientIdType,
-  ItemClientStateType,
-  ItemDataType,
-  ItemDataUntypedType,
-  ItemOrderableClientStateType,
-} from "@/types/item";
+import { findItemIndexByClientId } from "@/stores/itemDescendantStore/utils/descendantOrderValues";
+import { ClientIdType } from "@/types/item";
 import {
   DndContext,
   DragEndEvent,
@@ -34,14 +25,13 @@ import DescendantInput from "./DescendantInput";
 import DescendantListItem from "./DescendantListItem";
 import DescendantListItemInput from "./DescendantListItemInput";
 
-interface ItemDescendantListProps extends ItemDescendantRenderProps {}
-export default function DescendantList(props: ItemDescendantListProps) {
+interface DescendantListProps extends ItemDescendantRenderProps {}
+export default function DescendantList(props: DescendantListProps) {
   const { ancestorClientIdChain, rootItemModel, leafItemModel, itemModel, item, resumeAction } = props;
 
-  // const clientId = item.clientId;
-
   const canEdit = resumeAction === "edit";
-  // const [editingInput, setEditingInput] = useState(canEdit);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [editingInput, setEditingInput] = useState(canEdit);
 
   const isRootItemModel = itemModel === rootItemModel;
   const isLeafItemModel = itemModel === leafItemModel;
@@ -64,43 +54,33 @@ export default function DescendantList(props: ItemDescendantListProps) {
   const setDescendantData = store((state) => state.setDescendantData);
   const markDescendantAsDeleted = store((state) => state.markDescendantAsDeleted);
 
-  const getItems = (): ItemOrderableClientStateDescendantListType<
-    ItemOrderableClientStateType,
-    ItemOrderableClientStateType
-  > => {
-    // window.consoleLog(
-    //   `DescendantInput:itemDraft(clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`,
-    // );
+  const getItems = (): ItemDescendantOrderableClientStateListType => {
+    window.consoleLog(`DescendantInput:getItems(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
     return getDescendants(ancestorClientIdChain);
   };
 
   const setItemData = (descendantData: ItemDataUntypedType, clientId: ClientIdType): void => {
-    // window.consoleLog(
-    //   `Descendant:setItemData(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
-    //     ancestorClientIdChain,
-    //   )}`,
-    // );
+    window.consoleLog(
+      `Descendant:setItemData(descendantData=${descendantData}, clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(
+        ancestorClientIdChain,
+      )}`,
+    );
     setDescendantData(descendantData, clientId, ancestorClientIdChain);
   };
 
-  const markItemAsDeleted = (clientId: IdSchemaType): void => {
-    // window.consoleLog(
-    //   `Descendant:markDescendantAsDeleted(clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(
-    //     ancestorClientIdChain,
-    //   )}`,
-    // );
+  const markItemAsDeleted = (clientId: ClientIdType): void => {
+    window.consoleLog(
+      `Descendant:markItemAsDeleted(clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(
+        ancestorClientIdChain,
+      )}`,
+    );
     markDescendantAsDeleted(clientId, ancestorClientIdChain);
   };
 
   const descendants = getItems();
 
   // Update the state with the new array
-  const reArrangeItems = (
-    updatedItemList: ItemOrderableClientStateDescendantListType<
-      ItemOrderableClientStateType,
-      ItemOrderableClientStateType
-    >,
-  ) => {
+  const reArrangeItems = (updatedItemList: ItemDescendantOrderableClientStateListType) => {
     reArrangeDescendants(updatedItemList, ancestorClientIdChain);
   };
 
@@ -113,7 +93,7 @@ export default function DescendantList(props: ItemDescendantListProps) {
   const commitDescendantDraft = store((state) => state.commitDescendantDraft);
 
   const getItemDraft = (): ItemDataType<ItemClientStateType> => {
-    // window.consoleLog(`DescendantInput:getItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
+    window.consoleLog(`DescendantInput:getItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
     return getDescendantDraft(ancestorClientIdChain);
   };
 
@@ -147,14 +127,12 @@ export default function DescendantList(props: ItemDescendantListProps) {
       const overIndex = findItemIndexByClientId(descendants, over!.id as string);
 
       // Return a new array
-      const updatedDescendants = descendants.map(
-        (descendant: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>, index: number) => {
-          if (index === activeIndex || index === overIndex) {
-            return { ...descendant };
-          }
-          return descendant;
-        },
-      );
+      const updatedDescendants = descendants.map((descendant: ItemDescendantClientStateType, index: number) => {
+        if (index === activeIndex || index === overIndex) {
+          return { ...descendant };
+        }
+        return descendant;
+      });
 
       // Update the state with the new array
       reArrangeItems(arrayMove(updatedDescendants, activeIndex, overIndex));
@@ -189,30 +167,28 @@ export default function DescendantList(props: ItemDescendantListProps) {
               itemDraft={itemDraft}
               updateItemDraft={updateItemDraft}
               commitItemDraft={commitItemDraft}
-              // editingInput={editingInput}
+              editingInput={editingInput}
               // setEditingInput={setEditingInput}
               canEdit={canEdit}
             />
           ) : null}
           <ItemDescendantSortableWrapper items={descendants} disabled={!descendantsAreDragable}>
-            {descendants.map(
-              (item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>, index: number) => {
-                return (
-                  <DescendantListItem
-                    key={item.clientId}
-                    index={index}
-                    rootItemModel={rootItemModel}
-                    itemModel={descendantModel}
-                    item={item as ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>}
-                    resumeAction={resumeAction}
-                    setItemData={setItemData}
-                    markItemAsDeleted={markItemAsDeleted}
-                    itemIsDragable={descendantsAreDragable}
-                    canEdit={canEdit}
-                  />
-                );
-              },
-            )}
+            {descendants.map((item: ItemDescendantClientStateType, index: number) => {
+              return (
+                <DescendantListItem
+                  key={item.clientId}
+                  index={index}
+                  rootItemModel={rootItemModel}
+                  itemModel={descendantModel}
+                  item={item as ItemDescendantClientStateType}
+                  resumeAction={resumeAction}
+                  setItemData={setItemData}
+                  markItemAsDeleted={markItemAsDeleted}
+                  itemIsDragable={descendantsAreDragable}
+                  canEdit={canEdit}
+                />
+              );
+            })}
           </ItemDescendantSortableWrapper>
         </ul>
       </DndContext>

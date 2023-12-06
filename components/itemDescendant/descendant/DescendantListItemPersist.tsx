@@ -2,7 +2,12 @@
 
 import { cn } from "@/lib/utils";
 import { DateTimeFormat, DateTimeSeparator, dateToISOLocal } from "@/lib/utils/formatDate";
-import { getItemSchema, getSchemaFields } from "@/lib/utils/itemDescendantListUtils";
+import {
+  getItemSchema,
+  getSchemaFields,
+  getUpdateFromEdiTextField,
+  getUpdateFromEvent,
+} from "@/lib/utils/itemDescendantListUtils";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,38 +15,31 @@ import { usePathname } from "next/navigation";
 import { useForm } from "react-hook-form";
 
 import { ItemClientStateType, ItemDataUntypedType } from "@/schemas/item";
-import { ItemDescendantClientStateType } from "@/schemas/itemDescendant";
 import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
 import { ClientIdType, ItemDisposition } from "@/types/item";
-import { ItemDescendantModelNameType } from "@/types/itemDescendant";
-import { ResumeActionType } from "@/types/resume";
 import { Grip } from "lucide-react";
+import { useState } from "react";
 import { InputProps } from "react-editext";
-import EditableField from "../utils/EditableField";
+import { ItemDescendantRenderProps } from "../ItemDescendantList.client";
+import EditableFieldPersist from "../utils/EditableFieldPersist";
 import { ItemActionButton } from "../utils/ItemActionButton";
 
-export interface DescendantListItemProps {
-  index: number;
-  rootItemModel: ItemDescendantModelNameType;
-  itemModel: ItemDescendantModelNameType;
-  item: ItemDescendantClientStateType;
-  resumeAction: ResumeActionType;
+export interface DescendantListItemPersistProps extends ItemDescendantRenderProps {
   setItemData: (data: ItemDataUntypedType, clientId: string) => void;
   markItemAsDeleted: (clientId: ClientIdType) => void;
   itemIsDragable: boolean;
   canEdit: boolean;
 }
-
-export default function DescendantListItem({
-  canEdit,
+export default function DescendantListItemPersist({
   resumeAction = "view",
-  itemIsDragable,
   index,
   itemModel,
   item,
   setItemData,
   markItemAsDeleted,
-}: DescendantListItemProps) {
+  itemIsDragable,
+  canEdit,
+}: DescendantListItemPersistProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: item.clientId,
   });
@@ -49,6 +47,13 @@ export default function DescendantListItem({
     transform: CSS.Transform.toString(transform),
     transition,
   };
+
+  // Construct the URL to edit this item
+  const pathname = usePathname();
+
+  const settingsStore = useAppSettingsStore();
+  const { showItemDescendantInternals } = settingsStore;
+  const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
 
   const itemFormSchema = getItemSchema(itemModel, "form");
   const itemFormFields = getSchemaFields(itemModel, "display");
@@ -60,30 +65,51 @@ export default function DescendantListItem({
     resolver: zodResolver(itemFormSchema),
   });
 
-  const settingsStore = useAppSettingsStore();
-  const { showItemDescendantInternals } = settingsStore;
-  const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [inputIsValid, setInputIsValid] = useState(true);
 
-  // Construct the URL to edit this item
-  const pathname = usePathname();
-  // FIXME: Moved into <ItemActionButton />
-  // const getItemActionURL = (action: ResumeActionType) =>
-  //   `${pathname.replace(rootItemModel, itemModel)}/${item.id}/${action}`;
+  const updateValidationStatus = () => {
+    const validationStatus = itemFormSchema.safeParse({ ...item });
+    setInputIsValid(validationStatus.success);
+    return validationStatus;
+  };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSave = (val: any, inputProps?: InputProps) => {
-    if (inputProps?.name) {
-      setItemData({ [inputProps.name]: val } as ItemDataUntypedType, item.clientId);
-    } else {
-      window.consoleLog(
-        `ItemDescendantListItem: missing field name in handleSave(value=`,
-        val,
-        `, inputProps=`,
-        inputProps,
-        `)`,
-      );
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => {
+    // const update = handleUpdatedKeyValue(getUpdatedKeyValueFromEvent(event));
+    const update = getUpdateFromEvent(itemFormSchema, event);
+    if (update) {
+      // Update the Zustand store
+      setItemData(update, item.clientId);
+      // Update form state
+      updateValidationStatus();
     }
   };
+
+  const handleSave = (value?: string, inputProps?: InputProps) => {
+    // const update = handleUpdatedKeyValue(getUpdatedKeyValueFromEdiTextField(value, inputProps));
+    const update = getUpdateFromEdiTextField(itemFormSchema, value, inputProps);
+    if (update) {
+      // Update the Zustand store
+      setItemData(update, item.clientId);
+      // Update form state
+      updateValidationStatus();
+    }
+  };
+
+  // // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // const handleSave = (val: any, inputProps?: InputProps) => {
+  //   if (inputProps?.name) {
+  //     setItemData({ [inputProps.name]: val } as ItemDataUntypedType, item.clientId);
+  //   } else {
+  //     window.consoleLog(
+  //       `ItemDescendantListItemPersist: missing field name in handleSave(value=`,
+  //       val,
+  //       `, inputProps=`,
+  //       inputProps,
+  //       `)`,
+  //     );
+  //   }
+  // };
 
   return item.deletedAt ? null : (
     <div
@@ -130,10 +156,12 @@ export default function DescendantListItem({
             key={index}
             className="flex-1 text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4"
           >
-            <EditableField
+            <EditableFieldPersist
               key={field}
               fieldName={field}
               value={item[field as keyof ItemClientStateType] as string}
+              placeholder={`${field} for ${item.itemModel}`}
+              onChange={handleChange}
               onSave={handleSave}
               canEdit={canEdit}
             />

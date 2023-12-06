@@ -3,7 +3,8 @@
 import { cn } from "@/lib/utils";
 import { getItemSchema, getSchemaFields, isNumberField } from "@/lib/utils/itemDescendantListUtils";
 import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
-import { ItemClientStateType, ItemDataType, ItemDataUntypedFieldNameType, ItemDataUntypedType } from "@/types/item";
+import { ItemDataType, ItemDataUntypedFieldNameType, ItemDataUntypedType } from "@/schemas/item";
+import { ItemClientStateType } from "@/schemas/item";
 import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { Plus } from "lucide-react";
 import { /*Dispatch, SetStateAction, */ useState } from "react";
@@ -18,13 +19,13 @@ interface DescendantListItemInputProps {
   updateItemDraft: (itemData: ItemDataUntypedType) => void;
   commitItemDraft: () => void;
   canEdit: boolean;
-  // editingInput: boolean;
+  editingInput: boolean;
   // setEditingInput: Dispatch<SetStateAction<boolean>>;
 }
 
 export default function DescendantListItemInput({
   canEdit,
-  // editingInput /* setEditingInput, */,
+  editingInput /* setEditingInput, */,
   itemModel,
   itemDraft,
   updateItemDraft,
@@ -138,7 +139,7 @@ export default function DescendantListItemInput({
             placeholder={`${fieldName}`}
             onChange={handleChange}
             onSave={handleSave}
-            // editing={editingInput}
+            editing={editingInput}
             canEdit={canEdit}
             className="flex-1 flex gap-x-4 gap-y-2"
           />

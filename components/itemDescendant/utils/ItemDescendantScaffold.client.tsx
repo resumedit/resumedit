@@ -5,9 +5,8 @@
 import { ItemDescendantStoreProvider, useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { ResumeActionProvider } from "@/contexts/ResumeActionContext";
 import { StoreNameProvider, useStoreName } from "@/contexts/StoreNameContext";
-import { getItemId } from "@/schemas/id";
-import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { ItemClientStateType } from "@/types/item";
+import { getClientId } from "@/schemas/id";
+import { ItemDescendantClientStateType } from "@/schemas/itemDescendant";
 import { getParentModel } from "@/types/itemDescendant";
 
 import { AchievementItemClientStateType } from "@/schemas/achievement";
@@ -18,12 +17,8 @@ import { UserItemClientStateType } from "@/schemas/user";
 import { useEffect, useState } from "react";
 import { ItemDescendantListContextProps } from "../ItemDescendantList.client";
 
-const ItemDescendantScaffold = ({
-  item,
-}: {
-  item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>;
-}) => {
-  const renderItemBasedOnLevel = (item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>) => {
+const ItemDescendantScaffold = ({ item }: { item: ItemDescendantClientStateType }) => {
+  const renderItemBasedOnLevel = (item: ItemDescendantClientStateType) => {
     let modelItem;
     switch (item.itemModel) {
       case "user":
@@ -114,8 +109,8 @@ export default function ItemDescendantScaffoldClientComponent(props: ItemDescend
   const { serverState, resumeAction } = props;
 
   const itemModel = serverState.itemModel;
-  const parentClientId = getItemId(getParentModel(itemModel));
-  const clientId = getItemId(itemModel!);
+  const parentClientId = getClientId(getParentModel(itemModel));
+  const clientId = getClientId(itemModel!);
 
   const parentId = serverState.parentId;
   const id = serverState.id;

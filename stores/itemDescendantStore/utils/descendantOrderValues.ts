@@ -1,5 +1,6 @@
 import { IdSchemaType } from "@/schemas/id";
-import { ItemClientStateType, ItemDisposition, ItemOrderableClientStateType } from "@/types/item";
+import { ItemDisposition } from "@/types/item";
+import { ItemClientStateType, ItemOrderableClientStateType } from "@/schemas/item";
 
 /**
  * Helper function for finding index of descendant object in given array

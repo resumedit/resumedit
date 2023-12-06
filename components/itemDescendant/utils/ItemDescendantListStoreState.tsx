@@ -7,12 +7,12 @@ import { dateToISOLocal } from "@/lib/utils/formatDate";
 import { ItemDescendantServerStateType } from "@/schemas/itemDescendant";
 import { ItemDescendantModelAccessor } from "@/types/itemDescendant";
 
-interface ItemDescendantStoreStateProps {
+interface ItemDescendantStoreStateTypeProps {
   storeName: keyof ItemDescendantModelAccessor;
   serverState: ItemDescendantServerStateType;
 }
 
-export default function ItemDescendantListStoreStateComponent(props: ItemDescendantStoreStateProps) {
+export default function ItemDescendantListStoreStateComponent(props: ItemDescendantStoreStateTypeProps) {
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);
   const rootState = store((state) => state);

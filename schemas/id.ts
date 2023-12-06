@@ -14,6 +14,10 @@ const uuidRegex = String.raw`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a
 //     and finally the UUID regex without the first character (`^`)
 export const idRegex = String.raw`^[a-z0-9]{3,3}` + String.raw`-` + uuidRegex.slice(1);
 
+/*
+ * SERVER identifiers used in Prisma
+ */
+
 // export const idSchema = z.string().uuid(); // UUID
 export const idSchema = z.string().regex(RegExp(idRegex)); // UUID with prefix
 export const idDefault = "nul-00000000-0000-0000-0000-000000000000";
@@ -43,6 +47,23 @@ export function getItemId(kind: ItemDescendantModelNameType | null) {
   const kindPrefix = kind ? idPrefix[kind] || kind.substring(0, 3) : "und";
   return `${kindPrefix}-${v4()}`;
 }
+
+/*
+ * CLIENT identifiers used in Zustand
+ * Exactly the same as server ids.
+ */
+export const clientIdSchema = idSchema; // Same as server
+export const clientIdDefault = "nul-00000000-0000-0000-0000-000000000000";
+
+export type ClientIdSchemaType = z.infer<typeof clientIdSchema>;
+
+export function getClientId(kind: ItemDescendantModelNameType | null) {
+  return getItemId(kind);
+}
+
+export const isValidClientId = (id: string | null | undefined): boolean => {
+  return isValidItemId(id);
+};
 
 function findKeyByValue(map: object, value: string): string | undefined {
   for (const [key, val] of Object.entries(map)) {

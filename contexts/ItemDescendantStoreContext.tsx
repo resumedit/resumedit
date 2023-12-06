@@ -1,27 +1,25 @@
-// @/contexts/ItemDescendantStoreProvider
-
+// @/contexts/ItemDescendantStoreProvider.tsx
+import useLogging from "@/hooks/useLogging";
 import {
-  ItemDescendantHookType,
   ItemDescendantStoreConfigType,
   createItemDescendantStore,
 } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { ItemClientStateType } from "@/types/item";
-import { ItemDescendantModelAccessor } from "@/types/itemDescendant";
+import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { ReactNode, createContext, useContext, useEffect, useState } from "react";
 
-import useLogging from "@/hooks/useLogging";
+// Define the type for the context value
+type ItemDescendantStores = Record<ItemDescendantModelNameType, ReturnType<typeof createItemDescendantStore>>;
+
+// Create context
+const ItemDescendantStoreContext = createContext<ItemDescendantStores | null>(null);
 
 interface ItemDescendantStoreProviderProps {
   children: ReactNode;
   configs: ItemDescendantStoreConfigType[];
 }
 
-type RecordType = Record<keyof ItemDescendantModelAccessor, ItemDescendantHookType>;
-
-const ItemDescendantStoreContext = createContext<RecordType>({} as RecordType);
-
 export function ItemDescendantStoreProvider({ children, configs }: ItemDescendantStoreProviderProps) {
-  const [stores, setStores] = useState<RecordType>({} as RecordType);
+  const [stores, setStores] = useState<ItemDescendantStores | null>(null);
   // Track initialization of stores
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -31,14 +29,10 @@ export function ItemDescendantStoreProvider({ children, configs }: ItemDescendan
 
   useEffect(() => {
     if (!isInitialized) {
-      // Inside useEffect of the ItemDescendantStoreProvider
-      const initializedStores = configs.reduce(
-        (acc, config) => {
-          acc[config.itemModel] = createItemDescendantStore<ItemClientStateType, ItemClientStateType>(config);
-          return acc;
-        },
-        {} as Record<keyof ItemDescendantModelAccessor, ItemDescendantHookType>,
-      );
+      const initializedStores = configs.reduce((acc, config) => {
+        acc[config.itemModel] = createItemDescendantStore(config);
+        return acc;
+      }, {} as ItemDescendantStores);
 
       setStores(initializedStores);
       setIsInitialized(true);
@@ -51,7 +45,7 @@ export function ItemDescendantStoreProvider({ children, configs }: ItemDescendan
 }
 
 // Custom hook to use the context
-export const useItemDescendantStore = (model: keyof ItemDescendantModelAccessor) => {
+export const useItemDescendantStore = (model: ItemDescendantModelNameType) => {
   const context = useContext(ItemDescendantStoreContext);
   if (!context) {
     throw new Error("useItemDescendantStore must be used within a ItemDescendantStoreProvider");

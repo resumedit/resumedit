@@ -4,14 +4,16 @@ import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 // import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { ItemClientStateType, ItemDataType, ItemDataUntypedType } from "@/types/item";
+import { ItemClientStateType, ItemDataType, ItemDataUntypedType } from "@/schemas/item";
+import { useState } from "react";
 import { ItemDescendantRenderProps } from "../ItemDescendantList.client";
 import DescendantListItemInput from "./DescendantListItemInput";
 
 export default function DescendantInput(props: ItemDescendantRenderProps) {
   const { ancestorClientIdChain, item, itemModel, resumeAction } = props;
   const canEdit = resumeAction === "edit";
-  // const [editingInput, setEditingInput] = useState(canEdit);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [editingInput, setEditingInput] = useState(canEdit);
 
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);
@@ -25,16 +27,12 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
   };
 
   const updateItemDraft = (descendantData: ItemDataUntypedType): void => {
-    // window.consoleLog(
-    //   `DescendantInput:updateItemDraft(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
-    //     ancestorClientIdChain,
-    //   )}`,
-    // );
+    // window.consoleLog(`DescendantInput:updateItemDraft(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
     updateDescendantDraft(descendantData, ancestorClientIdChain);
   };
 
   const commitItemDraft = (): void => {
-    // window.consoleLog(`DescendantInput:commitItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
+    // window.consoleLog(`DescendantInput:commitItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`,);
     commitDescendantDraft(ancestorClientIdChain);
   };
 
@@ -60,7 +58,7 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
         itemDraft={itemDraft}
         updateItemDraft={updateItemDraft}
         commitItemDraft={commitItemDraft}
-        // editingInput={editingInput}
+        editingInput={editingInput}
         // setEditingInput={setEditingInput}
         canEdit={canEdit}
       />

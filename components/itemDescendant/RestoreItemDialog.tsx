@@ -2,8 +2,7 @@
 
 import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
-import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { ItemClientStateType } from "@/types/item";
+import { ItemDescendantClientStateType } from "@/schemas/itemDescendant";
 import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { ItemDescendantRenderProps } from "./ItemDescendantList.client";
 
@@ -23,7 +22,7 @@ import { useState } from "react";
 export interface ItemProps extends ItemDescendantRenderProps {
   rootItemModel: ItemDescendantModelNameType;
   itemModel: ItemDescendantModelNameType;
-  item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>;
+  item: ItemDescendantClientStateType;
 }
 export default function Item(props: ItemProps) {
   const { item } = props;

@@ -43,7 +43,7 @@ export type ItemClientToServerType = Omit<ItemType, "id"> & {
 
 // Type used by client to maintain client state
 export type ItemClientStateType = ItemClientToServerType & {
-  clientId: IdSchemaType;
+  clientId: ClientIdType;
 };
 
 // Type used by server to maintain server state

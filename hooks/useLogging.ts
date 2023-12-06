@@ -19,11 +19,11 @@ const useLogging = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       window.consoleLog = (...args: any[]) => {
         if (window[siteConfig.name].isLoggingEnabled) {
-          const stack = new Error().stack;
-          // Attempt to extract caller info from the stack trace
-          const callerInfo = stack ? stack.split("\n")[2].trim() : null;
-          console.log(callerInfo, ...args);
-          // console.log(...args);
+          console.log(...args);
+          // const stack = new Error().stack;
+          // // Attempt to extract caller info from the stack trace
+          // const callerInfo = stack ? stack.split("\n")[2].trim() : null;
+          // console.log(callerInfo, ...args);
         }
       };
     }

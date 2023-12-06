@@ -39,6 +39,22 @@ export function stripFields<T extends object, K extends keyof T>(obj: T, fieldsT
   return result as Omit<T, K>;
 }
 
+export function stripToType<OriginalT extends object, KeyOfOriginalT extends keyof OriginalT, TargetT>(
+  original: OriginalT,
+  propertiesToRemove: Array<KeyOfOriginalT>,
+): TargetT {
+  const result: Partial<OriginalT> = {};
+
+  const propertiesToRemoveSet = new Set<keyof OriginalT>(propertiesToRemove);
+  for (const key in original) {
+    if (!propertiesToRemoveSet.has(key as string as KeyOfOriginalT)) {
+      result[key] = original[key];
+    }
+  }
+
+  return result as TargetT;
+}
+
 /* FIXME: This code generated a list of parentId keys, such as `userId`, `resumeId`, etc., 
    based on the `itemDescendantModels` map. Since meanwhile all parent id columns are 
    called `parentId`, this code is no longer used.

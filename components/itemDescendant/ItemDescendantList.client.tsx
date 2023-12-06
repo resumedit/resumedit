@@ -5,11 +5,13 @@
 import { ItemDescendantStoreProvider, useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { ResumeActionProvider } from "@/contexts/ResumeActionContext";
 import { StoreNameProvider, useStoreName } from "@/contexts/StoreNameContext";
-import { getItemId } from "@/schemas/id";
+import { getClientId } from "@/schemas/id";
 import { ItemDescendantServerStateType } from "@/schemas/itemDescendant";
 import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
-import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { ClientIdType, ItemClientStateType, ItemDataType, ItemDataUntypedType } from "@/types/item";
+import { ItemDescendantClientStateType } from "@/schemas/itemDescendant";
+import { ClientIdType } from "@/types/item";
+import { ItemDataType, ItemDataUntypedType } from "@/schemas/item";
+import { ItemClientStateType } from "@/schemas/item";
 import { ItemDescendantModelNameType, getDescendantModel, getParentModel } from "@/types/itemDescendant";
 import { ResumeActionType } from "@/types/resume";
 import { Dispatch, ReactNode, SetStateAction, useEffect, useState } from "react";
@@ -24,7 +26,7 @@ export interface ItemDescendantRenderProps {
   index: number;
   ancestorClientIdChain: Array<ClientIdType>;
   // id: string;
-  item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>;
+  item: ItemDescendantClientStateType;
   itemModel: ItemDescendantModelNameType;
   rootItemModel: ItemDescendantModelNameType;
   leafItemModel: ItemDescendantModelNameType;
@@ -38,7 +40,7 @@ export interface ItemDescendantRenderProps {
   ) => void;
   // addDescendant: (descendantData: ItemDataType<C>) => void; // FIXME: Untested
   markDescendantAsDeleted: (clientId: ClientIdType, ancestorClientIds: Array<ClientIdType>) => void;
-  // reArrangeDescendants: (reArrangedDescendants: ItemClientStateDescendantListType<ItemClientStateType, ItemClientStateType>) => void;
+  // reArrangeDescendants: (reArrangedDescendants: ItemDescendantClientStateListType) => void;
   // resetDescendantsOrderValues: () => void;
   getDescendantDraft: (ancestorClientIds: Array<ClientIdType>) => ItemDataType<ItemClientStateType>;
   updateDescendantDraft: (descendantData: ItemDataUntypedType, ancestorClientIds: Array<ClientIdType>) => void;
@@ -63,6 +65,7 @@ function ItemDescendantListRender(props: ItemDescendantRenderProps): ReactNode {
     descendantModel: descendantDescendantModel,
     parentId: item.id,
     parentClientId: item.clientId,
+    ancestorClientIdChain: [item.clientId, ...ancestorClientIdChain],
   };
 
   return (
@@ -86,12 +89,7 @@ function ItemDescendantListRender(props: ItemDescendantRenderProps): ReactNode {
               ?.filter((descendant) => !descendant.deletedAt)
               .map((descendant, descendantIndex) => (
                 <li key={descendant.clientId}>
-                  <ItemDescendantListRender
-                    {...descendantProps}
-                    index={descendantIndex}
-                    item={descendant}
-                    ancestorClientIdChain={[...ancestorClientIdChain, descendant.clientId]}
-                  />
+                  <ItemDescendantListRender {...descendantProps} index={descendantIndex} item={descendant} />
                   {/*
                     !editingInput || item.descendantModel === leafItemModel || !descendantDescendantModel ? (
                       <div>{`editingInput=${editingInput} item.descendantModel === leafItemModel=${
@@ -178,8 +176,8 @@ export default function ItemDescendantListContext(props: ItemDescendantListConte
   const { serverState, resumeAction } = props;
 
   const itemModel = serverState.itemModel;
-  const parentClientId = getItemId(getParentModel(itemModel));
-  const clientId = getItemId(itemModel!);
+  const parentClientId = getClientId(getParentModel(itemModel));
+  const clientId = getClientId(itemModel!);
   const parentId = serverState.parentId;
   const id = serverState.id;
   const storeVersion = 1; // FIXME: add logic to determine the version from the serverUpdate

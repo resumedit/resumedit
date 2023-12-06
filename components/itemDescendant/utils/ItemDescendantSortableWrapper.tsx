@@ -1,12 +1,11 @@
 // @/components/itemDescendant/ItemDescendantSortableWrapper.tsx
 
-import { ItemClientStateDescendantListType } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { ItemClientStateType } from "@/types/item";
+import { ItemDescendantClientStateListType } from "@/schemas/itemDescendant";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { ReactNode } from "react";
 
 interface ItemDescendantSortableWrapperProps {
-  items: ItemClientStateDescendantListType<ItemClientStateType, ItemClientStateType>;
+  items: ItemDescendantClientStateListType;
   disabled?: boolean;
   children: ReactNode;
 }

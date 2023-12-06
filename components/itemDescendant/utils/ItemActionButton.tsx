@@ -1,18 +1,13 @@
 // @/components/itemDescendant/ItemDescendant.client.tsx
 "use client";
 import { idRegex } from "@/schemas/id";
-import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { ItemClientStateType } from "@/types/item";
+import { ItemDescendantClientStateType } from "@/schemas/itemDescendant";
 import { itemDescendantModelHierarchy } from "@/types/itemDescendant";
 import { ResumeActionType, resumeActionButtonIcons, resumeActionTypes } from "@/types/resume";
 import Link from "next/link";
 import { Button } from "../../ui/button";
 
-export function getActionURL(
-  pathname: string,
-  item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>,
-  action: ResumeActionType = "edit",
-) {
+export function getActionURL(pathname: string, item: ItemDescendantClientStateType, action: ResumeActionType = "edit") {
   // Regex pattern that combines item model and ID patterns
   const itemModelRE = new RegExp(itemDescendantModelHierarchy.join("|"));
   const idUnanchoredRE = new RegExp(idRegex.substring(1, idRegex.length - 1));
@@ -28,7 +23,7 @@ export function getActionURL(
 
 export interface ItemActionButtonProps {
   pathname: string;
-  item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>;
+  item: ItemDescendantClientStateType;
   action?: ResumeActionType;
 }
 export function ItemActionButton(props: ItemActionButtonProps) {
