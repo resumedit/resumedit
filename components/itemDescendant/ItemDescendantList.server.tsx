@@ -7,6 +7,7 @@ import { getCurrentUserIdOrNull } from "@/actions/user";
 import { IdSchemaType } from "@/schemas/id";
 import {
   ItemDescendantModelAccessor,
+  ItemDescendantModelNameType,
   getDescendantModel,
   getParentModel,
   itemDescendantModelHierarchy,
@@ -76,7 +77,8 @@ export default async function ItemDescendantList({ itemModel, itemId, ...props }
 
   let serverState,
     levels: Array<Record<string, string>> = [],
-    leafItemModel = itemDescendantModelHierarchy[itemDescendantModelHierarchy.length - 1];
+    leafItemModel: ItemDescendantModelNameType | null =
+      itemDescendantModelHierarchy[itemDescendantModelHierarchy.length - 1];
 
   if (itemId) {
     // If we are at the top level ("user"), we only show a flat list of
@@ -90,25 +92,26 @@ export default async function ItemDescendantList({ itemModel, itemId, ...props }
       serverState = await getItemDescendantList(itemModel, itemId);
     }
   } else {
-    // Otherwise we look for the latest item of the given itemModel
+    // Otherwise:
+    // - If itemModel is resume, we show all resumes of the user
+    // - For any other itemModel, we try to descend the hierarchy along the least
+    // recently created item of the given itemModel
     const targetItemModel = itemModel;
-    let derivedItemId: string | null = userId;
+    let derivedItemId: string = userId;
 
     // Start with a list of resumes owned by the current user
-    let derivedItemModel: string | null = itemDescendantModelHierarchy[0];
+    let derivedItemModel: string = itemDescendantModelHierarchy[0];
     if (derivedItemModel !== "user") {
       throw Error(`ItemDescendantServerComponent: invalid initial itemModel=${derivedItemModel}; should be "user"`);
     }
     levels = [{ itemModel: derivedItemModel, itemId: derivedItemId }];
 
-    while (derivedItemModel !== targetItemModel && (derivedItemModel = getDescendantModel(derivedItemModel))) {
+    while ((leafItemModel = getDescendantModel(derivedItemModel)) !== targetItemModel && leafItemModel) {
+      derivedItemModel = leafItemModel;
       const itemList = await getItemsByParentId(derivedItemModel, derivedItemId);
       if (itemList?.length > 0) {
         derivedItemId = itemList[0].id;
         levels = [...levels, { itemModel: derivedItemModel, itemId: derivedItemId }];
-        // if (derivedItemModel === targetItemModel) {
-        //   break;
-        // }
       } else {
         return (
           <>
@@ -121,14 +124,19 @@ export default async function ItemDescendantList({ itemModel, itemId, ...props }
         );
       }
     }
+    if (!derivedItemModel) {
+      throw Error(
+        `ItemDescendantServerComponent: ItemDescendantServerComponent(itemModel=${itemModel}): Failed to descend to this model`,
+      );
+    }
 
-    if (derivedItemModel && derivedItemId) {
+    if (leafItemModel && derivedItemId) {
       serverState = await getItemDescendantList(derivedItemModel, derivedItemId);
 
       console.log(`ItemDescendantServerComponent: serverState:`, serverState);
     } else {
       throw Error(
-        `ItemDescendantServerComponent: getItemDescendantList(itemModel=${derivedItemModel}, derivedItemId=${derivedItemId}) returned nothing`,
+        `ItemDescendantServerComponent: getItemDescendantList(leafItemModel=${leafItemModel}, derivedItemId=${derivedItemId}) returned nothing`,
       );
     }
   }

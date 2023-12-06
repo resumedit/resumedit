@@ -176,7 +176,7 @@ function RenderBreadcrumbs({
 }: BreadcrumbsProps) {
   const pathname = usePathname();
   const [breadcrumbs, setBreadcrumbs] = useState<Array<Breadcrumb> | null>(null);
-  const [itemActionMenu, setItemActionMenu] = useState<ReactNode>(<span>ItemActionMenu</span>);
+  // const [itemActionMenu, setItemActionMenu] = useState<ReactNode>(<span>ItemActionMenu</span>);
 
   useEffect(() => {
     if (pathname) {
@@ -191,13 +191,25 @@ function RenderBreadcrumbs({
       });
 
       setBreadcrumbs(pathArray);
-      setItemActionMenu(ItemActionMenu(pathname));
+      // setItemActionMenu(
+      //   ItemActionMenu(pathname, breadcrumbs ? breadcrumbs[breadcrumbs.length - 1].breadcrumb || undefined : undefined),
+      // );
     }
   }, [pathname]);
 
   if (!breadcrumbs) {
     return null;
   }
+
+  const lastItemTitle = breadcrumbs ? breadcrumbs[breadcrumbs.length - 2]?.breadcrumb || undefined : undefined;
+  const itemModel = getItemModelFromId(lastItemTitle);
+
+  let actionMenuTitle;
+  if (itemModel) {
+    actionMenuTitle = `Actions for ${itemModel} ${getPrefixFromId(lastItemTitle)}`;
+  }
+
+  const itemActionMenu = ItemActionMenu(pathname, actionMenuTitle);
 
   return breadcrumbs.length === 0 || breadcrumbs[0].href === "/" ? null : (
     <nav style={containerStyle} className={containerClassName} aria-label="breadcrumbs">
@@ -225,9 +237,9 @@ function RenderBreadcrumbs({
                 className={i === breadcrumbs.length - 1 ? activeItemClassName : inactiveItemClassName}
                 style={i === breadcrumbs.length - 1 ? activeItemStyle : inactiveItemStyle}
               >
-                {itemActionMenu && i === breadcrumbs.length - 1 ? (
+                {itemActionMenu && i === breadcrumbs.length - 2 ? (
                   itemActionMenu
-                ) : (
+                ) : itemActionMenu && i === breadcrumbs.length - 1 ? null : (
                   <Link
                     href={breadcrumb.href}
                     className={i === breadcrumbs.length - 1 ? activeItemLinkClassName : inactiveItemLinkClassName}

@@ -121,4 +121,12 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* FIXME: Styling react-editext does not work as expected
+  // https://www.npmjs.com/package/react-editext/v/3.18.0
+  div[editext="button-container"] {
+    display: none;
+    margin: 0;
+    padding: 0;
+  }
+  */
 }

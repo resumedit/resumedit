@@ -31,7 +31,10 @@ type ResumeActionsURLMap = {
   [K in ResumeActionType]: ActionURL;
 };
 
-export function getItemActions(pathname: string): { menuTitle: string; actions: ResumeActionsURLMap } | undefined {
+export function getItemActions(
+  pathname: string,
+  title?: string,
+): { menuTitle: string; actions: ResumeActionsURLMap } | undefined {
   // Define the regular expression with named groups
   const itemModelRE = itemDescendantModelHierarchy.join("|");
   const itemIdRE = idRegex.substring(1, idRegex.length - 1);
@@ -60,9 +63,12 @@ export function getItemActions(pathname: string): { menuTitle: string; actions: 
   const viewActionURL = `${actionBaseURL}/view`;
   const editActionURL = `${actionBaseURL}/edit`;
 
+  // Construct the menu title unless it has been passed as an argument
+  const menuTitle = title || sentenceCase(`${itemModel} actions`);
+
   // Construct and return the object with URLs
   return {
-    menuTitle: sentenceCase(`${itemModel} actions`),
+    menuTitle,
     actions: {
       view: { title: `View ${itemModel}`, url: viewActionURL, active: itemAction === "view" },
       edit: { title: `Edit ${itemModel}`, url: editActionURL, active: itemAction === "edit" },
@@ -70,9 +76,9 @@ export function getItemActions(pathname: string): { menuTitle: string; actions: 
   };
 }
 
-export function ItemActionMenu(pathname: string): ReactNode {
+export function ItemActionMenu(pathname: string, title?: string): ReactNode {
   // Render an action menu if and only if we are already on a specific item
-  const itemActions = getItemActions(pathname);
+  const itemActions = getItemActions(pathname, title);
   if (!itemActions) return null;
 
   return (

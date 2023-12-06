@@ -29,12 +29,12 @@ export default function DescendantList(props: ItemDescendantListProps) {
   const { rootItemModel, leafItemModel, itemModel, item, resumeAction } = props;
 
   const canEdit = resumeAction === "edit";
-  const [editingInput, setEditingInput] = useState(canEdit);
+  // const [editingInput, setEditingInput] = useState(canEdit);
 
   const isRootItemModel = itemModel === rootItemModel;
   const isLeafItemModel = itemModel === leafItemModel;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [inlineInsert, setInlineInsert] = useState(isRootItemModel && !isLeafItemModel);
+  const [inlineInsert, setInlineInsert] = useState(!isRootItemModel && !isLeafItemModel);
 
   const settingsStore = useSettingsStore();
   const { showItemDescendantInternals } = settingsStore;
@@ -98,7 +98,7 @@ export default function DescendantList(props: ItemDescendantListProps) {
           Reset order
         </button>
       ) : null}
-      {canEdit && descendantModel === "resume" ? <DescendantInput {...props} itemModel={descendantModel} /> : null}
+      {canEdit && !inlineInsert ? <DescendantInput {...props} itemModel={descendantModel} /> : null}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -112,8 +112,8 @@ export default function DescendantList(props: ItemDescendantListProps) {
               itemDraft={descendantDraft}
               updateItemDraft={updateDescendantDraft}
               commitItemDraft={commitDescendantDraft}
-              editingInput={editingInput}
-              setEditingInput={setEditingInput}
+              // editingInput={editingInput}
+              // setEditingInput={setEditingInput}
               canEdit={canEdit}
             />
           ) : null}

@@ -6,7 +6,7 @@ import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { ItemClientStateType, ItemDataType, ItemDataUntypedFieldNameType, ItemDataUntypedType } from "@/types/item";
 import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { Plus } from "lucide-react";
-import { Dispatch, SetStateAction, useState } from "react";
+import { /*Dispatch, SetStateAction, */ useState } from "react";
 import { InputProps } from "react-editext";
 import { Button } from "../../ui/button";
 import { toast } from "../../ui/use-toast";
@@ -18,13 +18,13 @@ interface DescendantListItemInputProps {
   updateItemDraft: (itemData: ItemDataUntypedType) => void;
   commitItemDraft: () => void;
   canEdit: boolean;
-  editingInput: boolean;
-  setEditingInput: Dispatch<SetStateAction<boolean>>;
+  // editingInput: boolean;
+  // setEditingInput: Dispatch<SetStateAction<boolean>>;
 }
 
 export default function DescendantListItemInput({
   canEdit,
-  editingInput /* setEditingInput, */,
+  // editingInput /* setEditingInput, */,
   itemModel: itemModel,
   itemDraft: itemDraft,
   updateItemDraft,
@@ -133,7 +133,7 @@ export default function DescendantListItemInput({
             placeholder={`${fieldName}`}
             onChange={handleChange}
             onSave={handleSave}
-            editing={editingInput}
+            // editing={editingInput}
             canEdit={canEdit}
             className="flex-1 flex gap-x-4 gap-y-2"
           />
@@ -143,8 +143,8 @@ export default function DescendantListItemInput({
         {<Plus />}
       </Button>
       {showListItemInternals && (
-        <div className={cn("my-2", { "bg-muted-foreground": editingInput })}>
-          <span>itermDraft=</span>
+        <div className={cn("my-2", { "bg-muted-foreground": canEdit /*editingInput */ })}>
+          <span>itemDraft=</span>
           <code>{JSON.stringify(itemDraft)}</code>
         </div>
       )}

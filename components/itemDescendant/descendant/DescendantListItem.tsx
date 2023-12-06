@@ -17,8 +17,8 @@ import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { ResumeActionType } from "@/types/resume";
 import { Grip } from "lucide-react";
 import { InputProps } from "react-editext";
-import { ItemActionButton } from "../utils/ItemActionButton";
 import EditableField from "../utils/EditableField";
+import { ItemActionButton } from "../utils/ItemActionButton";
 
 export interface DescendantListItemProps {
   index: number;
@@ -111,7 +111,9 @@ export default function DescendantListItem({
           </Link>
         </div>
       ) : null} */}
-      {canEdit && item.id ? <ItemActionButton pathname={pathname} item={item} action={resumeAction} /> : null}
+      {item.id && (itemModel === "resume" || pathname.startsWith("/item")) ? (
+        <ItemActionButton pathname={pathname} item={item} action={resumeAction} />
+      ) : null}
       {canEdit && itemIsDragable ? (
         <div
           className={cn("h-full flex items-center", {

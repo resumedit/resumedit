@@ -346,7 +346,7 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
             );
           }
           set((state) => {
-            handleItemDescendantListFromServer(state, serverState);
+            handleItemDescendantListFromServer(state, serverState, logUpdateFromServer);
             // state.descendants = [
             //   ...state.descendants,
             //   ...serverState.descendants.map((descendant) => {

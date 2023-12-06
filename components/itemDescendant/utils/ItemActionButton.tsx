@@ -23,7 +23,7 @@ export function getActionURL(
   const baseURL = pathname.replace(combinedRE, "");
 
   // Construct and return the new URL
-  return `/${baseURL}/${item.itemModel}/${item.id}/${action}`;
+  return `/${baseURL ? baseURL + "/" : ""}${item.itemModel}/${item.id}/${action}`;
 }
 
 export interface ItemActionButtonProps {
@@ -36,7 +36,7 @@ export function ItemActionButton(props: ItemActionButtonProps) {
   const actionURL = getActionURL(pathname, item, action);
   const actionButtonInner = resumeActionButtonIcons[action];
 
-  return actionURL.match(/\/(item)/) ? (
+  return actionURL ? (
     <Link href={actionURL}>
       <Button variant="ghost">{actionButtonInner}</Button>
     </Link>

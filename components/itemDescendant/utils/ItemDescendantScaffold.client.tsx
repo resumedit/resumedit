@@ -96,7 +96,7 @@ function ItemDescendantClientContext(props: ItemDescendantClientContextProps) {
 
   useEffect(() => {
     if (updateStoreWithServerData && !isStoreInitialized) {
-      console.log(`ItemDescendantClientContext: useEffect with serverState:`, serverState);
+      // console.log(`ItemDescendantClientContext: useEffect with serverState:`, serverState);
       updateStoreWithServerData(serverState);
       setStoreInitialized(true);
     }

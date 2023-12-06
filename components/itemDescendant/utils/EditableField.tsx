@@ -27,7 +27,7 @@ export const EditableFieldEdiTextProps = {
     editOnViewClick: true,
     startEditingOnFocus: true,
     submitOnEnter: true,
-    saveButtonClassName: "invisible",
+    saveButtonClassName: "hidden",
     editButtonClassName: "hidden",
     cancelButtonClassName: "hidden",
     // mainContainerClassName: "p-0",

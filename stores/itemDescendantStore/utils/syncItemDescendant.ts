@@ -225,7 +225,11 @@ export function handleItemDescendantListFromServer<
   C extends ItemClientStateType,
   SI extends ItemServerToClientType,
   SC extends ItemServerToClientType,
->(clientState: Draft<ItemDescendantStore<I, C>>, serverState: ItemDescendantServerStateType<SI, SC>): void {
+>(
+  clientState: Draft<ItemDescendantStore<I, C>>,
+  serverState: ItemDescendantServerStateType<SI, SC>,
+  logUpdateFromServer = false,
+): void {
   if (!(clientState.lastModified instanceof Date)) {
     throw Error(
       `handleItemDescendantListFromServer: store has invalid lastModified=${
@@ -252,22 +256,27 @@ export function handleItemDescendantListFromServer<
       `server: lastModified=${serverModified} descendants=${serverState.descendants?.length}`;
 
     if (serverModified <= clientModified) {
-      console.log(`handleItemDescendantListFromServer: CLIENT is more recent`, syncMsg);
+      if (logUpdateFromServer) {
+        console.log(`handleItemDescendantListFromServer: CLIENT is more recent`, syncMsg);
+      }
       // return null;
       return;
     }
-
-    console.log(`handleItemDescendantListFromServer: SERVER is more recent`, syncMsg);
+    if (logUpdateFromServer) {
+      console.log(`handleItemDescendantListFromServer: SERVER is more recent`, syncMsg);
+    }
   } else {
     // Handle initialization of the client's store: reset the `lastModified` timestamp to the epoch
     // to ensure that the rest of the store will be initialized with the server's state
-    console.log(
-      `handleItemDescendantListFromServer: SERVER id=${serverState.id} replaces client item with id=${clientState.id}`,
-    );
-    console.log(
-      `handleItemDescendantListFromServer: clientState.parentId is ${typeof clientState.parentId}:`,
-      clientState.parentId,
-    );
+    if (logUpdateFromServer) {
+      console.log(
+        `handleItemDescendantListFromServer: SERVER id=${serverState.id} replaces client item with id=${clientState.id}`,
+      );
+      console.log(
+        `handleItemDescendantListFromServer: clientState.parentId is ${typeof clientState.parentId}:`,
+        clientState.parentId,
+      );
+    }
     clientState.lastModified = new Date(0);
   }
 
@@ -287,18 +296,21 @@ export function handleItemDescendantListFromServer<
   // Update timestamp to server's `lastModified`
   clientState.lastModified = serverState.lastModified;
 
-  console.log(
-    `handleItemDescendantListFromServer: synchronized: serverState.lastModified=${dateToISOLocal(
-      serverState.lastModified,
-    )} clientState.lastModified=${dateToISOLocal(clientState.lastModified)}:`,
-    "\nClient state now contains",
-    `${clientState.descendants?.length} descendants:`,
-    clientState.descendants,
-  );
+  if (logUpdateFromServer) {
+    console.log(
+      `handleItemDescendantListFromServer: synchronized: serverState.lastModified=${dateToISOLocal(
+        serverState.lastModified,
+      )} clientState.lastModified=${dateToISOLocal(clientState.lastModified)}:`,
+      "\nClient state now contains",
+      `${clientState.descendants?.length} descendants:`,
+      clientState.descendants,
+    );
+  }
 }
 
 export function sanitizeItemDescendantClientState<I extends ItemClientStateType, C extends ItemClientStateType>(
   clientState: Draft<ItemDescendantStore<I, C>>,
+  logUpdateFromServer = false,
 ): void {
   let invalidDates = 0;
   clientState.descendants.forEach((item) => {
@@ -315,13 +327,17 @@ export function sanitizeItemDescendantClientState<I extends ItemClientStateType,
       }
     } else {
       if (!createdValid) {
-        console.log(`sanitizeItemDescendantClientState: invalid createdAt:`, item.createdAt);
+        if (logUpdateFromServer) {
+          console.log(`sanitizeItemDescendantClientState: invalid createdAt:`, item.createdAt);
+        }
         item.createdAt = new Date(0);
         item.disposition = ItemDisposition.Modified;
         invalidDates++;
       }
       if (!modifiedValid) {
-        console.log(`sanitizeItemDescendantClientState: invalid lastModified:`, item.lastModified);
+        if (logUpdateFromServer) {
+          console.log(`sanitizeItemDescendantClientState: invalid lastModified:`, item.lastModified);
+        }
         item.lastModified = new Date(0);
         item.disposition = ItemDisposition.Modified;
         invalidDates++;
@@ -334,8 +350,10 @@ export function sanitizeItemDescendantClientState<I extends ItemClientStateType,
 
   if (invalidDates > 0) {
     clientState.lastModified = new Date(0);
-    console.log(
-      `sanitizeItemDescendantClientState: ${invalidDates} invalid dates. Reset lastModified to ${clientState.lastModified}`,
-    );
+    if (logUpdateFromServer) {
+      console.log(
+        `sanitizeItemDescendantClientState: ${invalidDates} invalid dates. Reset lastModified to ${clientState.lastModified}`,
+      );
+    }
   }
 }

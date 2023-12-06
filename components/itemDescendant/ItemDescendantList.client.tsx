@@ -55,8 +55,8 @@ function ItemDescendantListRender(props: ItemDescendantRenderProps): ReactNode {
       {atRootLevel && editingInput ? <ItemDescendantListSynchronization /> : null}
       {atRootLevel ? <Item {...props} /> : <Descendant {...props} />}
       {item.descendantModel === leafItemModel ? (
-        <DescendantList {...{ ...props, itemModel: descendantModel }} />
-      ) : descendants?.filter((descendant) => !descendant.deletedAt)?.length > 0 ? (
+        <DescendantList {...{ ...props }} />
+      ) : (
         <>
           {!editingInput || item.descendantModel === leafItemModel || !descendantDescendantModel ? (
             <pre>{`!editingInput=${!editingInput}\nitem.descendantModel === leafItemModel=${
@@ -80,14 +80,14 @@ function ItemDescendantListRender(props: ItemDescendantRenderProps): ReactNode {
                     <div>{`editingInput=${editingInput} item.descendantModel === leafItemModel=${
                       item.descendantModel === leafItemModel
                     } !descendantDescendantModel=${!descendantDescendantModel}: Not showing <DescendantInput />`}</div>
-                  ) : (
+                  ) : null /*
                     <DescendantInput {...{ ...props, itemModel: descendantDescendantModel }} />
-                  )}
+                  */}
                 </li>
               ))}
           </ul>
         </>
-      ) : null}
+      )}
     </>
   );
 }
@@ -140,7 +140,7 @@ function ItemDescendantListState(props: ItemDescendantListStateProps) {
   // );
   useEffect(() => {
     if (updateStoreWithServerData && !isStoreInitialized) {
-      console.log(`ItemDescendantClientContext: useEffect with serverState:`, serverState);
+      // console.log(`ItemDescendantClientContext: useEffect with serverState:`, serverState);
       updateStoreWithServerData(serverState);
       setStoreInitialized(true);
     }
@@ -165,7 +165,7 @@ export default function ItemDescendantListContext(props: ItemDescendantListConte
   const parentId = serverState.parentId;
   const id = serverState.id;
   const storeVersion = 1; // Or any logic to determine the version
-  const logUpdateFromServer = process.env.NODE_ENV === "development";
+  const logUpdateFromServer = false; //process.env.NODE_ENV === "development";
 
   return (
     <ResumeActionProvider resumeAction={resumeAction}>
