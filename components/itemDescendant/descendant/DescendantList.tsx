@@ -143,7 +143,7 @@ export default function DescendantList(props: DescendantListProps) {
     <>
       {canEdit && showListItemInternals ? (
         <button
-          className="px-1 border-2 text-primary rounded-md"
+          className="rounded-md border-2 px-1 text-primary"
           name="resetDescendantsOrderValues"
           role="button"
           onClick={() => {
@@ -160,7 +160,7 @@ export default function DescendantList(props: DescendantListProps) {
         modifiers={[restrictToParentElement]}
         onDragEnd={handleDragEnd}
       >
-        <ul className="flex flex-col bg-elem-light dark:bg-elem-dark-1 overflow-auto">
+        <ul className="bg-elem-light dark:bg-elem-dark-1 flex flex-col overflow-auto">
           {canEdit && inlineInsert ? (
             <DescendantListItemInput
               itemModel={descendantModel}

@@ -129,8 +129,8 @@ export default function DescendantListItemInput({
   // };
 
   return (
-    <div className="flex-grow flex">
-      <div className="flex-grow flex flex-wrap gap-x-4 gap-y-2 justify-between">
+    <div className="flex flex-grow">
+      <div className="flex flex-grow flex-wrap justify-between gap-x-4 gap-y-2">
         {itemFormFields.map((fieldName) => (
           <EditableInputField
             key={fieldName}
@@ -141,7 +141,7 @@ export default function DescendantListItemInput({
             onSave={handleSave}
             editing={editingInput}
             canEdit={canEdit}
-            className="flex-1 flex gap-x-4 gap-y-2"
+            className="flex flex-1 gap-x-4 gap-y-2"
           />
         ))}
       </div>

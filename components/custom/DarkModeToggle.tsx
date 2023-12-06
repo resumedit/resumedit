@@ -69,9 +69,9 @@ export function DarkModeToggle() {
   }, []);
 
   return (
-    <Button variant="ghost" onClick={toggleTheme} size="sm" className="relative h-8 w-8 px-0 group">
+    <Button variant="ghost" onClick={toggleTheme} size="sm" className="group relative h-8 w-8 px-0">
       {currentTheme.icon}
-      <div className="hidden absolute group-hover:block -bottom-6 uppercase text-2xs">{currentTheme.label}</div>
+      <div className="text-2xs absolute -bottom-6 hidden uppercase group-hover:block">{currentTheme.label}</div>
     </Button>
   );
 }

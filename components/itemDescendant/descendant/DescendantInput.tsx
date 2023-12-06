@@ -39,10 +39,10 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
   const itemDraft = getItemDraft();
 
   return (
-    <div key={item.clientId} className="flex gap-x-4 items-center">
+    <div key={item.clientId} className="flex items-center gap-x-4">
       <div
-        className={cn("sm:flex-shrink-0 w-48 my-2 text-right text-muted-foreground text-sm", {
-          "font-medium text-xl my-4": ["user", "resume"].includes(itemModel),
+        className={cn("my-2 w-48 text-right text-sm text-muted-foreground sm:flex-shrink-0", {
+          "my-4 text-xl font-medium": ["user", "resume"].includes(itemModel),
         })}
       >
         Add new {itemModel}

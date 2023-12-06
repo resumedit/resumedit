@@ -15,6 +15,8 @@
     "start": "next start",
     "start-local": "next start --hostname devel.resumedit.local -p 3000",
     "lint": "next lint",
+    "prettier-check": "prettier --check '**/*.ts' '**/*.tsx'",
+    "prettier-format": "prettier --write '**/*.ts' '**/*.tsx'",
     "preview-email": "email dev -p 3030",
     "postinstall": "prisma generate && prisma migrate deploy"
   },

@@ -14,10 +14,10 @@ const NavigationActionButtons = async ({ user }: { user: PrismaUser | undefined 
   const currentUser = user === undefined ? await getCurrentUserOrNull() : user;
   return (
     <div className="flex gap-4">
-      <div className="flex flex-wrap gap-x-4 gap-y-4 items-center">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-4">
         <AppSettingsSheet />
       </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-4 items-center">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-4">
         <DarkModeToggle />
       </div>
       <Suspense fallback={<SignupNavigationSkeleton />}>
@@ -25,7 +25,7 @@ const NavigationActionButtons = async ({ user }: { user: PrismaUser | undefined 
           <ActionButton variant="default">Sign up</ActionButton>
         </SignupNavigation>
       </Suspense>
-      <div className="flex gap-4 items-center">
+      <div className="flex items-center gap-4">
         <Suspense fallback={<UserProfileNavigationSkeleton />}>
           <UserProfileNavigation user={currentUser} />
         </Suspense>
@@ -55,7 +55,7 @@ const NavigationActionButtons = async ({ user }: { user: PrismaUser | undefined 
 export default NavigationActionButtons;
 
 async function SignupNavigationSkeleton() {
-  return <Skeleton className="h-[32px] pl-8 w-[32px]" />;
+  return <Skeleton className="h-[32px] w-[32px] pl-8" />;
 }
 
 export async function SignupNavigation({
@@ -77,7 +77,7 @@ export async function SignupNavigation({
 }
 
 async function UserProfileNavigationSkeleton() {
-  return <Skeleton className="h-[32px] pl-8 w-[32px]" />;
+  return <Skeleton className="h-[32px] w-[32px] pl-8" />;
 }
 
 export async function UserProfileNavigation({

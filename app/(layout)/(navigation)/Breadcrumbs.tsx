@@ -287,7 +287,7 @@ export default function Breadcrumbs() {
     separator: {
       home: (
         <svg
-          className="w-4 h-4 me-2 flex-shrink-0"
+          className="me-2 h-4 w-4 flex-shrink-0"
           aria-hidden="true"
           xmlns="http://www.w3.org/2000/svg"
           fill="currentColor"
@@ -298,7 +298,7 @@ export default function Breadcrumbs() {
       ),
       beforeInactive: (
         <svg
-          className="rtl:rotate-180 block w-3 h-3 mr-2 text-gray-400 "
+          className="mr-2 block h-3 w-3 text-gray-400 rtl:rotate-180 "
           aria-hidden="true"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"

@@ -24,5 +24,5 @@ export default async function ItemDescendantActionPage({ params: { resumeId } }:
 }
 
 function ItemDescendantActionSkeleton() {
-  return <Skeleton className="border-2 border-primary-/20 h-48 w-full shadow-lg" />;
+  return <Skeleton className="border-primary-/20 h-48 w-full border-2 shadow-lg" />;
 }

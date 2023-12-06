@@ -6,8 +6,8 @@ import { NavigationMenuBar } from "./NavigationMenuBar";
 
 const Navbar = ({ user }: { user?: PrismaUser }) => {
   return (
-    <div className="pt-8 pb-4 flex flex-wrap gap-x-4 gap-y-4 justify-between">
-      <div className="flex flex-wrap gap-x-4 gap-y-4 items-center">
+    <div className="flex flex-wrap justify-between gap-x-4 gap-y-4 pb-4 pt-8">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-4">
         <Link href="/">
           <Logo className="mr-8" />
         </Link>

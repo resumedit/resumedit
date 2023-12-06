@@ -11,8 +11,7 @@ const logoVariants = cva(
       variant: {
         default: "hover:text-primary",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
-        outline:
-          "border border-input bg-transparent shadow-sm hover:bg-accent hover:text-accent-foreground",
+        outline: "border border-input bg-transparent shadow-sm hover:bg-accent hover:text-accent-foreground",
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
@@ -31,9 +30,7 @@ const logoVariants = cva(
   },
 );
 
-export interface LogoProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof logoVariants> {
+export interface LogoProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof logoVariants> {
   asChild?: boolean;
 }
 

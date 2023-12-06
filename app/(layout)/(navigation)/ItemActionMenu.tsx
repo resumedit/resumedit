@@ -87,7 +87,7 @@ export function ItemActionMenu(pathname: string, title?: string): ReactNode {
         <NavigationMenuItem>
           <NavigationMenuTrigger>{itemActions.menuTitle}</NavigationMenuTrigger>
           <NavigationMenuContent>
-            <ul className="flex flex-col w-max">
+            <ul className="flex w-max flex-col">
               {Object.entries(itemActions.actions).map(([actionKey, action]) => {
                 return (
                   <ItemActionMenuListItem

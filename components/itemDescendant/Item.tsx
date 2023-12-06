@@ -77,10 +77,10 @@ export default function Item(props: ItemProps) {
   };
 
   return (
-    <div className="flex-1 flex justify-between">
+    <div className="flex flex-1 justify-between">
       <div
-        className={cn("flex-1 flex gap-x-4 gap-y-2 justify-between outline outline-offset-2 ", {
-          "text-muted-foreground bg-blend-soft-light bg-background/50": item.disposition !== ItemDisposition.Synced,
+        className={cn("flex flex-1 justify-between gap-x-4 gap-y-2 outline outline-offset-2 ", {
+          "bg-background/50 text-muted-foreground bg-blend-soft-light": item.disposition !== ItemDisposition.Synced,
           "outline-red-500": !inputIsValid,
           "outline-none": inputIsValid,
         })}
@@ -88,7 +88,7 @@ export default function Item(props: ItemProps) {
         {itemFormFields.map((field, index) => (
           <div
             key={index}
-            className="flex-1 text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4"
+            className="text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4 flex-1"
           >
             <EditableFieldPersist
               key={field}
@@ -104,8 +104,8 @@ export default function Item(props: ItemProps) {
         {/* TODO: Handle and display errors from formState.errors */}
       </div>
       {showListItemInternals && (
-        <div className="basis-3/4 flex items-center gap-x-4 px-4 py-2 cursor-auto text-xs text-slate-600">
-          <p className="h-full flex items-center px-2 text-lg bg-slate-200">{index}</p>
+        <div className="flex basis-3/4 cursor-auto items-center gap-x-4 px-4 py-2 text-xs text-slate-600">
+          <p className="flex h-full items-center bg-slate-200 px-2 text-lg">{index}</p>
           <table>
             <tbody>
               <tr>
@@ -156,7 +156,7 @@ export default function Item(props: ItemProps) {
       {canEdit && itemModel !== "user" ? (
         <button
           /* /Delete Button */
-          className="px-4 self-stretch text-light-txt-2 dark:text-light-txt-1 opacity-100 md:group-hover:opacity-100 transition-all duration-150"
+          className="text-light-txt-2 dark:text-light-txt-1 self-stretch px-4 opacity-100 transition-all duration-150 md:group-hover:opacity-100"
           title={`Delete ${itemModel}`}
           onClick={() => markItemAsDeleted(item.clientId)}
         >
@@ -166,7 +166,7 @@ export default function Item(props: ItemProps) {
             viewBox="0 0 24 24"
             strokeWidth={1.5}
             stroke="currentColor"
-            className="w-6 h-6"
+            className="h-6 w-6"
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>

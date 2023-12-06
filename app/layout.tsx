@@ -33,14 +33,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* 2023-11-19: importing radix-ui/themes leads to errors regarding `Slot` not being exportet
            <Theme accentColor="indigo" grayColor="slate" panelBackground="solid" scaling="100%" radius="medium"> */}
           <div className="relative bg-background">
-            <div className="fixed z-5 top-0 left-0 w-full h-screen bg-gradient-to-br rounded-md filter blur-3xl opacity-50 from-neutral-300 to-indigo-300 dark:from-neutral-600 dark:to-indigo-900"></div>
-            <div className="relative z-10 flex flex-col min-w-full justify-between">
+            <div className="z-5 fixed left-0 top-0 h-screen w-full rounded-md bg-gradient-to-br from-neutral-300 to-indigo-300 opacity-50 blur-3xl filter dark:from-neutral-600 dark:to-indigo-900"></div>
+            <div className="relative z-10 flex min-w-full flex-col justify-between">
               <ClerkAuthProvider>
                 <header className="container">
                   <Navbar />
                   <Breadcrumbs />
                 </header>
-                <main className="container min-h-screen my-auto">{children}</main>
+                <main className="container my-auto min-h-screen">{children}</main>
               </ClerkAuthProvider>
               <SiteFooter />
               <Toaster />
