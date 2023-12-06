@@ -1,4 +1,4 @@
-import { getListLastModifiedById, handleParentItemListFromClient } from "@/actions/parentItemList";
+import { handleParentItemListFromClient } from "@/actions/parentItemList";
 import { toast } from "@/components/ui/use-toast";
 import { useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
@@ -29,7 +29,7 @@ export function useSendParentItemLisToServer() {
 
       if (updatedItemList) {
         updateStoreWithServerData(updatedItemList);
-        const serverModified = await getListLastModifiedById(storeName, clientList.parentId);
+        const serverModified = updatedItemList.lastModified;
 
         if (serverModified > clientModified) {
           toast({
@@ -41,7 +41,7 @@ export function useSendParentItemLisToServer() {
         }
       }
     }
-  }, []);
+  }, [items, lastModified, parentId, storeName, updateStoreWithServerData]);
 
   useEffect(() => {
     if (synchronizationInterval > 0) {

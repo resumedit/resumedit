@@ -29,7 +29,7 @@ const ParentItemListInput = () => {
         userFirstNameOutputRef.current.innerText = user?.firstName || "N/A";
       }
       if (userLastNameOutputRef.current) {
-        userLastNameOutputRef.current.innerText = user?.firstName || "N/A";
+        userLastNameOutputRef.current.innerText = user?.lastName || "N/A";
       }
       if (userEmailOutputRef.current) {
         userEmailOutputRef.current.innerText = user?.email || "N/A";

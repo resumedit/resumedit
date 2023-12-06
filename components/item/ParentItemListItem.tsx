@@ -78,11 +78,12 @@ const ParentItemListItem = ({ storeName, index, item, setItemDeleted }: ListItem
             >
               <EdiText
                 key={field}
-                type="text"
+                type="textarea"
                 value={item[field as keyof ItemClientStateType] as string}
                 onSave={handleSave}
-                inputProps={{ name: field }}
-                viewContainerClassName="flex gap-x-2 justify-between"
+                inputProps={{ name: field, className: "text-wrap" }}
+                viewContainerClassName="flex gap-x-2"
+                viewProps={{ className: "flex-1" }}
                 showButtonsOnHover
                 editOnViewClick
                 startEditingOnFocus

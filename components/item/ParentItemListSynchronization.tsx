@@ -12,6 +12,7 @@ import { ItemClientToServerType } from "@/types/item";
 import { ParentItemListType } from "@/types/parentItemList";
 import { useRef } from "react";
 import { toast } from "../ui/use-toast";
+import { useSendParentItemLisToServer } from "@/hooks/useSendParentItemListToServer";
 
 const ParentItemListSynchronization = () => {
   const storeName = useStoreName();
@@ -26,10 +27,8 @@ const ParentItemListSynchronization = () => {
   const items = store((state) => state.items);
   const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
 
-  async function synchronize(e: React.SyntheticEvent) {
+  async function sendParentItemListToServer(e: React.SyntheticEvent) {
     e.preventDefault();
-
-    // sendParentItemLisToServer(store);
 
     const clientList = { parentId, lastModified, items } as ParentItemListType<ItemClientToServerType>;
     if (clientList.parentId) {
@@ -52,19 +51,22 @@ const ParentItemListSynchronization = () => {
     }
   }
 
+  //const sendToServer =
+  useSendParentItemLisToServer();
+
   const synchronizationInterval = store((state) => state.synchronizationInterval);
   const setSynchronizationInterval = store((state) => state.setSynchronizationInterval);
 
   async function setSyncInterval(value: string) {
     const interval = Number(value);
 
-    if (typeof interval !== "number") return;
+    if (typeof interval === "number" && interval > 0) {
+      setSynchronizationInterval(interval);
 
-    setSynchronizationInterval(interval);
-
-    if (syncIntervalInputRef.current) {
-      syncIntervalInputRef.current.className = "text-bold";
-      syncIntervalInputRef.current.value = displayInterval(interval);
+      if (syncIntervalInputRef.current) {
+        syncIntervalInputRef.current.className = "text-bold";
+        syncIntervalInputRef.current.value = displayInterval(interval);
+      }
     }
   }
 
@@ -97,7 +99,7 @@ const ParentItemListSynchronization = () => {
             ))}
           </SelectContent>
         </Select>
-        <Button onClick={synchronize} ref={synchronizeButtonRef}>
+        <Button onClick={sendParentItemListToServer} ref={synchronizeButtonRef}>
           Sync now
         </Button>
       </form>
