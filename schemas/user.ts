@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { idSchema } from "./id";
+import { itemClientStateSchema } from "./item";
 
 export const userFormSchema = z.object({
   email: z.string().email().optional(),
@@ -7,7 +8,7 @@ export const userFormSchema = z.object({
   lastName: z.string().optional(),
 });
 
-export const userInternalSchema = z.object({
+export const userPersistServerSchema = z.object({
   id: idSchema,
   authProviderId: z.string(),
 });
@@ -15,9 +16,11 @@ export const userInternalSchema = z.object({
 export const userSchema = {
   form: userFormSchema,
   display: userFormSchema,
-  internal: userInternalSchema,
-  store: userFormSchema.merge(userInternalSchema),
+  persistServer: userFormSchema.merge(userPersistServerSchema),
 };
 
-export type UserInputType = z.input<typeof userSchema.store>;
-export type UserOutputType = z.output<typeof userSchema.store>;
+export type UserInputType = z.input<typeof userSchema.persistServer>;
+export type UserOutputType = z.output<typeof userSchema.persistServer>;
+
+export const userItemClientStateSchema = itemClientStateSchema.merge(userFormSchema);
+export type UserItemClientStateType = z.input<typeof userItemClientStateSchema>;

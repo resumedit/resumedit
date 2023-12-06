@@ -7,6 +7,7 @@ import { getCurrentUserIdOrNull } from "@/actions/user";
 import { IdSchemaType } from "@/schemas/id";
 import {
   ItemDescendantModelAccessor,
+  ItemDescendantModelNameType,
   getDescendantModel,
   getParentModel,
   itemDescendantModelHierarchy,
@@ -92,10 +93,10 @@ export default async function ItemDescendantScaffoldServerComponent({
   } else {
     // Otherwise we look for the latest item of the given itemModel
     const targetItemModel = itemModel;
-    let derivedItemId: string | null = userId;
+    let derivedItemId: IdSchemaType = userId;
 
     // Start with a list of resumes owned by the current user
-    let derivedItemModel: string | null = itemDescendantModelHierarchy[0];
+    let derivedItemModel: ItemDescendantModelNameType | null = itemDescendantModelHierarchy[0];
     if (derivedItemModel !== "user") {
       throw Error(
         `ItemDescendantScaffoldServerComponent: invalid initial itemModel=${derivedItemModel}; should be "user"`,

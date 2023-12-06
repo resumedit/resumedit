@@ -40,15 +40,6 @@ export type ItemOrderableClientStateType = ItemClientStateType & {
   order: number;
 };
 
-// Type used by server to maintain server state
-// This is the full-fledged Prisma schema, inferred by Zod
-// Augmented by `disposition` to make it compatible with `ItemClientStateType`
-export type ItemServerStateType = ItemOutputType & {
-  clientId: IdSchemaType;
-  parentClientId: IdSchemaType;
-  disposition: ItemDisposition;
-};
-
 // An object with fields that are specific to the item, i.e., excluding all the fields shared
 // between `Resume`, `Organization`, `Role` and `Achievement`
 export type ItemDataType<T> = Omit<T, keyof ItemClientStateType>;

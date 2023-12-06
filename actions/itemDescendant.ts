@@ -4,11 +4,7 @@
 
 import { prisma } from "@/prisma/client";
 import { IdSchemaType } from "@/schemas/id";
-import {
-  ItemDescendantServerStateType,
-  ItemServerStateDescendantListType,
-} from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { ItemServerStateType } from "@/types/item";
+import { ItemDescendantServerStateType, ItemServerStateDescendantListType } from "@/schemas/itemDescendant";
 import { ItemDescendantModelNameType, getDescendantModel, getModelAccessor } from "@/types/itemDescendant";
 import { PrismaClient } from "@prisma/client";
 
@@ -39,7 +35,7 @@ export async function getItemsByParentId(
   model: ItemDescendantModelNameType,
   parentId: IdSchemaType,
   prismaTransaction?: PrismaClient,
-): Promise<ItemServerStateDescendantListType<ItemServerStateType, ItemServerStateType>> {
+): Promise<ItemServerStateDescendantListType> {
   const prismaClient = prismaTransaction || prisma;
   const prismaItemModelInstance = getModelAccessor(model, prismaClient);
   // Retrieve the items
@@ -55,13 +51,14 @@ export async function getItemDescendantList(
   itemModel: ItemDescendantModelNameType,
   itemId: IdSchemaType,
   prismaTransaction?: PrismaClient,
-): Promise<ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>> {
+): Promise<ItemDescendantServerStateType> {
   const executeLogic = async (prismaClient: PrismaClient) => {
+    const logPrefix = `getItemDescendantList(itemModel=${itemModel}, itemId=${itemId})`;
     const item = await getItem(itemModel, itemId, prisma);
     if (!item) {
       throw Error(`getItemDescendantList: No ${itemModel} instance with id=${itemId} found`);
     }
-    let descendants: Array<ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>> = [];
+    let descendants: Array<ItemDescendantServerStateType> = [];
 
     // Fetch the items that are direct descendants of the item
     const descendantModel = getDescendantModel(itemModel);
@@ -71,7 +68,7 @@ export async function getItemDescendantList(
 
       // For each item, fetch its descendants recursively
       if (itemDescendants && itemDescendants.length > 0) {
-        console.log(`${itemModel} ${itemId} has ${itemDescendants.length} descendants`);
+        console.log(`${logPrefix}: returning ${itemDescendants.length} descendants:`, itemDescendants);
         const descendantModel = getDescendantModel(itemModel);
         if (descendantModel) {
           descendants = await Promise.all(
@@ -80,7 +77,7 @@ export async function getItemDescendantList(
         }
       }
     } else {
-      console.log(`${itemModel} ${itemId}: no descendants found`);
+      console.log(`${logPrefix}: no descendants found`);
     }
 
     // Construct the ItemDescendantServerStateType for the current itemModel and itemId

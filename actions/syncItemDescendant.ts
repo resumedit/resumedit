@@ -4,69 +4,114 @@
 
 import { dateToISOLocal } from "@/lib/utils/formatDate";
 import { prisma } from "@/prisma/client";
-import { UserInputType } from "@/schemas/user";
 import {
-  ItemDescendantClientStateType,
   ItemDescendantServerStateType,
-  ItemDescendantStore,
-  ItemServerStateDescendantListType,
-} from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { ItemClientStateType, ItemClientToServerType, ItemServerStateType } from "@/types/item";
-import { getModelAccessor, keepOnlyFieldsForCreate, keepOnlyFieldsForUpdate } from "@/types/itemDescendant";
-import { Prisma, PrismaClient } from "@prisma/client";
-import { getItemDescendantList, getItemsByParentId, softDeleteAndCascadeItem } from "./itemDescendant";
+  itemDescendantServerStateSchema,
+  itemDescendantServerToClientSchema,
+} from "@/schemas/itemDescendant";
+import { UserInputType } from "@/schemas/user";
+import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
+import { ItemClientStateType, ItemClientToServerType } from "@/types/item";
+import {
+  ItemDescendantModelNameType,
+  PrismaModelMethods,
+  getItemDataForCreate,
+  getItemDataForUpdate,
+  getModelAccessor,
+} from "@/types/itemDescendant";
+import { PrismaClient } from "@prisma/client";
 
 export async function handleNestedItemDescendantListFromClient(
   item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>,
-): Promise<ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType> | null> {
+): Promise<ItemDescendantServerStateType | Date> {
+  // Capture the result to respond to the client
+  let response = null;
+
   // Take the time
   const currentTimestamp = new Date();
 
   // Start the transaction
-  return prisma.$transaction(async (prismaTransaction) => {
-    return processItemDescendantRecursively(item, prismaTransaction as PrismaClient, currentTimestamp);
+  response = await prisma.$transaction(async (prismaTransaction) => {
+    return processItemRecursively(item, currentTimestamp, prismaTransaction as PrismaClient);
   });
-}
-async function processItemDescendantRecursively(
-  item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>,
-  prismaTransaction: PrismaClient,
-  currentTimestamp: Date,
-): Promise<ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType> | null> {
-  // Process the item itself
-  const itemResult = await processItemDescendant(item, prismaTransaction, currentTimestamp);
-  console.log(`handleNestedItemDescendantListFromClient: item.itemModel=${item.itemModel} itemResult`, itemResult);
-  if (itemResult === null || item.descendants.length === 0) {
-    return itemResult;
+
+  if (response) {
+    // Enssure the response corresponds to the schema
+    itemDescendantServerToClientSchema.parse(response);
   }
 
-  // Process each descendant
-  for (const descendant of item.descendants) {
-    const descendantResult = await processItemDescendantRecursively(descendant, prismaTransaction, currentTimestamp);
+  return response || item.lastModified;
+}
+
+async function processItemRecursively(
+  clientItem: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>,
+  currentTimestamp: Date,
+  prismaTransaction: PrismaClient,
+): Promise<ItemDescendantServerStateType | null> {
+  // Process the item itself
+  const serverItem = await processItem(clientItem, prismaTransaction, currentTimestamp);
+
+  if (serverItem === null || clientItem.descendants.length === 0) {
+    console.log(`processItemRecursively: item.itemModel=${clientItem.itemModel}: returning serverItem`, serverItem);
+    return serverItem;
+  }
+
+  // Accumulate updates for each descendant
+  // Pass along the item's `id` for the case where the descendant has just been created on the server
+  // and the descendants from the client do not contain the parentId yet
+  const updatedDescendants: Array<ItemDescendantServerStateType> = [];
+  for (const descendant of clientItem.descendants) {
+    const descendantResult = await processItemRecursively(
+      { ...descendant, parentId: serverItem.id },
+      currentTimestamp,
+      prismaTransaction,
+    );
     console.log(
-      `handleNestedItemDescendantListFromClient: descendant.itemModel=${descendant.itemModel}: descendantResult`,
+      `processItemRecursively: descendant.itemModel=${descendant.itemModel}: descendantResult`,
       descendantResult,
     );
-    // Update the descendant list in itemResult with the processed descendants
     if (descendantResult !== null) {
-      itemResult.descendants = itemResult.descendants.map((d) => (d.id === descendantResult.id ? descendantResult : d));
+      updatedDescendants.push(descendantResult);
     }
   }
 
-  return itemResult;
+  // Apply accumulated updates to the item's descendant array
+  if (serverItem.descendants) {
+    serverItem.descendants = serverItem.descendants.map(
+      (d: ItemDescendantServerStateType) => updatedDescendants.find((ud) => ud.id === d.id) ?? d,
+    );
+  }
+  console.log(`processItemRecursively: item.itemModel=${clientItem.itemModel}: returning serverItem`, serverItem);
+  if (serverItem !== null) {
+    itemDescendantServerStateSchema.parse(serverItem);
+  }
+  return serverItem;
 }
 
-async function processItemDescendant(
+async function processItem(
   clientItem: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>,
   prismaTransaction: PrismaClient,
   currentTimestamp: Date,
-): Promise<ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType> | null> {
+): Promise<ItemDescendantServerStateType | null> {
+  if (!clientItem.itemModel || !clientItem.parentId) {
+    throw Error(
+      `processItem: itemModel=${clientItem.itemModel} parentId=${clientItem.parentId} with clientItem: ${JSON.stringify(
+        clientItem,
+      )}`,
+    );
+  }
+  let serverItem = null;
+
   const itemModel = clientItem.itemModel;
+  const parentId = clientItem.parentId;
 
   // Ensure that the client's lastModified timestamp is less recent than currentTimestamp
   const clientLastModified =
     clientItem.lastModified < currentTimestamp
       ? clientItem.lastModified
       : new Date(currentTimestamp.getMilliseconds() - 1);
+
+  const prismaItemModelInstance = getModelAccessor(itemModel, prismaTransaction);
 
   if (clientItem.id) {
     const existingClientItem = {
@@ -77,10 +122,8 @@ async function processItemDescendant(
     const id = existingClientItem.id!;
 
     // const serverLastModifiedDb = await getItemLastModified(itemModel, id);
-    const prismaItemModelInstance = getModelAccessor(itemModel, prismaTransaction);
-    const serverItem = await prismaItemModelInstance.findUnique({
+    serverItem = await prismaItemModelInstance.findUnique({
       where: { id },
-      select: { lastModified: true },
     });
     const serverLastModifiedDb = serverItem?.lastModified;
 
@@ -91,49 +134,145 @@ async function processItemDescendant(
     // Process logic only if the client state is more recent
     if (clientLastModified > serverLastModified) {
       console.log(
-        `processItemDescendant: itemModel=${itemModel}: clientLastModified=${dateToISOLocal(
+        `processItem ${itemModel} MERGE: item exists but clientLastModified=${dateToISOLocal(
           clientLastModified,
         )} > ${dateToISOLocal(serverLastModified)}=serverLastModified`,
       );
-
-      const updatedItemDescendantState: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType> =
-        await mergeItemDescendant(existingClientItem, prismaTransaction, serverLastModified, currentTimestamp);
-      return updatedItemDescendantState;
+      serverItem = await mergeItem(existingClientItem, serverLastModified, currentTimestamp, prismaItemModelInstance);
     } else if (clientLastModified < serverLastModified) {
-      const serverItem = getItemDescendantList(itemModel, existingClientItem.id!) as Promise<
-        ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>
-      >;
-      return serverItem;
+      // Same lastModified timestamp implies no differences below this item
+      console.log(
+        `processItem ${itemModel}: NOOP: item exists and clientLastModified=${dateToISOLocal(
+          clientLastModified,
+        )} == ${dateToISOLocal(serverLastModified)}=serverLastModified`,
+      );
     } else {
       // Same lastModified timestamp implies no differences below this item
-      return null;
+      console.log(
+        `processItem ${itemModel}: NOOP: item exists and clientLastModified=${dateToISOLocal(
+          clientLastModified,
+        )} == ${dateToISOLocal(serverLastModified)}=serverLastModified`,
+      );
+      serverItem = null;
     }
   } else {
     // Create item
-    const parentId = clientItem.parentId!;
-    const data = keepOnlyFieldsForUpdate<ItemClientToServerType>({ ...clientItem, parentId }, clientLastModified);
-    console.log(`processItemDescendant: parentId=${parentId}: create item with data:`, data);
-    const prismaItemModelInstance = getModelAccessor(itemModel, prismaTransaction);
-    console.log(`processItemDescendant: ${itemModel}.create:`, data);
+    const data = getItemDataForCreate<ItemClientToServerType>(clientItem, parentId, clientLastModified);
+    console.log(`processItem ${itemModel}: CREATE `, "\n", clientItem);
+    console.log(`processItem ${itemModel}.create:`, "\n", data);
 
-    return await prismaItemModelInstance.create({
+    serverItem = await prismaItemModelInstance.create({
       data,
     });
   }
+  console.log(`processItem ${itemModel}: return serverItem:`, serverItem);
+  if (serverItem !== null) {
+    itemDescendantServerStateSchema.parse(serverItem);
+  }
+  return serverItem;
 }
 
-async function mergeItemDescendant(
-  existingClientItem: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>,
-  prismaTransaction: PrismaClient,
+async function mergeItem(
+  clientItem: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>,
   serverLastModified: Date,
   currentTimestamp: Date,
-): Promise<ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>> {
-  const id = existingClientItem.id!;
-  const clientLastModified = existingClientItem.lastModified;
-  const itemModel = existingClientItem.itemModel;
-  const descendantModel = existingClientItem.descendantModel;
+  prismaItemModelInstance: PrismaModelMethods[ItemDescendantModelNameType],
+): Promise<ItemDescendantServerStateType | Date> {
+  if (!clientItem.itemModel || !clientItem.parentId) {
+    throw Error(
+      `mergeItem: itemModel=${clientItem.itemModel} parentId=${clientItem.parentId} with clientItem: ${JSON.stringify(
+        clientItem,
+      )}`,
+    );
+  }
 
+  // Determine if the client needs to apply any changes detected on the server
+  const clientIsUpToDate = true;
+
+  const id = clientItem.id!;
+  const clientLastModified = clientItem.lastModified;
+  const itemModel = clientItem.itemModel;
+
+  // The best case scenario is that the client was the only one to have made changes
+  // In this case, we return only the `lastModified` timestamp of the client
+  // to indicate that all modifications up to this point in time have been
+  // applied by the server and there is nothing more recent to be aware of
+  let serverItem = clientLastModified;
+
+  // The `User` model requires special treatment
+  if (itemModel === "user") {
+    const { id, email, firstName, lastName } = clientItem as unknown as UserInputType;
+    const data = { id, email, firstName, lastName };
+    console.log(`mergeItem: ${itemModel}.update:`, {
+      where: { id },
+      data,
+    });
+    await prismaItemModelInstance.update({
+      where: { id },
+      data,
+    });
+  } else {
+    // Update current item properties
+    console.log(`mergeItem: ${itemModel}.update:`, {
+      where: { id },
+      data: getItemDataForUpdate<ItemClientToServerType>(clientItem, currentTimestamp),
+    });
+    await prismaItemModelInstance.update({
+      where: { id },
+      data: getItemDataForUpdate<ItemClientToServerType>(clientItem, currentTimestamp),
+    });
+  }
+
+  // Assign the final timestamp to that of the client if the client is up to data
+  // Otherwise, use the current time to update both server and client lastModified timestamp
+  const finalLastModified = clientIsUpToDate ? clientLastModified : currentTimestamp;
+
+  if (clientIsUpToDate) {
+    console.log(
+      `mergeItem ${itemModel}: SERVER UPDATED`,
+      "\n",
+      `update item ${itemModel} lastModified from ${dateToISOLocal(
+        serverLastModified,
+      )} to clientLastModified=${dateToISOLocal(finalLastModified)}`,
+    );
+  } else {
+    console.log(
+      `mergeItem ${itemModel}: MERGED`,
+      "\n",
+      `update item ${itemModel} lastModified from ${dateToISOLocal(
+        serverLastModified,
+      )} to currentTimestamp=${dateToISOLocal(finalLastModified)}`,
+    );
+  }
+
+  // Update the lastModified timestamp of the item
+  serverItem = await prismaItemModelInstance.update({
+    where: { id: id },
+    data: { lastModified: finalLastModified },
+  });
+
+  // const mergedItemDescendant = {
+  //   ...clientItem,
+  //   lastModified: finalLastModified,
+  //   descendants: [],
+  // } as ItemDescendantServerStateType;
+  // return mergedItemDescendant;
+
+  if (!(serverItem instanceof Date)) {
+    itemDescendantServerStateSchema.parse(serverItem);
+  }
+  return serverItem;
+}
+
+/*
+async function applyClientDescendantListToServer(
+  existingClientItem: ItemDescendantServerStateType,
+  prismaTransaction: PrismaClient,
+): Promise<Array<ItemDescendantServerToClientType<ItemServerToClientType, ItemServerToClientType>> | null> {
+  // Determine if the client needs to apply any changes detected on the server
   let clientIsUpToDate = true;
+
+  const descendantModel = existingClientItem.descendantModel;
 
   // Detect if the client has any descendants not present on the server
   let ghostItemsDetected = 0;
@@ -149,43 +288,22 @@ async function mergeItemDescendant(
   // that it can remove those as well
   let serverItemsDeleted = 0;
 
+  // Id of parent item
+  const id = existingClientItem.id;
+
   // Incorporate all changes from the client into the server's state
   const clientDescendants = existingClientItem.descendants;
 
-  // The descendants covered by the client are set to the clientLastModified timestamp
-  const lastModified = clientLastModified;
+  // The descendants covered by the client are set to the parent item's timestamp
+  const clientLastModified = existingClientItem.lastModified;
 
   // Process both the properties of the current item and its descendants
-  const prismaItemModelInstance = getModelAccessor(itemModel, prisma as PrismaClient);
 
-  // The `User` model requires special treatment
-  if (itemModel === "user") {
-    const { id, email, firstName, lastName } = existingClientItem as unknown as UserInputType;
-    const data = { id, email, firstName, lastName };
-    console.log(`mergeItemDescendant: ${itemModel}.update:`, {
-      where: { id },
-      data,
-    });
-    await prismaItemModelInstance.update({
-      where: { id },
-      data,
-    });
-  } else {
-    // Update current item properties
-    console.log(`processItemDescendant: ${itemModel}.update:`, {
-      where: { id },
-      data: keepOnlyFieldsForUpdate<ItemClientToServerType>(existingClientItem, currentTimestamp),
-    });
-    await prismaItemModelInstance.update({
-      where: { id },
-      data: keepOnlyFieldsForUpdate<ItemClientToServerType>(existingClientItem, currentTimestamp),
-    });
-  }
-  let descendantsAfterUpdate = clientDescendants as ItemServerStateDescendantListType<
-    ItemServerStateType,
-    ItemServerStateType
-  >;
-  let descendantsCreatedByThisClient: ItemServerStateDescendantListType<ItemServerStateType, ItemServerStateType> = [];
+  let descendantsAfterUpdate: Array<ItemDescendantServerToClientType<ItemServerToClientType, ItemServerToClientType>> =
+    [];
+  let descendantsCreatedByThisClient: Array<
+    ItemDescendantServerToClientType<ItemServerToClientType, ItemServerToClientType>
+  > = [];
 
   if (descendantModel) {
     const prismaDescendantModelInstance = getModelAccessor(descendantModel, prismaTransaction);
@@ -219,9 +337,9 @@ async function mergeItemDescendant(
               // Only consider client data if its timestamp looks sane
               if (descendant.lastModified && descendant.lastModified instanceof Date) {
                 if (!serverModified || descendant.lastModified > serverModified) {
-                  const data = keepOnlyFieldsForUpdate<ItemClientToServerType>(descendantWithParentId, lastModified);
+                  const data = getItemDataForUpdate<ItemClientToServerType>(descendantWithParentId, clientLastModified);
                   console.log(
-                    `mergeItemDescendant: descendant.id=${descendant.id}: update descendant with data:`,
+                    `applyClientDescendantListToServer: descendant.id=${descendant.id}: update descendant with data:`,
                     data,
                   );
                   return await prismaDescendantModelInstance.update({
@@ -233,21 +351,25 @@ async function mergeItemDescendant(
                 }
               } else {
                 console.log(
-                  `mergeItemDescendant: descendant.id=${descendant.id}: invalid lastModified timestamp:`,
+                  `applyClientDescendantListToServer: descendant.id=${descendant.id}: invalid lastModified timestamp:`,
                   descendant.lastModified,
                 );
                 ++clientItemsStaleOrInvalid;
               }
             }
           } else {
-            const data = keepOnlyFieldsForCreate<ItemClientToServerType>(descendantWithParentId, id, lastModified);
-            console.log(`mergeItemDescendant: ${descendantModel}.create:`, data);
+            const data = keepOnlyFieldsForCreate<ItemClientToServerType>(
+              descendantWithParentId,
+              id,
+              clientLastModified,
+            );
+            console.log(`applyClientDescendantListToServer: ${descendantModel}.create:`, data);
             const createdItem = await prismaDescendantModelInstance.create({
               data,
             });
             ++serverItemsCreated;
             const clientResponseItem = { ...createdItem, clientId: descendantWithParentId.clientId };
-            console.log(`mergeItemDescendant: appending to descendantsCreatedByThisClient:`, clientResponseItem);
+            console.log(`applyClientDescendantListToServer: appending to descendantsCreatedByThisClient:`, clientResponseItem);
             descendantsCreatedByThisClient = [...descendantsCreatedByThisClient, clientResponseItem];
             return createdItem;
           }
@@ -278,12 +400,15 @@ async function mergeItemDescendant(
     });
 
     console.log(
-      `mergeItemDescendant: client update with clientLastModified=${dateToISOLocal(
+      `applyClientDescendantListToServer: client update with clientLastModified=${dateToISOLocal(
         clientLastModified,
       )} applied:\n${clientDescendants
         .map((a: ItemClientStateType) => a.id?.substring(0, 8))
         .join(", ")}\n.findMany returned ${descendantsAfterUpdate.length} descendants:\n${descendantsAfterUpdate
-        .map((a: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>) => a.id?.substring(0, 8))
+        .map(
+          (a: ItemDescendantServerToClientType<ItemServerToClientType, ItemServerToClientType>) =>
+            a.id?.substring(0, 8),
+        )
         .join(", ")}\n`,
     );
 
@@ -297,7 +422,7 @@ async function mergeItemDescendant(
       // Compare server descendants with client descendants
       const clientItemIds = new Set(clientDescendants.map((a) => a.id));
       clientDescendantsComplete = descendantsAfterUpdate.every(
-        (serverItem: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>) =>
+        (serverItem: ItemDescendantServerToClientType<ItemServerToClientType, ItemServerToClientType>) =>
           clientItemIds.has(serverItem.id),
       );
     }
@@ -305,37 +430,6 @@ async function mergeItemDescendant(
     // Determine if the client is up to date
     clientIsUpToDate = serverDescendantsUnmodified && clientDescendantsComplete;
   }
-
-  // Assign the final timestamp to that of the client if the client is up to data
-  // Otherwise, use the current time to update both server and client lastModified timestamp
-  const finalLastModified = clientIsUpToDate ? clientLastModified : currentTimestamp;
-
-  if (clientIsUpToDate) {
-    console.log(
-      "mergeItemDescendant: server updated to match client state:\n",
-      `update item ${itemModel} lastModified from ${dateToISOLocal(
-        serverLastModified,
-      )} to clientLastModified=${dateToISOLocal(finalLastModified)}`,
-    );
-  } else {
-    console.log(
-      "mergeItemDescendant: server and client state merged:\n",
-      `update item ${itemModel} lastModified from ${dateToISOLocal(
-        serverLastModified,
-      )} to currentTimestamp=${dateToISOLocal(finalLastModified)}`,
-    );
-  }
-
-  // Update the lastModified timestamp of the item
-  await prismaItemModelInstance.update({
-    where: { id: id },
-    data: { lastModified: finalLastModified },
-  });
-
-  const mergedItemDescendant = {
-    ...existingClientItem,
-    lastModified: finalLastModified,
-    descendants: descendantsAfterUpdate,
-  } as ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>;
-  return mergedItemDescendant;
+  return clientIsUpToDate ? null : descendantsAfterUpdate;
 }
+*/

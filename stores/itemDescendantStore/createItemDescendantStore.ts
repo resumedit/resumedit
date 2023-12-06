@@ -1,5 +1,6 @@
 // @/stores/itemDescendant/createItemDescendantStore.ts
 import { IdSchemaType, getItemId } from "@/schemas/id";
+import { ItemDescendantServerStateType } from "@/schemas/itemDescendant";
 import {
   ClientIdType,
   ItemClientStateType,
@@ -7,15 +8,18 @@ import {
   ItemDataUntypedType,
   ItemDisposition,
   ItemOrderableClientStateType,
-  ItemServerStateType,
 } from "@/types/item";
 import { ItemDescendantModelNameType, createDateSafeLocalstorage, getDescendantModel } from "@/types/itemDescendant";
 import { Draft } from "immer";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import { reBalanceListOrderValues, updateListOrderValues } from "./utils/descendantOrderValues";
-import { handleItemDescendantListFromServer } from "./utils/syncItemDescendantStore";
+import {
+  getOrderValueForAppending,
+  reBalanceListOrderValues,
+  updateListOrderValues,
+} from "./utils/descendantOrderValues";
+import { handleItemDescendantFromServer } from "./utils/syncItemDescendantStore";
 
 // Type used by client to maintain client state
 export type ItemClientStateDescendantListType<I, C> = Array<ItemDescendantClientStateType<I, C>>;
@@ -53,13 +57,13 @@ export type ItemOrderableDescendantStoreStateType<I, C> = ItemClientStateType & 
   descendantDraft: ItemDataType<C>;
 };
 
-// Type used by server to maintain server state
-export type ItemServerStateDescendantListType<I, C> = Array<ItemDescendantServerStateType<I, C>>;
-export type ItemDescendantServerStateType<I, C> = ItemServerStateType & {
-  itemModel: ItemDescendantModelNameType;
-  descendantModel: ItemDescendantModelNameType | null;
-  descendants: ItemServerStateDescendantListType<I, C>;
-};
+// // Type used by server to maintain server state
+// export type ItemServerStateDescendantListType<I, C> = Array<ItemDescendantServerStateType<I, C>>;
+// export type ItemDescendantServerStateType<I, C> = ItemServerStateType & {
+//   itemModel: ItemDescendantModelNameType;
+//   descendantModel: ItemDescendantModelNameType | null;
+//   descendants: ItemServerStateDescendantListType<I, C>;
+// };
 
 // Type used by server to maintain server state with orderable descendants
 // export type ItemServerStateDescendantOrderableListType<I, C> = Array<ItemDescendantServerStateOrderableType<I, C>>;
@@ -71,7 +75,6 @@ export type ItemDescendantServerStateType<I, C> = ItemServerStateType & {
 // };
 
 // Type used by server to send its state to the client
-// FIXME: Replaced by ItemDescendantServerStateType to allow recursive calls of merge functions
 // export type ItemServerToClientDescendantListType<I, C> = Array<ItemDescendantServerToClientType<I, C>>;
 
 // export type ItemDescendantServerToClientType<I, C> = ItemServerToClientType & {
@@ -102,9 +105,7 @@ export type ItemDescendantStoreActions<I extends ItemClientStateType, C extends 
   getDescendantDraft: (ancestorClientIds: Array<ClientIdType>) => ItemDataType<C>;
   updateDescendantDraft: (descendantData: ItemDataUntypedType, ancestorClientIds: Array<ClientIdType>) => void;
   commitDescendantDraft: (ancestorClientIds: Array<ClientIdType>) => void;
-  updateStoreWithServerData: (
-    serverState: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>,
-  ) => void;
+  updateStoreWithServerData: (serverState: ItemDescendantServerStateType) => void;
 };
 
 export type ItemDescendantStore<
@@ -142,12 +143,14 @@ export function getDescendantFromAncestorChain(
   ancestorClientIdChain: Array<ClientIdType>,
   lastModified?: Date,
 ): ItemStoreStateDescendantListType<ItemClientStateType, ItemClientStateType> {
+  /*
   console.log(
     "getDescendantFromAncestorChain:\n",
     `ancestorStateChain: ${ancestorStateChain.map((item) => item.clientId).join("->")}`,
     "\n",
     `ancestorClientIdChain: ${ancestorClientIdChain.join("->")}`,
   );
+  */
   // Descend from the `state` all the way down to the descendant based on the `ancestorClientIdChain` array
   if (ancestorClientIdChain.length === 0) {
     if (lastModified) {
@@ -203,14 +206,15 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
         descendants: [],
         descendantDraft: {} as ItemDataType<C>,
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        setItemData: (descendantData: ItemDataUntypedType, clientId?: ClientIdType): void => {
-          // NOTE: The argument `clientId` is only here to provide the same signature as for descendants
+        setItemData: (descendantData: ItemDataUntypedType): void => {
           set((state) => {
             // Loop through each key in descendantData and update the state
-            Object.keys(descendantData).forEach((key) => {
+            // Assuming ItemDataUntypedType is a type that can be safely assigned to the state
+            Object.entries(descendantData).forEach(([key, value]) => {
               if (key in state) {
-                state[key as string as keyof Draft<ItemDescendantStore<I, C>>] = descendantData[key];
+                // Type assertion to convince TypeScript about the assignment
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (state as any)[key] = value;
               }
             });
             state.disposition = ItemDisposition.Modified;
@@ -366,29 +370,45 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
               : null;
             const descendantClientId = getItemId(ancestorState.descendantModel);
 
+            if (!ancestorState.descendantModel) {
+              throw Error(
+                `commitDescendantDraft: ancestorState has invalid descendantModel: ${JSON.stringify(ancestorState)}`,
+              );
+            }
+            const descendantModel = ancestorState.descendantModel!;
+
             // Create a copy of the draft
             const descendantData = {
-              ...(ancestorState.descendantDraft as ItemDataType<C>),
-            } as ItemDataType<C>;
-            // Construct the new item
-            const newItem = {
-              itemModel: ancestorState.descendantModel,
+              ...ancestorState.descendantDraft,
+              itemModel: descendantModel,
               clientId: descendantClientId,
               parentClientId: ancestorState.clientId,
               parentId: ancestorState.id,
               createdAt: new Date(),
               lastModified: new Date(),
               disposition: ItemDisposition.New,
-              ...descendantData,
               descendantModel: descendantOfDescendantModel,
               descendants: [],
               descendantDraft: {} as Draft<ItemDataType<C>>,
-            } as Draft<ItemDescendantStoreState<C, C>>;
+            };
+
+            let newDescendant;
+            // Add the `order` field if the model requires it
+            if (["achievement"].includes(descendantModel)) {
+              newDescendant = {
+                ...descendantData,
+                order: getOrderValueForAppending(
+                  ancestorState.descendants as unknown as ItemOrderableClientStateType[],
+                ),
+              } as Draft<ItemOrderableDescendantStoreStateType<C, C>>;
+            } else {
+              newDescendant = descendantData as Draft<ItemDescendantStoreState<C, C>>;
+            }
 
             // Append it to the end of the store's `descendants` array
             ancestorState.descendants = ancestorState.descendants.length
-              ? [...ancestorState.descendants, newItem]
-              : [newItem];
+              ? [...ancestorState.descendants, newDescendant]
+              : [newDescendant];
 
             // Reset the draft
             ancestorState.descendantDraft = {} as Draft<ItemDataType<C>>;
@@ -398,9 +418,7 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
             }
           });
         },
-        updateStoreWithServerData: (
-          serverState: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>,
-        ) => {
+        updateStoreWithServerData: (serverState: ItemDescendantServerStateType) => {
           // if (logUpdateFromServer) {
           //   logUpdateStoreWithServerData(
           //     get() as ItemDescendantStore<ItemClientStateType, ItemClientStateType>,
@@ -408,7 +426,7 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
           //   );
           // }
           set((state) => {
-            handleItemDescendantListFromServer(state, serverState);
+            handleItemDescendantFromServer(state, serverState);
           });
         },
       })),

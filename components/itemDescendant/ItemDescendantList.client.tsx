@@ -6,18 +6,10 @@ import { ItemDescendantStoreProvider, useItemDescendantStore } from "@/contexts/
 import { ResumeActionProvider } from "@/contexts/ResumeActionContext";
 import { StoreNameProvider, useStoreName } from "@/contexts/StoreNameContext";
 import { getItemId } from "@/schemas/id";
-import {
-  ItemDescendantClientStateType,
-  ItemDescendantServerStateType,
-} from "@/stores/itemDescendantStore/createItemDescendantStore";
+import { ItemDescendantServerStateType } from "@/schemas/itemDescendant";
 import useAppSettingsStore from "@/stores/appSettings/useAppSettingsStore";
-import {
-  ClientIdType,
-  ItemClientStateType,
-  ItemDataType,
-  ItemDataUntypedType,
-  ItemServerStateType,
-} from "@/types/item";
+import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
+import { ClientIdType, ItemClientStateType, ItemDataType, ItemDataUntypedType } from "@/types/item";
 import { ItemDescendantModelNameType, getDescendantModel, getParentModel } from "@/types/itemDescendant";
 import { ResumeActionType } from "@/types/resume";
 import { Dispatch, ReactNode, SetStateAction, useEffect, useState } from "react";
@@ -176,7 +168,7 @@ function ItemDescendantListState(props: ItemDescendantListStateProps) {
 }
 
 export interface ItemDescendantListContextProps {
-  serverState: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>;
+  serverState: ItemDescendantServerStateType;
   rootItemModel: ItemDescendantModelNameType;
   leafItemModel: ItemDescendantModelNameType;
   resumeAction: ResumeActionType;

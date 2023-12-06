@@ -7,13 +7,14 @@ import { ResumeActionProvider } from "@/contexts/ResumeActionContext";
 import { StoreNameProvider, useStoreName } from "@/contexts/StoreNameContext";
 import { getItemId } from "@/schemas/id";
 import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { AchievementItemClientStateType } from "@/types/achievement";
 import { ItemClientStateType } from "@/types/item";
 import { getParentModel } from "@/types/itemDescendant";
-import { OrganizationItemClientStateType } from "@/types/organization";
-import { ResumeItemClientStateType } from "@/types/resume";
-import { RoleItemClientStateType } from "@/types/role";
-import { UserItemClientStateType } from "@/types/user";
+
+import { AchievementItemClientStateType } from "@/schemas/achievement";
+import { OrganizationItemClientStateType } from "@/schemas/organization";
+import { ResumeItemClientStateType } from "@/schemas/resume";
+import { RoleItemClientStateType } from "@/schemas/role";
+import { UserItemClientStateType } from "@/schemas/user";
 import { useEffect, useState } from "react";
 import { ItemDescendantListContextProps } from "../ItemDescendantList.client";
 

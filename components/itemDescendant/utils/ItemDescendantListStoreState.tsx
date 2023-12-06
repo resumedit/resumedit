@@ -4,13 +4,12 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { dateToISOLocal } from "@/lib/utils/formatDate";
-import { ItemDescendantServerStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { ItemServerStateType } from "@/types/item";
+import { ItemDescendantServerStateType } from "@/schemas/itemDescendant";
 import { ItemDescendantModelAccessor } from "@/types/itemDescendant";
 
 interface ItemDescendantStoreStateProps {
   storeName: keyof ItemDescendantModelAccessor;
-  serverState: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>;
+  serverState: ItemDescendantServerStateType;
 }
 
 export default function ItemDescendantListStoreStateComponent(props: ItemDescendantStoreStateProps) {

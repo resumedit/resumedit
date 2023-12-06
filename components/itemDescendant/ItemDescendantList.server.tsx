@@ -97,10 +97,10 @@ export default async function ItemDescendantList({ itemModel, itemId, ...props }
     // - For any other itemModel, we try to descend the hierarchy along the least
     // recently created item of the given itemModel
     const targetItemModel = itemModel;
-    let derivedItemId: string = userId;
+    let derivedItemId: IdSchemaType = userId;
 
     // Start with a list of resumes owned by the current user
-    let derivedItemModel: string = itemDescendantModelHierarchy[0];
+    let derivedItemModel: ItemDescendantModelNameType = itemDescendantModelHierarchy[0];
     if (derivedItemModel !== "user") {
       throw Error(`ItemDescendantServerComponent: invalid initial itemModel=${derivedItemModel}; should be "user"`);
     }

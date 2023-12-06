@@ -2,6 +2,7 @@
 
 "use client";
 
+import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { FC, ReactNode, createContext, useContext } from "react";
 
 interface StoreNameContextProps {
@@ -20,5 +21,5 @@ export const useStoreName = () => {
   if (context === null) {
     throw new Error("useStoreName must be used within a StoreNameProvider");
   }
-  return context as string;
+  return context as ItemDescendantModelNameType;
 };

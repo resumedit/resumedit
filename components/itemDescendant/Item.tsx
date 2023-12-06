@@ -135,6 +135,7 @@ export default function Item(props: ItemProps) {
     <div className="flex-1 flex justify-between">
       <div
         className={cn("flex-1 flex gap-x-4 gap-y-2 justify-between outline outline-offset-2 ", {
+          "text-muted-foreground bg-blend-soft-light bg-background/50": item.disposition !== ItemDisposition.Synced,
           "outline-red-500": !inputIsValid,
           "outline-none": inputIsValid,
         })}
