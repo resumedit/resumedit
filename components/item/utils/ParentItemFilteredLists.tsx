@@ -13,7 +13,7 @@ interface ParentItemFilteredListProps extends ParentItemListItemProps {
 const ParentItemFilteredList = ({ resumeAction, itemsAreDragable, items }: ParentItemFilteredListProps) => {
   const storeName = useStoreName();
   const store = useParentItemListStore(storeName);
-  const setItemDeleted = store((state) => state.markItemAsDeleted);
+  const markItemAsDeleted = store((state) => state.markItemAsDeleted);
 
   return (
     <SortableWrapper items={items}>
@@ -26,7 +26,7 @@ const ParentItemFilteredList = ({ resumeAction, itemsAreDragable, items }: Paren
             index={index}
             key={item.clientId}
             item={item}
-            setItemDeleted={setItemDeleted}
+            markItemAsDeleted={markItemAsDeleted}
           />
         );
       })}

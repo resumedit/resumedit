@@ -1,7 +1,8 @@
 // @/contexts/NestedItemStoreProvider
 
 import { NestedItemHookType, createNestedItemStore } from "@/stores/nestedItemStore/createNestedItemStore";
-import { NestedItemClientStateType, NestedItemModelAccessor, NestedStoreConfigType } from "@/types/nestedItem";
+import { NestedItemClientStateType, NestedItemModelAccessor } from "@/types/nestedItem";
+import { NestedStoreConfigType } from "@/stores/nestedItemStore/createNestedItemStore";
 import { ReactNode, createContext, useContext, useEffect, useState } from "react";
 
 interface NestedItemStoreProviderProps {

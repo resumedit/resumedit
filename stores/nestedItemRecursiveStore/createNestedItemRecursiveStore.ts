@@ -1,38 +1,37 @@
-// @/stores/nestedItem/createNestedItemStore.ts
+// @/stores/nestedItem/createNestedItemRecursiveStore.ts
 import { IdSchemaType, getItemId } from "@/schemas/id";
 import {
   ClientIdType,
-  NestedItemDescendantClientStateType,
   NestedItemDescendantDataType,
   NestedItemDescendantDataUntypedType,
+  NestedItemDescendantClientStateType as NestedItemDescendantClientStateType,
   NestedItemDisposition,
   NestedItemListType,
   NestedItemModelAccessor,
   NestedItemOrderableChildClientStateType,
   NestedItemServerToClientType,
-  // createTypesafeLocalstorage,
+  NestedItemStoreNameType,
   getDescendantModel,
-  getParentModel,
 } from "@/types/nestedItem";
 import { Draft } from "immer";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { reBalanceListOrderValues, updateListOrderValues } from "./utils/descendantOrderValues";
-import { logUpdateStoreWithServerData } from "./utils/logNestedItemStore";
+import { logUpdateStoreWithServerData } from "./utils/logNestedItemRecursiveStore";
 import { handleNestedItemListFromServer } from "./utils/syncNestedItem";
 
-export type NestedItemStoreDescendantType<
+export type NestedItemRecursiveStoreDescendantType<
   I extends NestedItemDescendantClientStateType,
   C extends NestedItemDescendantClientStateType,
-> = C | NestedItemStore<I, C>;
+> = C | NestedItemRecursiveStore<I, C>;
 
-export type NestedItemStoreDescendantListType<
+export type NestedItemRecursiveStoreDescendantListType<
   I extends NestedItemDescendantClientStateType,
   C extends NestedItemDescendantClientStateType,
-> = Array<NestedItemStoreDescendantType<I, C>>;
+> = Array<NestedItemRecursiveStoreDescendantType<I, C>>;
 
-export type NestedItemState<
+export type NestedItemRecursiveState<
   I extends NestedItemDescendantClientStateType,
   C extends NestedItemDescendantClientStateType,
 > = {
@@ -44,15 +43,19 @@ export type NestedItemState<
   deletedAt: Date | null;
   disposition: NestedItemDisposition;
 
-  parentModel: keyof NestedItemModelAccessor | null;
   itemModel: keyof NestedItemModelAccessor;
-  descendantModel: keyof NestedItemModelAccessor | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  descendants: NestedItemStoreDescendantListType<I, C>;
+  descendants: NestedItemRecursiveStoreDescendantListType<I, C>;
   descendantDraft: NestedItemDescendantDataType<C>;
 };
 
-export type NestedItemActions<C extends NestedItemDescendantClientStateType> = {
+export type NestedItemRecursiveActions<C extends NestedItemDescendantClientStateType> = {
+  getItemModelStore: (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    store: NestedItemRecursiveStore<any, any>,
+    itemModel: NestedItemStoreNameType,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) => NestedItemRecursiveStore<any, any>;
   setData: (data: NestedItemDescendantDataUntypedType) => void;
   setDescendantData: (clientId: ClientIdType, data: NestedItemDescendantDataUntypedType) => void;
   addDescendant: (itemData: NestedItemDescendantDataType<C>) => ClientIdType;
@@ -66,70 +69,98 @@ export type NestedItemActions<C extends NestedItemDescendantClientStateType> = {
   ) => void;
 };
 
-export type NestedItemStore<
+export type NestedItemRecursiveStore<
   I extends NestedItemDescendantClientStateType,
   C extends NestedItemDescendantClientStateType,
-> = NestedItemState<I, C> & NestedItemActions<C>;
+> = NestedItemRecursiveState<I, C> & NestedItemRecursiveActions<C>;
 
 // Selector type is used to type the return type when using the store with a selector
-type NestedItemSelectorType<
+type NestedItemRecursiveSelectorType<
   I extends NestedItemDescendantClientStateType,
   C extends NestedItemDescendantClientStateType,
   T,
-> = (state: NestedItemStore<I, C>) => T;
+> = (state: NestedItemRecursiveStore<I, C>) => T;
 
 // Hook type is used as a return type when using the store
-export type NestedItemHookType = <
+export type NestedItemRecursiveHookType = <
   I extends NestedItemDescendantClientStateType,
   C extends NestedItemDescendantClientStateType,
   T,
 >(
-  selector?: NestedItemSelectorType<I, C, T>,
+  selector?: NestedItemRecursiveSelectorType<I, C, T>,
 ) => T;
 
-export interface NestedStoreConfigType {
+export interface NestedItemRecursiveStoreConfigType {
   itemModel: keyof NestedItemModelAccessor;
+
+  parentClientId: IdSchemaType;
   clientId: IdSchemaType;
-  id: IdSchemaType | undefined;
+
   parentId: IdSchemaType | undefined;
+  id: IdSchemaType | undefined;
+
   storeVersion?: number;
   storeName?: string;
   logUpdateFromServer?: boolean;
 }
 export const storeVersion = 1;
-export const storeNameSuffix = "nested-item.devel.resumedit.local";
+export const storeNameSuffix = "nested-item-recursive.devel.resumedit.local";
 
-export const createNestedItemStore = <
+export const createNestedItemRecursiveStore = <
   I extends NestedItemDescendantClientStateType,
   C extends NestedItemDescendantClientStateType,
->(
-  props: NestedStoreConfigType,
-) => {
-  const parentId = props.parentId;
-  const id = props.id;
-  const clientId = props.clientId;
-  const itemModel = props.itemModel;
-  // Retrieve the parent model
-  const descendantModel = getParentModel(props.itemModel);
-  const storeName = `${itemModel}-${storeNameSuffix}`;
+>({
+  itemModel,
+  parentClientId,
+  clientId,
+  parentId,
+  id,
+  storeVersion,
+  ...rest
+}: NestedItemRecursiveStoreConfigType) => {
+  const storeName = rest.storeName ? rest.storeName : `${itemModel}-${storeNameSuffix}`;
 
   return create(
     persist(
-      immer<NestedItemStore<I, C>>((set, get) => ({
+      immer<NestedItemRecursiveStore<I, C>>((set, get) => ({
+        parentClientId,
+        clientId,
         parentId,
         id,
-        clientId,
         createdAt: new Date(),
         lastModified: new Date(),
         deletedAt: null,
         disposition: NestedItemDisposition.New,
 
-        parentModel: getParentModel(itemModel),
         itemModel: itemModel,
-        descendantModel: descendantModel,
         descendants: [],
         descendantDraft: {} as C,
 
+        // Helper function to find the target state based on itemModel
+        getItemModelStore: (
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          store: NestedItemRecursiveStore<any, any>,
+          itemModel: NestedItemStoreNameType,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ): NestedItemRecursiveStore<any, any> => {
+          // Base case: If the current state's itemModel matches the target itemModel
+          if (store.itemModel === itemModel) {
+            return store;
+          }
+          // Recursive case: Search in descendants
+          for (const descendant of store.descendants) {
+            if (descendant.itemModel === itemModel) {
+              return descendant;
+            }
+            const foundStore = store.getItemModelStore(descendant, itemModel);
+            if (foundStore) {
+              return foundStore;
+            }
+          }
+          throw Error(
+            `createNestedItemRecursiveStore:getItemModelState(itemModel="${itemModel}"): no state for itemModel`,
+          );
+        },
         setData: (itemData: NestedItemDescendantDataUntypedType): void => {
           set((state) => {
             // Loop through each key in itemData and update the state
@@ -163,15 +194,16 @@ export const createNestedItemStore = <
             let newItem;
             if (descendantModel) {
               // Create the nested store of type C
-              const descendantStoreProps: NestedStoreConfigType = {
+              const descendantStoreProps: NestedItemRecursiveStoreConfigType = {
+                itemModel: descendantModel,
+                parentClientId: clientId,
+                clientId: descendantClientId,
                 parentId: id,
                 id: undefined,
-                clientId: descendantClientId,
-                itemModel: descendantModel,
               };
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const descendantStore = createNestedItemStore<C, any>(descendantStoreProps);
-              newItem = descendantStore as unknown as Draft<NestedItemStore<I, C>>;
+              const descendantStore = createNestedItemRecursiveStore<C, any>(descendantStoreProps);
+              newItem = descendantStore as unknown as Draft<NestedItemRecursiveStore<I, C>>;
             } else {
               // Leaf of the hierarchy
               // Add the extra fields for type `NestedItemClientType`
@@ -260,7 +292,10 @@ export const createNestedItemStore = <
         ) => {
           if (props.logUpdateFromServer) {
             logUpdateStoreWithServerData(
-              get() as NestedItemStore<NestedItemDescendantClientStateType, NestedItemDescendantClientStateType>,
+              get() as NestedItemRecursiveStore<
+                NestedItemDescendantClientStateType,
+                NestedItemDescendantClientStateType
+              >,
               serverState,
             );
           }

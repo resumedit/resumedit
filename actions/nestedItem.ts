@@ -5,7 +5,7 @@
 import { prisma } from "@/prisma/client";
 import { IdSchemaType } from "@/schemas/id";
 import { ItemServerStateType } from "@/types/item";
-import { NestedItemListType, NestedItemStoreNameType, getChildModel, getModelAccessor } from "@/types/nestedItem";
+import { NestedItemListType, NestedItemStoreNameType, getDescendantModel, getModelAccessor } from "@/types/nestedItem";
 import { PrismaClient } from "@prisma/client";
 
 export async function getItem(model: NestedItemStoreNameType, id: IdSchemaType, prismaTransaction?: PrismaClient) {
@@ -60,7 +60,7 @@ export async function getNestedItemList(
     let descendants: Array<NestedItemListType<ItemServerStateType, ItemServerStateType>> = [];
 
     // Fetch the items that are direct descendants of the item
-    const itemDescendantModel = getChildModel(itemModel);
+    const itemDescendantModel = getDescendantModel(itemModel);
 
     if (itemDescendantModel) {
       const itemDescendants = await getItemsByParentId(itemDescendantModel, itemId, prismaClient);
@@ -68,7 +68,7 @@ export async function getNestedItemList(
       // For each item, fetch its descendants recursively
       if (itemDescendants && itemDescendants.length > 0) {
         console.log(`${itemModel} ${itemId} has ${itemDescendants.length} descendants`);
-        const descendantModel = getChildModel(itemModel);
+        const descendantModel = getDescendantModel(itemModel);
         if (descendantModel) {
           descendants = await Promise.all(
             itemDescendants.map((item) => getNestedItemList(descendantModel, item.id, prismaClient)),
@@ -82,6 +82,7 @@ export async function getNestedItemList(
     // Construct the NestedItemListType for the current itemModel and itemId
     return {
       ...item,
+      itemModel: itemModel,
       descendants,
     };
   };
@@ -109,7 +110,7 @@ export async function softDeleteAndCascadeItem(
     });
 
     // Recursively soft delete all descendant items
-    const itemModel = getChildModel(model);
+    const itemModel = getDescendantModel(model);
     if (itemModel) {
       const itemModelAccessor = getModelAccessor(itemModel, prismaClient);
       const itemsToDelete = await itemModelAccessor.findMany({

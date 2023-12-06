@@ -1,9 +1,9 @@
 import { ItemServerToClientType } from "@/types/item";
 import { NestedItemDescendantClientStateType, NestedItemListType } from "@/types/nestedItem";
-import { NestedItemStore } from "../createNestedItemStore";
+import { NestedItemRecursiveStore } from "../createNestedItemRecursiveStore";
 
 export function logUpdateStoreWithServerData(
-  storeState: NestedItemStore<NestedItemDescendantClientStateType, NestedItemDescendantClientStateType>,
+  storeState: NestedItemRecursiveStore<NestedItemDescendantClientStateType, NestedItemDescendantClientStateType>,
   serverState: NestedItemListType<ItemServerToClientType, ItemServerToClientType>,
 ) {
   console.log(

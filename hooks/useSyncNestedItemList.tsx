@@ -5,7 +5,7 @@ import { useStoreName } from "@/contexts/StoreNameContext";
 import { dateToISOLocal } from "@/lib/utils/formatDate";
 import { NestedItemState } from "@/stores/nestedItemStore/createNestedItemStore";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
-import { NestedItemChildClientStateType } from "@/types/nestedItem";
+import { NestedItemDescendantClientStateType } from "@/types/nestedItem";
 import { useCallback, useEffect } from "react";
 
 export function useSyncNestedItemList() {
@@ -21,8 +21,8 @@ export function useSyncNestedItemList() {
   const syncItems = useCallback(async () => {
     // Send the entire item list
     const clientList = { ...rootState, descendants } as NestedItemState<
-      NestedItemChildClientStateType,
-      NestedItemChildClientStateType
+      NestedItemDescendantClientStateType,
+      NestedItemDescendantClientStateType
     >;
     const clientModified = clientList.lastModified;
     const updatedItemList = await handleNestedItemListFromClient(clientList);

@@ -59,35 +59,35 @@ export type NestedItemServerStateType = NestedItemType;
 // Type used when client sends items to server for merge
 // As both items and their descendants are created on the client, they may have
 // neither a parentId nor an id until they have been synchronized with the server
-export type NestedItemChildClientToServerType = Omit<NestedItemType, "parentId" | "id"> & {
+export type NestedItemDescendantClientToServerType = Omit<NestedItemType, "parentId" | "id"> & {
   parentId?: IdSchemaType;
   id?: IdSchemaType;
   disposition: NestedItemDisposition;
 };
 
 // Type used by client to maintain client state
-export type NestedItemChildClientStateType = NestedItemChildClientToServerType & {
+export type NestedItemDescendantClientStateType = NestedItemDescendantClientToServerType & {
   clientId: IdSchemaType;
 };
 
-export type NestedItemOrderableChildClientStateType = NestedItemChildClientStateType & {
+export type NestedItemOrderableChildClientStateType = NestedItemDescendantClientStateType & {
   order: number;
 };
 
 // An object with fields that are specific to the item, i.e., excluding all the fields shared
 // between `Resume`, `Organization`, `Role` and `Achievement`
-export type NestedItemChildDataType<T extends NestedItemChildClientStateType> = Omit<
+export type NestedItemDescendantDataType<T extends NestedItemDescendantClientStateType> = Omit<
   T,
-  keyof NestedItemChildClientStateType
+  keyof NestedItemDescendantClientStateType
 >;
-export type NestedItemChildDataFieldNameType<T extends NestedItemChildClientStateType> =
-  keyof NestedItemChildDataType<T>;
+export type NestedItemDescendantDataFieldNameType<T extends NestedItemDescendantClientStateType> =
+  keyof NestedItemDescendantDataType<T>;
 
 // FIXME: The following two types don't add much type safety but
 // are currently used to be able to work with components without a type parameter
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type NestedItemChildDataUntypedType = Omit<Record<string, any>, keyof NestedItemChildClientStateType>;
-export type NestedItemChildDataUntypedFieldNameType = keyof NestedItemChildDataUntypedType;
+export type NestedItemDescendantDataUntypedType = Omit<Record<string, any>, keyof NestedItemDescendantClientStateType>;
+export type NestedItemDescendantDataUntypedFieldNameType = keyof NestedItemDescendantDataUntypedType;
 
 export const nestedItemModelHierarchy = ["user", "resume", "organization", "role", "achievement"];
 
@@ -130,12 +130,12 @@ export function getParentModel(model: keyof NestedItemModelAccessor): keyof Nest
  * @param model - The model whose child is to be found.
  * @returns The child model or null if it's the bottom-level model.
  */
-export function getChildModel(model: keyof NestedItemModelAccessor): keyof NestedItemModelAccessor | null {
+export function getDescendantModel(model: keyof NestedItemModelAccessor): keyof NestedItemModelAccessor | null {
   const entry = nestedItemModels[model];
   if (entry) {
     return entry.child;
   }
-  throw new Error(`getChildModel(model=${model}): model not found`);
+  throw new Error(`getDescendantModel(model=${model}): model not found`);
 }
 
 // Define a type that maps model names to Prisma model method types
@@ -189,7 +189,9 @@ function generateParentIdKeys(): Set<string> {
 // descendants: an array of child model instances, e.g., Array<Organization>
 export type NestedItemListType<I, C> = I & {
   parentId: IdSchemaType;
-  descendants: C[];
+  itemModel: NestedItemModelNameType;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  descendants: NestedItemListType<C, any>[];
 };
 
 // List of parentId keys to be stripped from objects
@@ -258,8 +260,8 @@ export function buildParentIdKeyValue(parentModel: keyof NestedItemModelAccessor
 }
 
 export function createTypesafeLocalstorage<
-  P extends NestedItemChildClientStateType,
-  I extends NestedItemChildClientStateType,
+  P extends NestedItemDescendantClientStateType,
+  I extends NestedItemDescendantClientStateType,
 >(): PersistStorage<NestedItemState<P, I>> {
   return {
     getItem: (name) => {
@@ -279,16 +281,4 @@ export function createTypesafeLocalstorage<
       localStorage.removeItem(name);
     },
   };
-}
-export const storeVersion = 1;
-export const storeNameSuffix = "nested-item.devel.resumedit.local";
-
-export interface NestedStoreConfigType {
-  itemModel: keyof NestedItemModelAccessor;
-  clientId: IdSchemaType;
-  id: IdSchemaType | undefined;
-  parentId: IdSchemaType | undefined;
-  storeVersion?: number;
-  storeName?: string;
-  logUpdateFromServer?: boolean;
 }

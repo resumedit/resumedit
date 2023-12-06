@@ -6,7 +6,7 @@ import { dateToISOLocal } from "@/lib/utils/formatDate";
 import { prisma } from "@/prisma/client";
 import { NestedItemState, NestedItemStore } from "@/stores/nestedItemStore/createNestedItemStore";
 import {
-  NestedItemChildClientStateType,
+  NestedItemDescendantClientStateType,
   NestedItemClientToServerType,
   NestedItemListType,
   NestedItemServerStateType,
@@ -19,7 +19,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { getItemLastModified, getItemsByParentId, getNestedItem, softDeleteAndCascadeItem } from "./nestedItem";
 
 export async function handleNestedItemListFromClient(
-  clientState: NestedItemState<NestedItemChildClientStateType, NestedItemChildClientStateType>,
+  clientState: NestedItemState<NestedItemDescendantClientStateType, NestedItemDescendantClientStateType>,
 ): Promise<NestedItemListType<NestedItemServerToClientType, NestedItemServerToClientType> | null> {
   if (!clientState.parentId) {
     throw Error(`handleNestedItemListFromClient: invalid parentId=${clientState.parentId}`);
@@ -81,8 +81,8 @@ export async function handleNestedItemListFromClient(
             const childPromises = clientChildren.map(
               async (
                 child:
-                  | NestedItemChildClientStateType
-                  | NestedItemStore<NestedItemChildClientStateType, NestedItemChildClientStateType>,
+                  | NestedItemDescendantClientStateType
+                  | NestedItemStore<NestedItemDescendantClientStateType, NestedItemDescendantClientStateType>,
               ) => {
                 const childWithParentId = { ...child, parentId: id };
                 try {
@@ -145,7 +145,7 @@ export async function handleNestedItemListFromClient(
               `handleNestedItemListFromClient: client update with clientTimestamp=${dateToISOLocal(
                 clientLastModified,
               )} applied:\n${clientChildren
-                .map((a: NestedItemChildClientStateType) => a.id?.substring(0, 3))
+                .map((a: NestedItemDescendantClientStateType) => a.id?.substring(0, 3))
                 .join(", ")}\n.findMany returned ${descendantsAfterUpdate.length} descendants:\n${descendantsAfterUpdate
                 .map((a: NestedItemServerStateType) => a.id?.substring(0, 3))
                 .join(", ")}\n`,

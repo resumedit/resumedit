@@ -9,7 +9,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
-import { useNestedItemStore } from "@/contexts/NestedItemStoreContext";
+// import { useNestedItemStore } from "@/contexts/NestedItemStoreContext";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import {
   NestedItemDescendantDataUntypedType,
@@ -22,7 +22,7 @@ import { Edit, Grip } from "lucide-react";
 import Link from "next/link";
 import { InputProps } from "react-editext";
 import { Button } from "../ui/button";
-import EditableField from "./utils/EditableField";
+import EditableField from "../nestedItem/utils/EditableField";
 
 export interface NestedItemListItemProps {
   storeName: NestedItemStoreNameType;
@@ -30,7 +30,7 @@ export interface NestedItemListItemProps {
   descendantsAreDragable: boolean;
   index: number;
   item: NestedItemClientStateType;
-  markItemAsDeleted: (itemId: IdSchemaType) => void;
+  setItemDeleted: (itemId: IdSchemaType) => void;
 }
 
 export default function NestedItemListItem({
@@ -39,7 +39,7 @@ export default function NestedItemListItem({
   descendantsAreDragable,
   index,
   item,
-  markItemAsDeleted,
+  setItemDeleted,
 }: NestedItemListItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: item.clientId,
@@ -64,8 +64,13 @@ export default function NestedItemListItem({
   const showListItemInternals = process.env.NODE_ENV === "development" && showNestedItemInternals;
 
   // const storeName = useStoreName();
-  const store = useNestedItemStore(storeName);
-  const setDescendantData = store((state) => state.setDescendantData);
+  // const store = useNestedItemStore(storeName);
+  // const setDescendantData = store((state) => state.setDescendantData);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const setDescendantData = (clientId: IdSchemaType, value: any) => {
+    console.log(`setDescendantData(clientId=${clientId}, value=${value})`);
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSave = (val: any, inputProps?: InputProps) => {
@@ -187,7 +192,7 @@ export default function NestedItemListItem({
             <button
               className="text-light-txt-2 dark:text-light-txt-1 basis-1/12 flex place-name-center opacity-100 md:group-hover:opacity-100 transition-all duration-150"
               title="Delete child"
-              onClick={() => markItemAsDeleted(item.clientId)}
+              onClick={() => setItemDeleted(item.clientId)}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

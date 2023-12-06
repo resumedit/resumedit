@@ -17,7 +17,7 @@ export default function NestedItemFilteredList({
 }: NestedItemFilteredListProps) {
   const storeName = useStoreName();
   const store = useNestedItemStore(storeName);
-  const setItemDeleted = store((state) => state.markDescendantAsDeleted);
+  const markItemAsDeleted = store((state) => state.markDescendantAsDeleted);
 
   return (
     <SortableWrapper items={descendants}>
@@ -30,7 +30,7 @@ export default function NestedItemFilteredList({
             index={index}
             key={item.clientId}
             item={item}
-            setItemDeleted={setItemDeleted}
+            markItemAsDeleted={markItemAsDeleted}
           />
         );
       })}

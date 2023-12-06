@@ -26,7 +26,7 @@ export interface ParentItemListItemProps {
   itemsAreDragable: boolean;
   index: number;
   item: ItemClientStateType;
-  setItemDeleted: (itemId: IdSchemaType) => void;
+  markItemAsDeleted: (itemId: IdSchemaType) => void;
 }
 
 export default function ItemListItem({
@@ -35,7 +35,7 @@ export default function ItemListItem({
   itemsAreDragable,
   index,
   item,
-  setItemDeleted,
+  markItemAsDeleted,
 }: ParentItemListItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: item.clientId,
@@ -178,7 +178,7 @@ export default function ItemListItem({
             <button
               className="text-light-txt-2 dark:text-light-txt-1 basis-1/12 flex place-name-center opacity-100 md:group-hover:opacity-100 transition-all duration-150"
               title="Delete Item"
-              onClick={() => setItemDeleted(item.clientId)}
+              onClick={() => markItemAsDeleted(item.clientId)}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

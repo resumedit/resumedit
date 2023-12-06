@@ -35,7 +35,7 @@ export default async function ParentItemListServerComponent({
           ParentItemListStore <code>{storeName}</code>
         </h2>
         <p>
-          Store name <code>{storeName}</code> is invalid.
+          Store name <code>&quot;{storeName}&quot;</code> is invalid.
         </p>
         <p>Valid store names: {parentItemModelHierarchy.slice(1).join(`, `)}</p>
       </div>

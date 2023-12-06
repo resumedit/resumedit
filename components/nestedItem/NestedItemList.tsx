@@ -7,7 +7,7 @@ import { NestedItemStoreDescendantType } from "@/stores/nestedItemStore/createNe
 import { findItemIndexByClientId } from "@/stores/nestedItemStore/utils/descendantOrderValues";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import {
-  NestedItemChildClientStateType,
+  NestedItemDescendantClientStateType,
   NestedItemClientStateType,
   OrderableItemClientStateType,
 } from "@/types/nestedItem";
@@ -33,7 +33,7 @@ const NestedItemList = () => {
   const storeName = useStoreName();
   const store = useNestedItemStore(storeName);
   const descendants = store((state) => state.descendants);
-  const setChildDeleted = store((state) => state.markDescendantAsDeleted);
+  const markDescendantAsDeleted = store((state) => state.markDescendantAsDeleted);
   const reArrangeDescendants = store((state) => state.reArrangeDescendants);
   const resetDescendantsOrderValues = store((state) => state.resetDescendantsOrderValues);
 
@@ -59,7 +59,10 @@ const NestedItemList = () => {
       // Create a new array with updated 'moved' properties
       const updatedDescendants = descendants.map(
         (
-          descendant: NestedItemStoreDescendantType<NestedItemChildClientStateType, NestedItemChildClientStateType>,
+          descendant: NestedItemStoreDescendantType<
+            NestedItemDescendantClientStateType,
+            NestedItemDescendantClientStateType
+          >,
           index: number,
         ) => {
           if (index === activeIndex || index === overIndex) {
@@ -108,7 +111,10 @@ const NestedItemList = () => {
               <NestedItemSortableWrapper items={descendants} disabled={!descendantsAreDragable}>
                 {descendants.map(
                   (
-                    item: NestedItemStoreDescendantType<NestedItemChildClientStateType, NestedItemChildClientStateType>,
+                    item: NestedItemStoreDescendantType<
+                      NestedItemDescendantClientStateType,
+                      NestedItemDescendantClientStateType
+                    >,
                     index: number,
                   ) => {
                     return (
@@ -119,7 +125,7 @@ const NestedItemList = () => {
                         resumeAction={resumeAction}
                         descendantsAreDragable={descendantsAreDragable}
                         item={item as NestedItemClientStateType}
-                        setItemDeleted={setChildDeleted}
+                        markItemAsDeleted={markDescendantAsDeleted}
                       />
                     );
                   },

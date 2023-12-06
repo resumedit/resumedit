@@ -1,12 +1,12 @@
 // @/components/nestedItem/NestedItemSortableWrapper.tsx
 
 import { NestedItemStoreDescendantListType } from "@/stores/nestedItemStore/createNestedItemStore";
-import { NestedItemChildClientStateType } from "@/types/nestedItem";
+import { NestedItemDescendantClientStateType } from "@/types/nestedItem";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { ReactNode } from "react";
 
 interface NestedItemSortableWrapperProps {
-  items: NestedItemStoreDescendantListType<NestedItemChildClientStateType, NestedItemChildClientStateType>;
+  items: NestedItemStoreDescendantListType<NestedItemDescendantClientStateType, NestedItemDescendantClientStateType>;
   disabled?: boolean;
   children: ReactNode;
 }

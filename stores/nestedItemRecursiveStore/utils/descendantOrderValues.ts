@@ -4,7 +4,7 @@ import {
   NestedItemDisposition,
   NestedItemOrderableChildClientStateType,
 } from "@/types/nestedItem";
-import { NestedItemStoreDescendantListType } from "../createNestedItemStore";
+import { NestedItemStoreDescendantListType } from "../createNestedItemRecursiveStore";
 
 /**
  * Helper function for finding index of item object in given array

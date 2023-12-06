@@ -28,7 +28,7 @@ const ParentItemList = () => {
   const storeName = useStoreName();
   const store = useParentItemListStore(storeName);
   const items = store((state) => state.items);
-  const setItemDeleted = store((state) => state.markItemAsDeleted);
+  const markItemAsDeleted = store((state) => state.markItemAsDeleted);
   const reArrangeItemList = store((state) => state.reArrangeItemList);
   const resetItemListOrderValues = store((state) => state.resetItemListOrderValues);
 
@@ -104,7 +104,7 @@ const ParentItemList = () => {
                     resumeAction={resumeAction}
                     itemsAreDragable={itemsAreDragable}
                     item={item as ItemClientStateType}
-                    setItemDeleted={setItemDeleted}
+                    markItemAsDeleted={markItemAsDeleted}
                   />
                 );
               })}

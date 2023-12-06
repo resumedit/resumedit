@@ -8,12 +8,12 @@ import {
 } from "@/types/nestedItem";
 import { ModificationTimestampType } from "@/types/timestamp";
 import { Draft } from "immer";
-import { NestedItemStore } from "../createNestedItemStore";
+import { NestedItemStore } from "../createNestedItemRecursiveStore";
 
 import { handleNestedItemListFromClient } from "@/actions/syncNestedItemL";
 import { toast } from "@/components/ui/use-toast";
 import { dateToISOLocal } from "@/lib/utils/formatDate";
-import { NestedItemHookType } from "../createNestedItemStore";
+import { NestedItemHookType } from "../createNestedItemRecursiveStore";
 
 export async function sendNestedItemToServer(store: NestedItemHookType) {
   const rootState = store((state) => state);

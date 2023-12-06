@@ -10,7 +10,7 @@ import {
   NestedItemListType,
   NestedItemModelAccessor,
   NestedItemServerStateType,
-  getChildModel,
+  getDescendantModel,
 } from "@/types/nestedItem";
 import NestedItemClientComponent from "./NestedItemList.client";
 
@@ -46,7 +46,7 @@ export default async function ResumeNestedItemListServerComponent(props: ResumeN
   // component will render this specific resume
   if (id && rootStoreName) {
     rootParentId = id;
-    rootStoreName = getChildModel(rootStoreName);
+    rootStoreName = getDescendantModel(rootStoreName);
   }
 
   if (!rootStoreName) {
@@ -54,7 +54,7 @@ export default async function ResumeNestedItemListServerComponent(props: ResumeN
   }
 
   // Determine the storeName of the descendants
-  const itemStoreName = getChildModel(rootStoreName);
+  const itemStoreName = getDescendantModel(rootStoreName);
 
   // Fetch server state for the current level
   const serverState = await fetchServerState(rootStoreName, rootParentId);
