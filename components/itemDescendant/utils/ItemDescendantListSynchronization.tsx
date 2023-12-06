@@ -16,6 +16,7 @@ export function ItemDescendantListSynchronization() {
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);
   const rootState = store((state) => state);
+  const updateLastModifiedOfModifiedItems = store((state) => state.updateLastModifiedOfModifiedItems);
   const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
 
   useSyncItemDescendantStore();
@@ -27,7 +28,12 @@ export function ItemDescendantListSynchronization() {
     if (!rootState) {
       throw Error(`sendItemDescendantToServer(): storeName=${storeName}, rootState=${rootState})`);
     }
-    await syncItemDescendantStoreWithServer(rootState, updateStoreWithServerData, forceUpdate);
+    await syncItemDescendantStoreWithServer(
+      rootState,
+      updateLastModifiedOfModifiedItems,
+      updateStoreWithServerData,
+      forceUpdate,
+    );
   }
 
   return !store ? null : (

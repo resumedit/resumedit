@@ -11,13 +11,14 @@ export function useSyncItemDescendantStore() {
   const store = useItemDescendantStore(storeName);
 
   const rootState = store((state) => state);
+  const updateLastModifiedOfModifiedItems = store((state) => state.updateLastModifiedOfModifiedItems);
   const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
 
   const synchronizationInterval = useAppSettingsStore((state) => state.synchronizationInterval);
 
   const syncItems = useCallback(async () => {
-    await syncItemDescendantStoreWithServer(rootState, updateStoreWithServerData);
-  }, [rootState, updateStoreWithServerData]);
+    await syncItemDescendantStoreWithServer(rootState, updateLastModifiedOfModifiedItems, updateStoreWithServerData);
+  }, [rootState, updateLastModifiedOfModifiedItems, updateStoreWithServerData]);
 
   useEffect(() => {
     if (synchronizationInterval > 0) {

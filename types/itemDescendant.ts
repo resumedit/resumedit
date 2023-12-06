@@ -146,6 +146,7 @@ export function getItemDataForUpdate<T extends ItemClientToServerType>(item: T, 
 export function getItemDescendantStoreStateForServer<T extends ItemDescendantStore>(rootState: T) {
   // Remove all properties that are not part of the item
   const storeActions: Array<keyof T> = [
+    "updateLastModifiedOfModifiedItems",
     "setItemData",
     "markItemAsDeleted",
     "restoreDeletedItem",

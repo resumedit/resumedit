@@ -65,6 +65,7 @@ export type ItemDescendantStoreState = {
 };
 
 export type ItemDescendantStoreActions = {
+  updateLastModifiedOfModifiedItems: (overrideLastModified?: Date) => void;
   setItemData: (data: ItemDataUntypedType, clientId: ClientIdType) => void;
   markItemAsDeleted: (clientId: ClientIdType) => void;
   restoreDeletedItem: (clientId: ClientIdType) => void;
@@ -111,44 +112,6 @@ export const storeVersion = 1;
 const storeNameSuffix =
   process.env.NODE_ENV === "development" ? `devel.${siteConfig.canonicalDomainName}` : siteConfig.canonicalDomainName;
 
-export function getDescendantFromAncestorChain(
-  ancestorStateChain: ItemDescendantStoreStateListType,
-  ancestorClientIdChain: Array<ClientIdType>,
-  lastModified?: Date,
-): ItemDescendantStoreStateListType {
-  console.log(
-    "getDescendantFromAncestorChain:\n",
-    `ancestorStateChain: ${ancestorStateChain.map((item) => item.clientId).join("->")}`,
-    "\n",
-    `ancestorClientIdChain: ${ancestorClientIdChain.join("->")}`,
-  );
-  // Descend from the `state` all the way down to the descendant based on the `ancestorClientIdChain` array
-  const state = ancestorStateChain[0];
-  if (lastModified) {
-    state.lastModified = lastModified;
-    state.disposition = ItemDisposition.Modified;
-  }
-  if (ancestorClientIdChain.length === 0) {
-    return ancestorStateChain;
-  }
-  const ancestorClientId = ancestorClientIdChain[ancestorClientIdChain.length - 2];
-  const ancestorState = state.descendants.find(
-    (descendant) => descendant.clientId === ancestorClientId,
-  ) as ItemDescendantStoreState;
-  if (ancestorState) {
-    if (lastModified) {
-      ancestorState.lastModified = lastModified;
-      ancestorState.disposition = ItemDisposition.Modified;
-    }
-    return getDescendantFromAncestorChain(
-      [ancestorState, ...ancestorStateChain],
-      ancestorClientIdChain.slice(0, -1),
-      lastModified,
-    );
-  }
-  return ancestorStateChain;
-}
-
 export const createItemDescendantStore = ({
   parentClientId,
   clientId,
@@ -177,6 +140,23 @@ export const createItemDescendantStore = ({
         descendants: [],
         descendantDraft: {} as ItemDataUntypedType,
 
+        /**
+         * Updates the lastModified timestamp of all modified items and descendants in the store.
+         * If overrideLastModified is provided, it uses this timestamp; otherwise, it uses the most recent
+         * timestamp of any modified descendant.
+         *
+         * @param {number | undefined} overrideLastModified - Optional timestamp to override the lastModified value.
+         */
+        updateLastModifiedOfModifiedItems: (overrideLastModified?: Date) => {
+          set((state) => {
+            const updatedState = updateItemToLastModifiedDescendant(
+              state,
+              overrideLastModified ? overrideLastModified : undefined,
+            );
+            state.descendants = updatedState.descendants;
+            state.lastModified = updatedState.lastModified;
+          });
+        },
         setItemData: (descendantData: ItemDataUntypedType): void => {
           set((state) => {
             // Loop through each key in descendantData and update the state
@@ -387,3 +367,99 @@ export const createItemDescendantStore = ({
     ),
   );
 };
+
+function getDescendantFromAncestorChain(
+  ancestorStateChain: ItemDescendantStoreStateListType,
+  ancestorClientIdChain: Array<ClientIdType>,
+  lastModified?: Date,
+): ItemDescendantStoreStateListType {
+  console.log(
+    "getDescendantFromAncestorChain:\n",
+    `ancestorStateChain: ${ancestorStateChain.map((item) => item.clientId).join("->")}`,
+    "\n",
+    `ancestorClientIdChain: ${ancestorClientIdChain.join("->")}`,
+  );
+  // Descend from the `state` all the way down to the descendant based on the `ancestorClientIdChain` array
+  const state = ancestorStateChain[0];
+  if (lastModified) {
+    state.lastModified = lastModified;
+    state.disposition = ItemDisposition.Modified;
+  }
+  if (ancestorClientIdChain.length === 0) {
+    return ancestorStateChain;
+  }
+  const ancestorClientId = ancestorClientIdChain[ancestorClientIdChain.length - 2];
+  const ancestorState = state.descendants.find(
+    (descendant) => descendant.clientId === ancestorClientId,
+  ) as ItemDescendantStoreState;
+  if (ancestorState) {
+    if (lastModified) {
+      ancestorState.lastModified = lastModified;
+      ancestorState.disposition = ItemDisposition.Modified;
+    }
+    return getDescendantFromAncestorChain(
+      [ancestorState, ...ancestorStateChain],
+      ancestorClientIdChain.slice(0, -1),
+      lastModified,
+    );
+  }
+  return ancestorStateChain;
+}
+
+/**
+ * Recursively updates the lastModified timestamp of the item and its descendants.
+ * If an override timestamp is provided, it updates the timestamp to this value;
+ * otherwise, it uses the most recent timestamp of any modified descendant.
+ *
+ * @param {ItemDescendantClientState} item - The item to update.
+ * @param {Date | undefined} overrideLastModified - Optional override timestamp.
+ * @returns {ItemDescendantClientState} - The updated item.
+ */
+function updateItemToLastModifiedDescendant(
+  item: ItemDescendantClientState,
+  overrideLastModified?: Date,
+): ItemDescendantClientState {
+  // Base case: If the item has no descendants, return the item as is
+  if (!item.descendants || item.descendants.length === 0) {
+    if (item.disposition !== ItemDisposition.Synced) {
+      return { ...item, lastModified: overrideLastModified ? overrideLastModified : item.lastModified };
+    }
+    return item;
+  }
+
+  // Recursive case: Traverse the descendants and update their lastModified timestamps
+  // If `overrideLastModified` is provided, the latestTimestamp is updated to whatever is more recent
+  let latestTimestamp =
+    item.disposition !== ItemDisposition.Synced && overrideLastModified
+      ? overrideLastModified > item.lastModified
+        ? overrideLastModified
+        : item.lastModified
+      : item.lastModified;
+  const updatedDescendants = item.descendants.map((descendant) => {
+    // Update each descendant recursively
+    const updatedDescendant = updateItemToLastModifiedDescendant(descendant, overrideLastModified);
+
+    // Find the latest timestamp among descendants
+    if (updatedDescendant.lastModified > latestTimestamp) {
+      latestTimestamp = updatedDescendant.lastModified;
+    }
+
+    return updatedDescendant;
+  });
+
+  // Update the item's lastModified timestamp if a descendant has a more recent timestamp
+  // or if the item itself is not synced
+  if (latestTimestamp > item.lastModified || item.disposition !== ItemDisposition.Synced) {
+    return {
+      ...item,
+      lastModified: latestTimestamp,
+      descendants: updatedDescendants,
+    };
+  }
+
+  // If no descendant has a more recent timestamp and item is synced, return the item with updated descendants
+  return {
+    ...item,
+    descendants: updatedDescendants,
+  };
+}
