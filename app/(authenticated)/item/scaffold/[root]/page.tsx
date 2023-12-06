@@ -1,6 +1,6 @@
 "use server";
 
-import ItemDescendantScaffoldServerComponent from "@/components/itemDescendant/ItemDescendantScaffold.server";
+import ItemDescendantScaffoldServerComponent from "@/components/itemDescendant/utils/ItemDescendantScaffold.server";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { Suspense } from "react";

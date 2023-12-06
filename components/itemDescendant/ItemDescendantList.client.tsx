@@ -15,9 +15,11 @@ import { ItemClientStateType, ItemDataType, ItemDataUntypedType, ItemServerToCli
 import { ItemDescendantModelNameType, getParentModel } from "@/types/itemDescendant";
 import { ResumeActionType } from "@/types/resume";
 import { Dispatch, ReactNode, SetStateAction, useEffect, useState } from "react";
-import ItemDescendantItem from "./ItemDescendantItem";
-import ItemDescendantItemInput from "./ItemDescendantItemInput";
-import { ItemDescendantListSynchronization } from "./ItemDescendantListSynchronization";
+import DescendantInput from "./descendant/DescendantInput";
+import { ItemDescendantListSynchronization } from "./utils/ItemDescendantListSynchronization";
+import DescendantList from "./descendant/DescendantList";
+import Item from "./Item";
+import Descendant from "./descendant/Descendant";
 
 export interface ItemDescendantRenderProps {
   index: number;
@@ -37,7 +39,7 @@ export interface ItemDescendantRenderProps {
   showIdentifiers: boolean;
   showSynchronization: boolean;
 }
-function ItemDescendantRender(props: ItemDescendantRenderProps): ReactNode {
+function ItemDescendantListRender(props: ItemDescendantRenderProps): ReactNode {
   const { item, rootItemModel, leafItemModel, resumeAction } = props;
   const { itemModel, descendantModel, descendants } = item;
 
@@ -45,36 +47,35 @@ function ItemDescendantRender(props: ItemDescendantRenderProps): ReactNode {
 
   const atRootLevel = itemModel === rootItemModel;
 
-  const renderItem = () => {
-    return <ItemDescendantItem {...props} />;
-  };
-
   return !descendantModel || item.deletedAt ? null : (
     <>
       {atRootLevel && resumeAction === "edit" ? <ItemDescendantListSynchronization /> : null}
-      {renderItem()}
-      {item.itemModel !== leafItemModel &&
-        descendants
-          ?.filter((descendant) => !descendant.deletedAt)
-          .map((descendant, descendantIndex) => (
-            <ItemDescendantRender
-              {...props}
-              key={descendant.clientId}
-              id={descendant.clientId}
-              index={descendantIndex}
-              item={descendant}
-              itemModel={descendantModel}
-            />
-          ))}
-      {item.itemModel === leafItemModel ? null : (
-        <ItemDescendantItemInput {...{ ...props, itemModel: descendantModel }} />
-      )}
+      {atRootLevel ? <Item {...props} /> : <Descendant {...props} />}
+      {item.itemModel === leafItemModel ? (
+        <DescendantList {...{ ...props, itemModel: descendantModel }} />
+      ) : descendants?.filter((descendant) => !descendant.deletedAt)?.length > 0 ? (
+        <ul key={item.clientId}>
+          {descendants
+            ?.filter((descendant) => !descendant.deletedAt)
+            .map((descendant, descendantIndex) => (
+              <ItemDescendantListRender
+                {...props}
+                key={descendant.clientId}
+                id={descendant.clientId}
+                index={descendantIndex}
+                item={descendant}
+                itemModel={descendantModel}
+              />
+            ))}
+        </ul>
+      ) : null}
+      {item.itemModel === leafItemModel ? null : <DescendantInput {...{ ...props, itemModel: descendantModel }} />}
     </>
   );
 }
 
-interface ItemDescendantClientContextProps extends ItemDescendantClientComponentProps {}
-function ItemDescendantClientContext(props: ItemDescendantClientContextProps) {
+interface ItemDescendantListStateProps extends ItemDescendantListContextProps {}
+function ItemDescendantListState(props: ItemDescendantListStateProps) {
   const [isStoreInitialized, setStoreInitialized] = useState(false);
 
   const globalStoreName = useStoreName();
@@ -127,17 +128,17 @@ function ItemDescendantClientContext(props: ItemDescendantClientContextProps) {
     }
   }, [serverState, isStoreInitialized, updateStoreWithServerData]);
 
-  return !isStoreInitialized ? null : <ItemDescendantRender {...clientProps} id={clientProps.item.clientId} />;
+  return !isStoreInitialized ? null : <ItemDescendantListRender {...clientProps} id={clientProps.item.clientId} />;
 }
 
-export interface ItemDescendantClientComponentProps {
+export interface ItemDescendantListContextProps {
   serverState: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>;
   rootItemModel: ItemDescendantModelNameType;
   leafItemModel: ItemDescendantModelNameType;
   resumeAction: ResumeActionType;
 }
 
-export default function ItemDescendantClientComponent(props: ItemDescendantClientComponentProps) {
+export default function ItemDescendantListContext(props: ItemDescendantListContextProps) {
   const { serverState, resumeAction } = props;
 
   const itemModel = serverState.itemModel;
@@ -154,7 +155,7 @@ export default function ItemDescendantClientComponent(props: ItemDescendantClien
         <ItemDescendantStoreProvider
           configs={[{ itemModel, parentClientId, clientId, parentId, id, storeVersion, logUpdateFromServer }]}
         >
-          <ItemDescendantClientContext {...props} />
+          <ItemDescendantListState {...props} />
         </ItemDescendantStoreProvider>
       </StoreNameProvider>
     </ResumeActionProvider>

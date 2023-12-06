@@ -2,7 +2,7 @@
 
 "use server";
 
-import ItemDescendantServerComponent from "@/components/itemDescendant/ItemDescendant.server";
+import ItemDescendantList from "@/components/itemDescendant/ItemDescendantList.server";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ItemDescendantModelNameType, getParentModel } from "@/types/itemDescendant";
 import { notFound } from "next/navigation";
@@ -20,7 +20,7 @@ export default async function ItemDescendantActionPage({ params: { root } }: Ite
     notFound()
   ) : (
     <Suspense fallback={<ItemDescendantActionSkeleton />}>
-      <ItemDescendantServerComponent itemModel={itemModel} resumeAction={resumeAction} />
+      <ItemDescendantList itemModel={itemModel} resumeAction={resumeAction} />
     </Suspense>
   );
 }

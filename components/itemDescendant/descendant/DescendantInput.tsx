@@ -3,11 +3,11 @@
 import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { useState } from "react";
-import { ItemDescendantRenderProps } from "./ItemDescendant.client";
-import ItemDescendantListItemInput from "./ItemDescendantListItemInput";
+import { ItemDescendantRenderProps } from "../ItemDescendantList.client";
+import DescendantListItemInput from "./DescendantListItemInput";
 import { cn } from "@/lib/utils";
 
-export default function ItemDescendantItemInput(props: ItemDescendantRenderProps) {
+export default function DescendantInput(props: ItemDescendantRenderProps) {
   const { id, itemModel, resumeAction } = props;
   const canEdit = resumeAction === "edit";
   const [editingInput, setEditingInput] = useState(canEdit);
@@ -27,7 +27,7 @@ export default function ItemDescendantItemInput(props: ItemDescendantRenderProps
       >
         Add new {itemModel}
       </p>
-      <ItemDescendantListItemInput
+      <DescendantListItemInput
         itemModel={itemModel}
         itemDraft={itemDraft}
         updateItemDraft={updateItemDraft}

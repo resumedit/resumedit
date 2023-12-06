@@ -2,7 +2,7 @@
 
 "use server";
 
-import ItemDescendantServerComponent from "@/components/itemDescendant/ItemDescendant.server";
+import ItemDescendantList from "@/components/itemDescendant/ItemDescendantList.server";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IdSchemaType, isValidItemId } from "@/schemas/id";
 import { ItemDescendantModelNameType } from "@/types/itemDescendant";
@@ -22,7 +22,7 @@ export default async function ItemDescendantActionPage({ params: { root, id } }:
     notFound()
   ) : (
     <Suspense fallback={<ItemDescendantActionSkeleton />}>
-      <ItemDescendantServerComponent itemModel={itemModel} itemId={id} resumeAction={resumeAction} />
+      <ItemDescendantList itemModel={itemModel} itemId={id} resumeAction={resumeAction} />
     </Suspense>
   );
 }

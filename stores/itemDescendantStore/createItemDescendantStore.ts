@@ -85,11 +85,11 @@ export type ItemDescendantServerToClientType<I, C> = ItemServerToClientType & {
 };
 
 export type ItemDescendantStoreActions<I extends ItemClientStateType, C extends ItemClientStateType> = {
-  // setItemData: (data: ItemDataUntypedType, clientId: ClientIdType) => void;
-  // markItemAsDeleted: (clientId: ClientIdType) => void;
+  setItemData: (data: ItemDataUntypedType, clientId: ClientIdType) => void;
+  markItemAsDeleted: (clientId: ClientIdType) => void;
   setDescendantData: (data: ItemDataUntypedType, clientId: ClientIdType) => void;
   addDescendant: (descendantData: ItemDataType<C>) => void;
-  markDescendantAsDeleted: (clientId: ClientIdType) => void;
+  markDescendantAsDeleted: (clientId: ClientIdType, item?: ItemDescendantClientStateType<I, C>) => void;
   reArrangeDescendants: (reArrangedDescendants: ItemClientStateDescendantListType<I, C>) => void;
   resetDescendantsOrderValues: () => void;
   updateDescendantDraft: (descendantData: ItemDataUntypedType) => void;
@@ -160,7 +160,6 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
         descendantDraft: {} as ItemDataType<C>,
         logUpdateFromServer,
 
-        /*
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         setItemData: (descendantData: ItemDataUntypedType, clientId?: ClientIdType): void => {
           // NOTE: The argument `clientId` is only here to provide the same signature as for descendants
@@ -168,7 +167,7 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
             // Loop through each key in descendantData and update the state
             Object.keys(descendantData).forEach((key) => {
               if (key in state) {
-                state[key] = descendantData[key];
+                state[key as string as keyof Draft<ItemDescendantStore<I, C>>] = descendantData[key];
               }
             });
             state.disposition = ItemDisposition.Modified;
@@ -186,7 +185,7 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
             state.lastModified = new Date();
           });
         },
-        */
+
         setDescendantData: (descendantData: ItemDataUntypedType, clientId: ClientIdType): void => {
           if (!clientId) {
             throw Error(`setDescendantData: clientId=${clientId}`);
@@ -231,21 +230,32 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
               : ([newItem] as Draft<ItemDescendantStoreState<C, C>>[]);
           });
         },
-        markDescendantAsDeleted: (clientId: ClientIdType): void => {
+        markDescendantAsDeleted: (clientId: ClientIdType, item?: ItemDescendantClientStateType<I, C>): void => {
           if (!clientId) {
             throw Error(`setDescendantData: clientId=${clientId}`);
           }
-          // Update the state with the deletedAt timestamp for the specified descendant
-          set((state) => {
-            state.descendants = state.descendants.map((item) => {
+          if (item) {
+            item.descendants = item.descendants.map((item) => {
               if (item.clientId === clientId) {
                 return { ...item, disposition: ItemDisposition.Modified, deletedAt: new Date() };
               }
               return item;
             });
             // Update the modification timestamp
-            state.lastModified = new Date();
-          });
+            item.lastModified = new Date();
+          } else {
+            set((state) => {
+              // Update the state with the deletedAt timestamp for the specified descendant
+              state.descendants = state.descendants.map((item) => {
+                if (item.clientId === clientId) {
+                  return { ...item, disposition: ItemDisposition.Modified, deletedAt: new Date() };
+                }
+                return item;
+              });
+              // Update the modification timestamp
+              state.lastModified = new Date();
+            });
+          }
         },
         reArrangeDescendants: (reArrangedDescendants: ItemClientStateDescendantListType<I, C>): void => {
           set((state) => {

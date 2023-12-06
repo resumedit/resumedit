@@ -4,10 +4,10 @@ import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { ItemClientStateDescendantListType } from "@/stores/itemDescendantStore/createItemDescendantStore";
 import { ItemClientStateType } from "@/types/item";
-import ItemDescendantListItem, { ItemDescendantListItemProps } from "../ItemDescendantListItem";
+import DescendantListItem, { DescendantListItemProps } from "../descendant/DescendantListItem";
 import SortableWrapper from "./ItemDescendantSortableWrapper";
 
-interface ItemDescendantFilteredListProps extends ItemDescendantListItemProps {
+interface ItemDescendantFilteredListProps extends DescendantListItemProps {
   descendants: ItemClientStateDescendantListType<ItemClientStateType, ItemClientStateType>;
 }
 
@@ -27,7 +27,7 @@ export default function ItemDescendantFilteredLists({
     <SortableWrapper items={descendants}>
       {descendants.map((item, index) => {
         return (
-          <ItemDescendantListItem
+          <DescendantListItem
             index={index}
             key={item.clientId}
             rootItemModel={rootItemModel}

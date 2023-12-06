@@ -19,13 +19,13 @@ import {
 import { restrictToParentElement } from "@dnd-kit/modifiers";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useState } from "react";
-import { ItemDescendantRenderProps } from "./ItemDescendant.client";
-import ItemDescendantListItem from "./ItemDescendantListItem";
-import ItemDescendantListItemInput from "./ItemDescendantListItemInput";
-import ItemDescendantSortableWrapper from "./utils/ItemDescendantSortableWrapper";
+import { ItemDescendantRenderProps } from "../ItemDescendantList.client";
+import DescendantListItem from "./DescendantListItem";
+import DescendantListItemInput from "./DescendantListItemInput";
+import ItemDescendantSortableWrapper from "../utils/ItemDescendantSortableWrapper";
 
 interface ItemDescendantListProps extends ItemDescendantRenderProps {}
-export default function ItemDescendantList({ rootItemModel, item, resumeAction }: ItemDescendantListProps) {
+export default function DescendantList({ rootItemModel, item, resumeAction }: ItemDescendantListProps) {
   const canEdit = resumeAction === "edit";
   const [editingInput, setEditingInput] = useState(canEdit);
   const settingsStore = useSettingsStore();
@@ -97,7 +97,7 @@ export default function ItemDescendantList({ rootItemModel, item, resumeAction }
       >
         <ul className="flex flex-col bg-elem-light dark:bg-elem-dark-1 overflow-auto">
           {descendantModel && canEdit ? (
-            <ItemDescendantListItemInput
+            <DescendantListItemInput
               itemModel={descendantModel}
               itemDraft={descendantDraft}
               updateItemDraft={updateDescendantDraft}
@@ -114,7 +114,7 @@ export default function ItemDescendantList({ rootItemModel, item, resumeAction }
                   const setDescendantData = store((state) => state.setDescendantData);
                   const markDescendantAsDeleted = store((state) => state.markDescendantAsDeleted);
                   return (
-                    <ItemDescendantListItem
+                    <DescendantListItem
                       key={item.clientId}
                       index={index}
                       rootItemModel={rootItemModel}

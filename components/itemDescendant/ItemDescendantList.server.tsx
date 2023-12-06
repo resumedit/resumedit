@@ -12,9 +12,9 @@ import {
   itemDescendantModelHierarchy,
 } from "@/types/itemDescendant";
 import { ResumeActionType } from "@/types/resume";
-import ItemDescendantClientComponent from "./ItemDescendant.client";
+import ItemDescendantListContext from "./ItemDescendantList.client";
 
-export interface ItemDescendantServerComponentProps {
+export interface ItemDescendantListProps {
   itemModel: keyof ItemDescendantModelAccessor;
   itemId?: IdSchemaType;
   resumeAction?: ResumeActionType;
@@ -47,11 +47,7 @@ async function RenderLevels({
   );
 }
 
-export default async function ItemDescendantServerComponent({
-  itemModel,
-  itemId,
-  ...props
-}: ItemDescendantServerComponentProps) {
+export default async function ItemDescendantList({ itemModel, itemId, ...props }: ItemDescendantListProps) {
   const userId = await getCurrentUserIdOrNull();
   if (!userId) {
     throw Error(`ItemDescendantServerComponent: Cannot render itemModel=${itemModel}: current user not found`);
@@ -140,7 +136,7 @@ export default async function ItemDescendantServerComponent({
   return !serverState ? null : (
     <>
       <RenderLevels itemModel={itemModel} levels={levels} />
-      <ItemDescendantClientComponent
+      <ItemDescendantListContext
         serverState={serverState}
         rootItemModel={itemModel}
         leafItemModel={leafItemModel}

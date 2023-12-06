@@ -15,7 +15,7 @@ import { ResumeItemClientStateType } from "@/types/resume";
 import { RoleItemClientStateType } from "@/types/role";
 import { UserItemClientStateType } from "@/types/user";
 import { useEffect, useState } from "react";
-import { ItemDescendantClientComponentProps } from "./ItemDescendant.client";
+import { ItemDescendantListContextProps } from "../ItemDescendantList.client";
 
 const ItemDescendantScaffold = ({
   item,
@@ -83,7 +83,7 @@ const ItemDescendantScaffold = ({
   );
 };
 
-interface ItemDescendantClientContextProps extends ItemDescendantClientComponentProps {}
+interface ItemDescendantClientContextProps extends ItemDescendantListContextProps {}
 function ItemDescendantClientContext(props: ItemDescendantClientContextProps) {
   const [isStoreInitialized, setStoreInitialized] = useState(false);
 
@@ -109,7 +109,7 @@ function ItemDescendantClientContext(props: ItemDescendantClientContextProps) {
   );
 }
 
-export default function ItemDescendantScaffoldClientComponent(props: ItemDescendantClientComponentProps) {
+export default function ItemDescendantScaffoldClientComponent(props: ItemDescendantListContextProps) {
   const { serverState, resumeAction } = props;
 
   const itemModel = serverState.itemModel;

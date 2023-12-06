@@ -8,11 +8,11 @@ import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { Plus } from "lucide-react";
 import { Dispatch, SetStateAction, useState } from "react";
 import { InputProps } from "react-editext";
-import { Button } from "../ui/button";
-import { toast } from "../ui/use-toast";
-import EditableInputField from "./utils/EditableInputField";
+import { Button } from "../../ui/button";
+import { toast } from "../../ui/use-toast";
+import EditableInputField from "../utils/EditableInputField";
 
-interface ItemDescendantListItemInputProps {
+interface DescendantListItemInputProps {
   itemModel: ItemDescendantModelNameType;
   itemDraft: ItemDataType<ItemClientStateType>;
   updateItemDraft: (itemData: ItemDataUntypedType) => void;
@@ -22,14 +22,14 @@ interface ItemDescendantListItemInputProps {
   setEditingInput: Dispatch<SetStateAction<boolean>>;
 }
 
-export default function ItemDescendantListItemInput({
+export default function DescendantListItemInput({
   canEdit,
   editingInput /* setEditingInput, */,
   itemModel: itemModel,
   itemDraft: itemDraft,
   updateItemDraft,
   commitItemDraft,
-}: ItemDescendantListItemInputProps) {
+}: DescendantListItemInputProps) {
   const itemFormSchema = getItemSchema(itemModel, "form");
   const itemFormFields = getSchemaFields(itemModel, "display");
 

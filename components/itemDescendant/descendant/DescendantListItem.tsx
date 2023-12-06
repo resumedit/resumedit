@@ -17,10 +17,10 @@ import { ResumeItemClientStateType } from "@/types/resume";
 import { Edit, Grip } from "lucide-react";
 import Link from "next/link";
 import { InputProps } from "react-editext";
-import { Button } from "../ui/button";
-import EditableField from "./utils/EditableField";
+import { Button } from "../../ui/button";
+import EditableField from "../utils/EditableField";
 
-export interface ItemDescendantListItemProps {
+export interface DescendantListItemProps {
   index: number;
   rootItemModel: ItemDescendantModelNameType;
   itemModel: ItemDescendantModelNameType;
@@ -31,7 +31,7 @@ export interface ItemDescendantListItemProps {
   canEdit: boolean;
 }
 
-export default function ItemDescendantListItem({
+export default function DescendantListItem({
   canEdit,
   itemIsDragable,
   index,
@@ -40,7 +40,7 @@ export default function ItemDescendantListItem({
   item: item,
   setItemData,
   markItemAsDeleted,
-}: ItemDescendantListItemProps) {
+}: DescendantListItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: item.clientId,
   });
