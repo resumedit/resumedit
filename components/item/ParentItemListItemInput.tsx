@@ -43,9 +43,14 @@ const ParentItemListItemInput = ({ editingInput /*, setEditingInput */ }: Parent
     return validationStatus;
   };
 
+  function extractFieldName(input: string): ItemDataUntypedFieldNameType {
+    const parts = input.split("-");
+    return parts[parts.length - 1];
+  }
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => {
     if (event.target.name) {
-      const fieldName = event.target.name as ItemDataUntypedFieldNameType;
+      const fieldName = extractFieldName(event.target.name);
       let newValue: string | number = event.target.value;
       // Check if the field is a number and parse it
       if (isNumberField(itemSchema, fieldName)) {
@@ -63,7 +68,7 @@ const ParentItemListItemInput = ({ editingInput /*, setEditingInput */ }: Parent
   const handleSave = (value?: string, inputProps?: InputProps) => {
     if (value && inputProps?.name) {
       // Update the item draft in the store
-      const fieldName = inputProps.name as ItemDataUntypedFieldNameType;
+      const fieldName = extractFieldName(inputProps.name);
 
       let newValue: string | number = value;
 
@@ -117,9 +122,9 @@ const ParentItemListItemInput = ({ editingInput /*, setEditingInput */ }: Parent
           {itemFields.map((fieldName) => (
             <EditableInputField
               key={fieldName}
-              fieldName={fieldName}
+              fieldName={`${storeName}-${fieldName}`}
               value={fieldValues[fieldName]}
-              placeholder={`Type ${fieldName}`}
+              placeholder={`Type ${storeName} ${fieldName}`}
               onChange={handleChange}
               onSave={handleSave}
               editing={editingInput}

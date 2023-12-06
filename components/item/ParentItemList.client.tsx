@@ -5,20 +5,20 @@
 import { ParentItemListStoreProvider, useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
 import { StoreNameProvider, useStoreName } from "@/contexts/StoreNameContext";
 import { idDefault } from "@/schemas/id";
+import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { ItemServerStateType } from "@/types/item";
-import { ParentItemListType, ParentItemModelAccessor } from "@/types/parentItemList";
+import { ParentItemListType } from "@/types/parentItemList";
 import { useEffect } from "react";
 import ParentItemList from "./ParentItemList";
+import { ParentItemListServerComponentProps } from "./ParentItemList.server";
 import ParentItemListStoreState from "./ParentItemListStoreState";
 import ParentItemListSynchronization from "./ParentItemListSynchronization";
-import useSettingsStore from "@/stores/settings/useSettingsStore";
 
-interface Props {
-  storeName: keyof ParentItemModelAccessor;
-  serverState: ParentItemListType<ItemServerStateType>;
-}
-const ParentItemListClientContext = ({ serverState }: Props) => {
-  const storeName = useStoreName();
+export interface ParentItemListClientContextProps extends ParentItemListClientComponentProps {}
+
+const ParentItemListClientContext = (props: ParentItemListClientContextProps) => {
+  const globalStoreName = useStoreName();
+  const storeName = props.storeName || globalStoreName;
   const store = useParentItemListStore(storeName);
   const parentId = store((state) => state.parentId);
   const parentModel = store((state) => state.parentModel);
@@ -27,6 +27,8 @@ const ParentItemListClientContext = ({ serverState }: Props) => {
   const settingsStore = useSettingsStore();
   const { showParentItemListInternals } = settingsStore;
   const showInternals = process.env.NODE_ENV === "development" && showParentItemListInternals;
+
+  const { serverState } = props;
 
   useEffect(() => {
     if (updateStoreWithServerData) {
@@ -55,7 +57,11 @@ const ParentItemListClientContext = ({ serverState }: Props) => {
   );
 };
 
-const ParentItemListClientComponent = (props: Props) => {
+export interface ParentItemListClientComponentProps extends ParentItemListServerComponentProps {
+  serverState: ParentItemListType<ItemServerStateType>;
+}
+
+const ParentItemListClientComponent = (props: ParentItemListClientComponentProps) => {
   const storeVersion = 2;
   return (
     <StoreNameProvider storeName={props.storeName}>

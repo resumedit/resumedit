@@ -17,12 +17,12 @@ export type ClientIdType = IdSchemaType;
 
 // A parent item list comprises:
 // parentId:     identifies the parent instance and is an alias for the specific
-//               parent identifier of the child model.
-//               For example if the parent is `User`, the child is `Resume`
+//               parent identifier of the item model.
+//               For example if the parent is `User`, the item is `Resume`
 //               and its column `parentId` refers to the user that owns the resume
 // lastModified: a timestamp when anything in the parent item list
 //               was last modified
-// item:         array of children, e.g., Array<Resume>
+// item:         array of itemren, e.g., Array<Resume>
 export type ParentItemListType<T> = {
   parentId: IdSchemaType;
   lastModified: ModificationTimestampType;
@@ -66,18 +66,72 @@ export function getModelAccessor(model: ParentItemListStoreNameType, prisma: Pri
 
 const parentItemModelHierarchy = ["user", "resume", "organization", "role", "achievement"];
 
-const parentItemModels = parentItemModelHierarchy.map((model, index) => {
-  return {
-    model: model,
-    parent: index === 0 ? null : parentItemModelHierarchy[index - 1],
-  };
-});
-
+/**
+ * Type representing each model's parent and item in the hierarchy.
+ */
 export type ParentItemModelAccessor = {
-  [K in (typeof parentItemModels)[number]["model"]]: {
-    parent: (typeof parentItemModels)[number]["parent"];
+  [K in (typeof parentItemModelHierarchy)[number]]: {
+    parent: string | null;
+    item: string | null;
   };
 };
+
+/**
+ * Creates a mapping of each model to its parent and item.
+ */
+const parentItemModels = parentItemModelHierarchy.reduce((acc, model, index, array) => {
+  acc[model] = {
+    parent: index === 0 ? null : array[index - 1],
+    item: index < array.length - 1 ? array[index + 1] : null,
+  };
+  return acc;
+}, {} as ParentItemModelAccessor);
+
+/**
+ * Retrieves the parent of a given model from the hierarchy.
+ * @param model - The model whose parent is to be found.
+ * @returns The parent model or null if it's the top-level model.
+ */
+export function getParentModel(model: keyof ParentItemModelAccessor): keyof ParentItemModelAccessor | null {
+  const entry = parentItemModels[model];
+  if (entry) {
+    return entry.parent;
+  }
+  throw new Error(`getParentModel(model=${model}): model not found`);
+}
+
+/**
+ * Retrieves the item of a given model from the hierarchy.
+ * @param model - The model whose item is to be found.
+ * @returns The item model or null if it's the bottom-level model.
+ */
+export function getItemModel(model: keyof ParentItemModelAccessor): keyof ParentItemModelAccessor | null {
+  const entry = parentItemModels[model];
+  if (entry) {
+    return entry.item;
+  }
+  throw new Error(`getItemModel(model=${model}): model not found`);
+}
+
+/**
+ * Generates a set of keys for parent IDs based on the model hierarchy.
+ * @returns A set of strings representing parent ID keys.
+ */
+function generateParentIdKeys(): Set<string> {
+  const keys = new Set<string>();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  for (const [model, { parent }] of Object.entries(parentItemModels)) {
+    if (parent) {
+      keys.add(`${parent}Id`);
+    }
+  }
+  return keys;
+}
+
+// List of parentId keys to be stripped from objects
+export const parentIdKeys = generateParentIdKeys();
+
+type ParentIdKey = `${keyof ParentItemModelAccessor}Id`;
 
 export type ParentItemListStoreNameType = keyof ParentItemModelAccessor;
 
@@ -119,35 +173,6 @@ export type ParentItemListStore<T extends ItemClientStateType> = ParentItemListS
 type ParentItemListStoreType = ParentItemListStore<ItemClientStateType>;
 type ParentItemListSelectorType<T> = (state: ParentItemListStoreType) => T;
 export type ParentItemListHookType = <T>(selector?: ParentItemListSelectorType<T>) => T;
-
-// Returns the parent model or null
-// Example: for the model `achievement`, it returns `role`
-// For `user`, it returns `null` because `user` does not have a parent
-export function getParentModel(model: keyof ParentItemModelAccessor): keyof ParentItemModelAccessor {
-  const entry = parentItemModels.find((m) => m.model === model);
-  if (entry) {
-    if (entry.parent) {
-      return entry.parent as keyof ParentItemModelAccessor;
-    }
-    throw new Error(`getParentModel(model=${model}): parent of model not found`);
-  }
-  throw new Error(`getParentModel(model=${model}): model not found`);
-}
-
-function generateParentIdKeys(): Set<string> {
-  const keys = new Set<string>();
-  parentItemModels.forEach((item) => {
-    if (item.parent) {
-      keys.add(`${item.parent}Id`);
-    }
-  });
-  return keys;
-}
-
-// List of parentId keys to be stripped from objects
-export const parentIdKeys = generateParentIdKeys();
-
-type ParentIdKey = `${keyof ParentItemModelAccessor}Id`;
 
 export function stripFieldsForDatabase<T extends ItemClientToServerType>(
   item: T,

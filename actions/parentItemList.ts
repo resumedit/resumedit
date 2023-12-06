@@ -52,6 +52,10 @@ export async function getParentItemList(
 ) {
   const parentModel = getParentModel(model);
 
+  if (!parentModel) {
+    throw Error(`getParentList(model=${model}, parentId=${parentId}): no parent model for ${model}`);
+  }
+
   // Function to execute the logic, using either an existing transaction or a new prisma client
   const executeLogic = async (prismaClient: PrismaClient) => {
     const lastModified = await getListLastModifiedById(parentModel, parentId, prismaClient);
@@ -90,6 +94,11 @@ export async function handleParentItemListFromClient(
 ): Promise<ParentItemListType<ItemServerToClientType> | null> {
   const parentId = clientList.parentId;
   const parentModel = getParentModel(model);
+
+  if (!parentModel) {
+    throw Error(`handleParentItemListFromClient(model=${model}, parentId=${parentId}): no parent model for ${model}`);
+  }
+
   const currentTimestamp = new Date();
   const clientLastModified = clientList.lastModified < currentTimestamp ? clientList.lastModified : currentTimestamp;
 
