@@ -6,8 +6,8 @@ import { dateToISOLocal } from "@/lib/utils/formatDate";
 import { prisma } from "@/prisma/client";
 import { NestedItemState, NestedItemStore } from "@/stores/nestedItemStore/createNestedItemStore";
 import {
-  NestedItemDescendantClientStateType,
   NestedItemClientToServerType,
+  NestedItemDescendantClientStateType,
   NestedItemListType,
   NestedItemServerStateType,
   NestedItemServerToClientType,
@@ -16,7 +16,7 @@ import {
   keepOnlyFieldsForUpdate,
 } from "@/types/nestedItem";
 import { Prisma, PrismaClient } from "@prisma/client";
-import { getItemLastModified, getItemsByParentId, getNestedItem, softDeleteAndCascadeItem } from "./nestedItem";
+import { getItemLastModified, getItemsByParentId, getNestedItemList, softDeleteAndCascadeItem } from "./nestedItem";
 
 export async function handleNestedItemListFromClient(
   clientState: NestedItemState<NestedItemDescendantClientStateType, NestedItemDescendantClientStateType>,
@@ -198,13 +198,16 @@ export async function handleNestedItemListFromClient(
           return {
             ...existingItem,
             lastModified: finalLastModified,
-            descendants: descendantsAfterUpdate,
-          };
+            descendants: descendantsAfterUpdate as NestedItemListType<
+              NestedItemServerToClientType,
+              NestedItemServerToClientType
+            >[],
+          } as NestedItemListType<NestedItemServerToClientType, NestedItemServerToClientType>;
         });
 
       return updatedNestedItemState;
     } else if (clientLastModified < serverLastModified) {
-      return getNestedItem(itemModel, existingItem.id!);
+      return getNestedItemList(itemModel, existingItem.id!);
     }
   } else {
     // Create item

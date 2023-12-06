@@ -2,9 +2,9 @@
 import { IdSchemaType, getItemId } from "@/schemas/id";
 import {
   ClientIdType,
+  NestedItemDescendantClientStateType,
   NestedItemDescendantDataType,
   NestedItemDescendantDataUntypedType,
-  NestedItemDescendantClientStateType as NestedItemDescendantClientStateType,
   NestedItemDisposition,
   NestedItemListType,
   NestedItemModelAccessor,
@@ -56,8 +56,9 @@ export type NestedItemRecursiveActions<C extends NestedItemDescendantClientState
     itemModel: NestedItemStoreNameType,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) => NestedItemRecursiveStore<any, any>;
-  setData: (data: NestedItemDescendantDataUntypedType) => void;
-  setDescendantData: (clientId: ClientIdType, data: NestedItemDescendantDataUntypedType) => void;
+  setItemData: (data: NestedItemDescendantDataUntypedType, clientId: ClientIdType) => void;
+  markItemAsDeleted: (clientId: ClientIdType) => void;
+  setDescendantData: (data: NestedItemDescendantDataUntypedType, clientId: ClientIdType) => void;
   addDescendant: (itemData: NestedItemDescendantDataType<C>) => ClientIdType;
   markDescendantAsDeleted: (clientId: ClientIdType) => void;
   reArrangeDescendants: (reArrangedItems: NestedItemOrderableChildClientStateType[]) => void;
@@ -116,6 +117,7 @@ export const createNestedItemRecursiveStore = <
   parentId,
   id,
   storeVersion,
+  logUpdateFromServer,
   ...rest
 }: NestedItemRecursiveStoreConfigType) => {
   const storeName = rest.storeName ? rest.storeName : `${itemModel}-${storeNameSuffix}`;
@@ -161,7 +163,9 @@ export const createNestedItemRecursiveStore = <
             `createNestedItemRecursiveStore:getItemModelState(itemModel="${itemModel}"): no state for itemModel`,
           );
         },
-        setData: (itemData: NestedItemDescendantDataUntypedType): void => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        setItemData: (itemData: NestedItemDescendantDataUntypedType, clientId?: ClientIdType): void => {
+          // NOTE: The argument `clientId` is only here to provide the same signature as for descendants
           set((state) => {
             // Loop through each key in itemData and update the state
             Object.keys(itemData).forEach((key) => {
@@ -174,12 +178,28 @@ export const createNestedItemRecursiveStore = <
             state.lastModified = new Date();
           });
         },
-        setDescendantData: (clientId: ClientIdType, itemData: NestedItemDescendantDataUntypedType): void => {
-          // Update the state with the new content for the specified item
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        markItemAsDeleted: (clientId?: ClientIdType): void => {
+          // NOTE: The argument `clientId` is only here to provide the same signature as for descendants
+          // Update the state with the deletedAt timestamp for the item
+          set((state) => {
+            state = { ...state, disposition: NestedItemDisposition.Modified, deletedAt: new Date() };
+
+            // Update the modification timestamp
+            state.lastModified = new Date();
+          });
+        },
+        setDescendantData: (itemData: NestedItemDescendantDataUntypedType, clientId: ClientIdType): void => {
+          // Update the state with the new content for the specified descendant
           set((state) => {
             state.descendants = state.descendants.map((item) => {
               if (item.clientId === clientId) {
-                return { ...item, ...itemData, disposition: NestedItemDisposition.Modified, lastModified: new Date() };
+                return {
+                  ...item,
+                  ...itemData,
+                  disposition: NestedItemDisposition.Modified,
+                  lastModified: new Date(),
+                };
               }
               return item;
             });
@@ -220,7 +240,7 @@ export const createNestedItemRecursiveStore = <
           return clientId;
         },
         markDescendantAsDeleted: (clientId: ClientIdType): void => {
-          // Update the state with the deletedAt timestamp for the specified item
+          // Update the state with the deletedAt timestamp for the specified descendant
           set((state) => {
             state.descendants = state.descendants.map((item) => {
               if (item.clientId === clientId) {
@@ -290,7 +310,7 @@ export const createNestedItemRecursiveStore = <
         updateStoreWithServerData: (
           serverState: NestedItemListType<NestedItemServerToClientType, NestedItemServerToClientType>,
         ) => {
-          if (props.logUpdateFromServer) {
+          if (logUpdateFromServer) {
             logUpdateStoreWithServerData(
               get() as NestedItemRecursiveStore<
                 NestedItemDescendantClientStateType,

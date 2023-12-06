@@ -1,4 +1,4 @@
-// @/components/nestedItem/NestedItemList.server.tsx
+// @/components/nestedItemRecursive/NestedItemRecursiveScaffold.server.tsx
 
 "use server";
 

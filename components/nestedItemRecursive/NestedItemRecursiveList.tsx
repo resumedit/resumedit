@@ -1,15 +1,14 @@
 // @/components/nestedItemRecursive/NestedItemRecursiveList.tsx
 
-import { useNestedItemStore } from "@/contexts/NestedItemStoreContext";
+import { useNestedItemRecursiveStore } from "@/contexts/NestedItemRecursiveStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
-import { NestedItemStoreDescendantType } from "@/stores/nestedItemStore/createNestedItemStore";
+import { NestedItemRecursiveStoreDescendantType } from "@/stores/nestedItemRecursiveStore/createNestedItemRecursiveStore";
 import { findItemIndexByClientId } from "@/stores/nestedItemStore/utils/descendantOrderValues";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import {
   NestedItemDescendantClientStateType,
-  NestedItemClientStateType,
   OrderableItemClientStateType,
-  nestedItemModelHierarchy,
+  getDescendantModel,
 } from "@/types/nestedItem";
 import {
   DndContext,
@@ -28,37 +27,37 @@ import { NestedItemRecursiveProps } from "./NestedItemRecursive.client";
 import NestedItemRecursiveListItem from "./NestedItemRecursiveListItem";
 import NestedItemRecursiveListItemInput from "./NestedItemRecursiveListItemInput";
 
-interface NestedItemRecursiveListDescendantListProps extends NestedItemRecursiveProps {}
-function NestedItemRecursiveListDescendantList({
-  serverState,
-  resumeAction,
-}: NestedItemRecursiveListDescendantListProps) {
+interface NestedItemRecursiveDescendantListProps extends NestedItemRecursiveProps {}
+function NestedItemRecursiveDescendantList({ serverState, resumeAction }: NestedItemRecursiveDescendantListProps) {
   const [editingInput, setEditingInput] = useState(resumeAction === "edit");
-  // const storeName = useStoreName();
-  // const store = useNestedItemStore(storeName);
-  // const descendants = store((state) => state.descendants);
-  // const setDescendantDeleted = store((state) => state.markDescendantAsDeleted);
-  // const reArrangeDescendants = store((state) => state.reArrangeDescendants);
-  // const resetDescendantsOrderValues = store((state) => state.resetDescendantsOrderValues);
-
-  const storeName = serverState.itemModel;
-
-  const descendants = serverState.descendants;
-  const setDescendantDeleted = () => {
-    console.log(`setDescendantDeleted`);
-  };
-  const reArrangeDescendants = () => {
-    console.log(`reArrangeDescendants`);
-  };
-  const resetDescendantsOrderValues = () => {
-    console.log(`resetDescendantsOrderValues`);
-  };
-
   const settingsStore = useSettingsStore();
   const { showNestedItemInternals } = settingsStore;
   const showListItemInternals = process.env.NODE_ENV === "development" && showNestedItemInternals;
 
-  const descendantsAreDragable = storeName === "achievement" ? true : false;
+  // const descendants = serverState.descendants;
+  // const markDescendantAsDeleted = () => {
+  //   console.log(`markDescendantAsDeleted`);
+  // };
+  // const reArrangeDescendants = () => {
+  //   console.log(`reArrangeDescendants`);
+  // };
+  // const resetDescendantsOrderValues = () => {
+  //   console.log(`resetDescendantsOrderValues`);
+  // };
+
+  const itemModel = serverState.itemModel;
+  const descendantModel = getDescendantModel(itemModel);
+  const descendantsAreDragable = itemModel === "achievement" ? true : false;
+
+  const storeName = useStoreName();
+  const store = useNestedItemRecursiveStore(storeName);
+  const descendants = store((state) => state.descendants);
+  const reArrangeDescendants = store((state) => state.reArrangeDescendants);
+  const resetDescendantsOrderValues = store((state) => state.resetDescendantsOrderValues);
+
+  const descendantDraft = store((state) => state.descendantDraft);
+  const updateDescendantDraft = store((state) => state.updateDescendantDraft);
+  const commitDescendantDraft = store((state) => state.commitDescendantDraft);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -76,7 +75,7 @@ function NestedItemRecursiveListDescendantList({
       // Create a new array with updated 'moved' properties
       const updatedDescendants = descendants.map(
         (
-          descendant: NestedItemStoreDescendantType<
+          descendant: NestedItemRecursiveStoreDescendantType<
             NestedItemDescendantClientStateType,
             NestedItemDescendantClientStateType
           >,
@@ -116,33 +115,44 @@ function NestedItemRecursiveListDescendantList({
         onDragEnd={handleDragEnd}
       >
         <ul className="flex flex-col bg-elem-light dark:bg-elem-dark-1 overflow-auto">
-          {resumeAction === "edit" ? (
+          {descendantModel && resumeAction === "edit" ? (
             <NestedItemRecursiveListItemInput
+              resumeAction={resumeAction}
+              itemModel={descendantModel}
+              itemDraft={descendantDraft}
+              updateItemDraft={updateDescendantDraft}
+              commitItemDraft={commitDescendantDraft}
               editingInput={editingInput}
               setEditingInput={setEditingInput}
-              storeName={storeName}
-              resumeAction={resumeAction}
             />
           ) : null}
-          {serverState.itemModel !== nestedItemModelHierarchy[nestedItemModelHierarchy.length - 1] ? null : (
+          {!descendantModel ? null : (
             <NestedItemSortableWrapper items={descendants} disabled={!descendantsAreDragable}>
               {descendants.map(
                 (
-                  item: NestedItemStoreDescendantType<
+                  item: NestedItemRecursiveStoreDescendantType<
                     NestedItemDescendantClientStateType,
                     NestedItemDescendantClientStateType
                   >,
                   index: number,
                 ) => {
+                  const setDescendantData = store((state) => state.setDescendantData);
+                  const markDescendantAsDeleted = store((state) => state.markDescendantAsDeleted);
                   return (
                     <NestedItemRecursiveListItem
                       key={item.clientId}
                       index={index}
-                      storeName={storeName}
                       resumeAction={resumeAction}
-                      descendantsAreDragable={descendantsAreDragable}
-                      item={item as NestedItemClientStateType}
-                      setItemDeleted={setDescendantDeleted}
+                      itemModel={descendantModel}
+                      item={
+                        item as NestedItemRecursiveStoreDescendantType<
+                          NestedItemDescendantClientStateType,
+                          NestedItemDescendantClientStateType
+                        >
+                      }
+                      setItemData={setDescendantData}
+                      markItemAsDeleted={markDescendantAsDeleted}
+                      itemIsDragable={descendantsAreDragable}
                     />
                   );
                 },
@@ -158,36 +168,45 @@ function NestedItemRecursiveListDescendantList({
 export default function NestedItemRecursiveList(props: NestedItemRecursiveProps) {
   const { serverState, resumeAction } = props;
   // const [editingInput, setEditingInput] = useState(resumeAction === "edit");
-  // const storeName = useStoreName();
-  // const store = useNestedItemStore(storeName);
-  // const descendants = store((state) => state.descendants);
-  // const setDescendantDeleted = store((state) => state.markDescendantAsDeleted);
+  const storeName = useStoreName();
+  const store = useNestedItemRecursiveStore(storeName);
+  const descendants = store((state) => state.descendants);
+  const setItemData = store((state) => state.setItemData);
+  const markItemAsDeleted = store((state) => state.markItemAsDeleted);
 
-  const descendants = serverState.descendants;
-  const setDescendantDeleted = () => {
-    console.log(`setDescendantDeleted`);
-  };
+  const itemModel = serverState.itemModel;
 
-  const settingsStore = useSettingsStore();
-  const { showNestedItemInternals } = settingsStore;
+  // const descendants = serverState.descendants;
+  // const markDescendantAsDeleted = () => {
+  //   console.log(`markDescendantAsDeleted`);
+  // };
+
+  // const settingsStore = useSettingsStore();
+  // const { showNestedItemInternals } = settingsStore;
   // const showListItemInternals = process.env.NODE_ENV === "development" && showNestedItemInternals;
 
-  return (
+  return !descendants ? null : (
     <div
       className="bg-elem-light dark:bg-elem-dark-1 mt-5 mb-5 rounded-md shadow-2xl shadow-shadow-light
      dark:shadow-black overflow-hidden"
     >
       <div>
         <NestedItemRecursiveListItem
-          storeName={serverState.itemModel}
           resumeAction={resumeAction}
-          descendantsAreDragable={false}
           index={0}
-          item={serverState as NestedItemClientStateType}
-          setItemDeleted={setDescendantDeleted}
+          itemModel={itemModel}
+          item={
+            serverState as NestedItemRecursiveStoreDescendantType<
+              NestedItemDescendantClientStateType,
+              NestedItemDescendantClientStateType
+            >
+          }
+          setItemData={setItemData}
+          markItemAsDeleted={markItemAsDeleted}
+          itemIsDragable={false}
         />
       </div>
-      {!descendants ? null : <NestedItemRecursiveListDescendantList {...props} />}
+      {!descendants ? null : <NestedItemRecursiveDescendantList {...props} />}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-// @/component/item/NestedItemListItem.tsx
+// @/component/nestedItemRecursive/NestedItemRecursiveListItem.tsx
 
 import { cn } from "@/lib/utils";
 import { DateTimeFormat, DateTimeSeparator, dateToISOLocal } from "@/lib/utils/formatDate";
@@ -9,11 +9,11 @@ import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
-// import { useNestedItemStore } from "@/contexts/NestedItemStoreContext";
+import { NestedItemRecursiveStoreDescendantType } from "@/stores/nestedItemRecursiveStore/createNestedItemRecursiveStore";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import {
+  NestedItemDescendantClientStateType,
   NestedItemDescendantDataUntypedType,
-  NestedItemClientStateType,
   NestedItemDisposition,
   NestedItemStoreNameType,
 } from "@/types/nestedItem";
@@ -21,26 +21,31 @@ import { ResumeActionType, ResumeItemClientStateType } from "@/types/resume";
 import { Edit, Grip } from "lucide-react";
 import Link from "next/link";
 import { InputProps } from "react-editext";
-import { Button } from "../ui/button";
 import EditableField from "../nestedItem/utils/EditableField";
+import { Button } from "../ui/button";
 
-export interface NestedItemListItemProps {
-  storeName: NestedItemStoreNameType;
+export interface NestedItemRecursiveListItemProps {
   resumeAction: ResumeActionType;
-  descendantsAreDragable: boolean;
+  itemIsDragable: boolean;
   index: number;
-  item: NestedItemClientStateType;
-  setItemDeleted: (itemId: IdSchemaType) => void;
+  itemModel: NestedItemStoreNameType;
+  item: NestedItemRecursiveStoreDescendantType<
+    NestedItemDescendantClientStateType,
+    NestedItemDescendantClientStateType
+  >;
+  setItemData: (data: NestedItemDescendantDataUntypedType, clientId: string) => void;
+  markItemAsDeleted: (clientId: IdSchemaType) => void;
 }
 
-export default function NestedItemListItem({
-  storeName,
+export default function NestedItemRecursiveListItem({
   resumeAction,
-  descendantsAreDragable,
+  itemIsDragable,
   index,
-  item,
-  setItemDeleted,
-}: NestedItemListItemProps) {
+  itemModel,
+  item: item,
+  setItemData,
+  markItemAsDeleted,
+}: NestedItemRecursiveListItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: item.clientId,
   });
@@ -49,35 +54,32 @@ export default function NestedItemListItem({
     transition,
   };
 
-  const itemFormSchema = getItemSchema(storeName, "form");
-  const itemFormFields = getSchemaFields(storeName, "display");
+  const descendantFormSchema = getItemSchema(itemModel, "form");
+  const descendantFormFields = getSchemaFields(itemModel, "display");
   const {
     // register,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(itemFormSchema),
+    resolver: zodResolver(descendantFormSchema),
   });
 
   const settingsStore = useSettingsStore();
   const { showNestedItemInternals } = settingsStore;
   const showListItemInternals = process.env.NODE_ENV === "development" && showNestedItemInternals;
 
-  // const storeName = useStoreName();
-  // const store = useNestedItemStore(storeName);
-  // const setDescendantData = store((state) => state.setDescendantData);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const setDescendantData = (clientId: IdSchemaType, value: any) => {
-    console.log(`setDescendantData(clientId=${clientId}, value=${value})`);
-  };
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSave = (val: any, inputProps?: InputProps) => {
     if (inputProps?.name) {
-      setDescendantData(item.clientId, { [inputProps.name]: val } as NestedItemDescendantDataUntypedType);
+      setItemData({ [inputProps.name]: val } as NestedItemDescendantDataUntypedType, item.clientId);
     } else {
-      console.log(`NestedItemListItem: missing field name in handleSave(value=`, val, `, inputProps=`, inputProps, `)`);
+      console.log(
+        `NestedItemRecursiveListItem: missing field name in handleSave(value=`,
+        val,
+        `, inputProps=`,
+        inputProps,
+        `)`,
+      );
     }
   };
 
@@ -97,7 +99,7 @@ export default function NestedItemListItem({
           },
         )}
       >
-        {true && storeName === "resume" && item.id !== undefined ? (
+        {resumeAction === "edit" && itemModel === "user" && item.id !== undefined ? (
           <div className="h-full">
             <Link
               title={`Edit resume ${(item as unknown as ResumeItemClientStateType).name}`}
@@ -109,10 +111,10 @@ export default function NestedItemListItem({
             </Link>
           </div>
         ) : null}
-        {resumeAction === "edit" && descendantsAreDragable ? (
+        {resumeAction === "edit" && itemIsDragable ? (
           <div
             className={cn("h-full flex items-center", {
-              "hover:cursor-grab active:cursor-grabbing": descendantsAreDragable,
+              "hover:cursor-grab active:cursor-grabbing": itemIsDragable,
             })}
             {...listeners}
           >
@@ -120,7 +122,7 @@ export default function NestedItemListItem({
           </div>
         ) : null}
         <div className="w-full flex-1 flex gap-y-2 justify-between">
-          {itemFormFields.map((field, index) => (
+          {descendantFormFields.map((field, index) => (
             <div
               key={index}
               className="w-full text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4"
@@ -128,7 +130,7 @@ export default function NestedItemListItem({
               <EditableField
                 key={field}
                 fieldName={field}
-                value={item[field as keyof NestedItemClientStateType] as string}
+                value={item[field as keyof NestedItemDescendantClientStateType] as string}
                 onSave={handleSave}
                 canEdit={resumeAction === "edit"}
               />
@@ -192,7 +194,7 @@ export default function NestedItemListItem({
             <button
               className="text-light-txt-2 dark:text-light-txt-1 basis-1/12 flex place-name-center opacity-100 md:group-hover:opacity-100 transition-all duration-150"
               title="Delete child"
-              onClick={() => setItemDeleted(item.clientId)}
+              onClick={() => markItemAsDeleted(item.clientId)}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

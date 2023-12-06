@@ -2,7 +2,10 @@
 
 "use client";
 
-import { NestedItemStoreProvider, useNestedItemStore } from "@/contexts/NestedItemStoreContext";
+import {
+  NestedItemRecursiveStoreProvider,
+  useNestedItemRecursiveStore,
+} from "@/contexts/NestedItemRecursiveStoreContext";
 import { ResumeActionProvider } from "@/contexts/ResumeActionContext";
 import { StoreNameProvider, useStoreName } from "@/contexts/StoreNameContext";
 import { getItemId } from "@/schemas/id";
@@ -69,7 +72,7 @@ interface NestedItemRecursiveClientContextProps {
 function NestedItemRecursiveClientContext(props: NestedItemRecursiveClientContextProps) {
   const globalStoreName = useStoreName();
 
-  const store = useNestedItemStore(globalStoreName);
+  const store = useNestedItemRecursiveStore(globalStoreName);
   const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
 
   const { serverState } = props;
@@ -95,12 +98,15 @@ export interface NestedItemRecursiveClientComponentProps
 }
 
 const NestedItemRecursiveClientComponent = (props: NestedItemRecursiveClientComponentProps) => {
-  const storeVersion = 2;
+  const storeVersion = 1;
   const resumeAction = props?.resumeAction ? props.resumeAction : "view";
-  const parentId = props.serverState.parentId;
+
   const itemModel = props.serverState.itemModel;
-  const id = props.serverState.id;
+  const parentClientId = getItemId();
   const clientId = getItemId();
+  const parentId = props.serverState.parentId;
+  const id = props.serverState.id;
+
   return !parentId ? null : !id ? (
     <span>
       Please create a resume owned by user with <code>userId=parentId=&quot;{parentId}&quot;</code> first.
@@ -108,9 +114,11 @@ const NestedItemRecursiveClientComponent = (props: NestedItemRecursiveClientComp
   ) : (
     <ResumeActionProvider resumeAction={resumeAction}>
       <StoreNameProvider storeName={`${props.serverState.itemModel}`}>
-        <NestedItemStoreProvider configs={[{ itemModel: itemModel, parentId, clientId, id, storeVersion }]}>
+        <NestedItemRecursiveStoreProvider
+          configs={[{ itemModel: itemModel, parentClientId, clientId, parentId, id, storeVersion }]}
+        >
           <NestedItemRecursiveClientContext {...{ ...props, resumeAction: resumeAction }} />
-        </NestedItemStoreProvider>
+        </NestedItemRecursiveStoreProvider>
       </StoreNameProvider>
     </ResumeActionProvider>
   );
