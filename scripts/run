@@ -1,0 +1,9 @@
+#!/usr/bin/env zsh
+
+set -ue -pipefail
+
+if ! pgrep Docker >/dev/null 2>&1; then
+  open -a Docker
+fi
+
+docker compose -f docker/development/docker-compose.yml up
