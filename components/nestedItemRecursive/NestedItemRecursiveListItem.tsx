@@ -25,8 +25,6 @@ import EditableField from "../nestedItem/utils/EditableField";
 import { Button } from "../ui/button";
 
 export interface NestedItemRecursiveListItemProps {
-  canEdit: boolean;
-  itemIsDragable: boolean;
   index: number;
   itemModel: NestedItemModelNameType;
   item: NestedItemRecursiveStoreDescendantType<
@@ -35,6 +33,8 @@ export interface NestedItemRecursiveListItemProps {
   >;
   setItemData: (data: NestedItemDescendantDataUntypedType, clientId: string) => void;
   markItemAsDeleted: (clientId: IdSchemaType) => void;
+  itemIsDragable: boolean;
+  canEdit: boolean;
 }
 
 export default function NestedItemRecursiveListItem({
@@ -193,7 +193,7 @@ export default function NestedItemRecursiveListItem({
             {/* /Delete Button */}
             <button
               className="text-light-txt-2 dark:text-light-txt-1 basis-1/12 flex place-name-center opacity-100 md:group-hover:opacity-100 transition-all duration-150"
-              title="Delete child"
+              title={`Delete ${itemModel}`}
               onClick={() => markItemAsDeleted(item.clientId)}
             >
               <svg

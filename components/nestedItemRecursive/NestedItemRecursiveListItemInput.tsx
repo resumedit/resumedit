@@ -18,13 +18,13 @@ import { Button } from "../ui/button";
 import { toast } from "../ui/use-toast";
 
 interface NestedItemRecursiveListItemInputProps {
-  canEdit: boolean;
-  editingInput: boolean;
-  setEditingInput: Dispatch<SetStateAction<boolean>>;
   itemModel: NestedItemModelNameType;
   itemDraft: NestedItemDescendantDataType<NestedItemDescendantClientStateType>;
   updateItemDraft: (itemData: NestedItemDescendantDataUntypedType) => void;
   commitItemDraft: () => void;
+  canEdit: boolean;
+  editingInput: boolean;
+  setEditingInput: Dispatch<SetStateAction<boolean>>;
 }
 
 export default function NestedItemRecursiveListItemInput({
