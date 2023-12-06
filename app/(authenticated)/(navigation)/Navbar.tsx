@@ -1,6 +1,7 @@
 import ActionButtons from "@/app/(layout)/(navigation)/action-buttons";
 import { MenuBar } from "@/app/(layout)/(navigation)/navigation-menu";
 import { Logo } from "@/components/custom/Logo";
+import SettingsDialog from "@/components/settings/SettingsDialog";
 import { User as PrismaUser } from "@prisma/client";
 import Link from "next/link";
 
@@ -11,6 +12,7 @@ const Navbar = ({ user }: { user?: PrismaUser }) => {
         <Logo />
       </Link>
       <MenuBar />
+      <SettingsDialog />
       <ActionButtons user={user} />
     </div>
   );

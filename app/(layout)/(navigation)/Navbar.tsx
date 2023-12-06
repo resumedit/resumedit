@@ -3,6 +3,7 @@ import { User as PrismaUser } from "@prisma/client";
 import Link from "next/link";
 import ActionButtons from "./action-buttons";
 import { MenuBar } from "./navigation-menu";
+import SettingsDialog from "@/components/settings/SettingsDialog";
 
 const Navbar = ({ user }: { user?: PrismaUser }) => {
   return (
@@ -13,6 +14,7 @@ const Navbar = ({ user }: { user?: PrismaUser }) => {
         </Link>
         <MenuBar />
       </div>
+      <SettingsDialog />
       <ActionButtons user={user} />
     </div>
   );

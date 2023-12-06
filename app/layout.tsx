@@ -16,14 +16,6 @@ export const metadata: Metadata = {
   description: "Your resume meets AI",
 };
 
-// export default function RootLayout({ children }: { children: React.ReactNode }) {
-//   return (
-//     <html lang="en">
-//       <body className={font.className}>{children}</body>
-//     </html>
-//   );
-// }
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     /// https://ui.shadcn.com/docs/dark-mode/next: need
