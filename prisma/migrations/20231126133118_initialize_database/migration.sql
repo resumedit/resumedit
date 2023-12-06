@@ -1,9 +1,10 @@
 -- CreateTable
 CREATE TABLE "User" (
-    "id" UUID NOT NULL,
+    "id" TEXT NOT NULL DEFAULT concat('usr-', gen_random_uuid()),
     "authProviderId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "lastModified" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deletedAt" TIMESTAMP(3),
     "email" TEXT,
     "firstName" TEXT,
     "lastName" TEXT,
@@ -13,24 +14,24 @@ CREATE TABLE "User" (
 
 -- CreateTable
 CREATE TABLE "Resume" (
-    "id" UUID NOT NULL,
+    "id" TEXT NOT NULL DEFAULT concat('res-', gen_random_uuid()),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "lastModified" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "parentId" UUID NOT NULL,
-    "published" BOOLEAN NOT NULL DEFAULT false,
-    "name" TEXT NOT NULL DEFAULT '',
+    "deletedAt" TIMESTAMP(3),
+    "parentId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
     "description" TEXT NOT NULL DEFAULT '',
-    "content" TEXT NOT NULL DEFAULT '[]',
 
     CONSTRAINT "Resume_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Organization" (
-    "id" UUID NOT NULL,
+    "id" TEXT NOT NULL DEFAULT concat('org-', gen_random_uuid()),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "lastModified" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "parentId" UUID NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "parentId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "location" TEXT NOT NULL DEFAULT '',
 
@@ -39,10 +40,11 @@ CREATE TABLE "Organization" (
 
 -- CreateTable
 CREATE TABLE "Role" (
-    "id" UUID NOT NULL,
+    "id" TEXT NOT NULL DEFAULT concat('rol-', gen_random_uuid()),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "lastModified" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "parentId" UUID NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "parentId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "location" TEXT NOT NULL DEFAULT '',
 
@@ -51,12 +53,12 @@ CREATE TABLE "Role" (
 
 -- CreateTable
 CREATE TABLE "Achievement" (
-    "id" UUID NOT NULL,
+    "id" TEXT NOT NULL DEFAULT concat('ach-', gen_random_uuid()),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "lastModified" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "parentId" UUID NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "parentId" TEXT NOT NULL,
     "content" TEXT NOT NULL,
-    "value" DOUBLE PRECISION NOT NULL,
     "order" DOUBLE PRECISION NOT NULL,
 
     CONSTRAINT "Achievement_pkey" PRIMARY KEY ("id")
