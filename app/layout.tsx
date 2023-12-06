@@ -7,9 +7,9 @@ import { Toaster } from "@/components/ui/toaster";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
-import "./globals.css";
+import Breadcrumbs from "./(layout)/(navigation)/Breadcrumbs";
 import Navbar from "./(layout)/(navigation)/Navbar";
-import Breadcrumb from "./(layout)/(navigation)/Breadcrumbs";
+import "./globals.css";
 
 const font = Inter({ subsets: ["latin"] });
 
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <ClerkAuthProvider>
                 <header className="container">
                   <Navbar />
-                  <Breadcrumb />
+                  <Breadcrumbs />
                 </header>
                 <main className="container min-h-screen my-auto">{children}</main>
               </ClerkAuthProvider>

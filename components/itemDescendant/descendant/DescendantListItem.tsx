@@ -14,12 +14,10 @@ import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/crea
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { ItemClientStateType, ItemDataUntypedType, ItemDisposition } from "@/types/item";
 import { ItemDescendantModelNameType } from "@/types/itemDescendant";
-import { ResumeActionType, ResumeItemClientStateType } from "@/types/resume";
-import { Edit, Grip } from "lucide-react";
-import Link from "next/link";
+import { ResumeActionType } from "@/types/resume";
+import { Grip } from "lucide-react";
 import { InputProps } from "react-editext";
-import { Button } from "../../ui/button";
-import { ItemActionButton } from "../ItemDescendantList.client";
+import { ItemActionButton } from "../utils/ItemActionButton";
 import EditableField from "../utils/EditableField";
 
 export interface DescendantListItemProps {
@@ -39,7 +37,6 @@ export default function DescendantListItem({
   resumeAction = "view",
   itemIsDragable,
   index,
-  rootItemModel,
   itemModel,
   item,
   setItemData,
@@ -69,8 +66,9 @@ export default function DescendantListItem({
 
   // Construct the URL to edit this item
   const pathname = usePathname();
-  const getItemActionURL = (action: ResumeActionType) =>
-    `${pathname.replace(rootItemModel, itemModel)}/${item.id}/${action}`;
+  // FIXME: Moved into <ItemActionButton />
+  // const getItemActionURL = (action: ResumeActionType) =>
+  //   `${pathname.replace(rootItemModel, itemModel)}/${item.id}/${action}`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSave = (val: any, inputProps?: InputProps) => {
@@ -101,7 +99,7 @@ export default function DescendantListItem({
       style={styles}
       {...attributes}
     >
-      {canEdit && rootItemModel === "user" ? (
+      {/* {canEdit && rootItemModel === "user" ? (
         <div className="h-full">
           <Link
             title={`Edit resume ${(item as unknown as ResumeItemClientStateType).name}`}
@@ -112,10 +110,8 @@ export default function DescendantListItem({
             </Button>
           </Link>
         </div>
-      ) : null}
-      {process.env.NODE_ENV === "development" && canEdit && item.id ? (
-        <ItemActionButton pathname={pathname} item={item} action={resumeAction} />
-      ) : null}
+      ) : null} */}
+      {canEdit && item.id ? <ItemActionButton pathname={pathname} item={item} action={resumeAction} /> : null}
       {canEdit && itemIsDragable ? (
         <div
           className={cn("h-full flex items-center", {

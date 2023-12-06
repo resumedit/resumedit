@@ -17,16 +17,25 @@ import {
 } from "@dnd-kit/core";
 import { restrictToParentElement } from "@dnd-kit/modifiers";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { useState } from "react";
 import { ItemDescendantRenderProps } from "../ItemDescendantList.client";
 import ItemDescendantSortableWrapper from "../utils/ItemDescendantSortableWrapper";
 import DescendantInput from "./DescendantInput";
 import DescendantListItem from "./DescendantListItem";
+import DescendantListItemInput from "./DescendantListItemInput";
 
 interface ItemDescendantListProps extends ItemDescendantRenderProps {}
 export default function DescendantList(props: ItemDescendantListProps) {
-  const { rootItemModel, item, resumeAction } = props;
+  const { rootItemModel, leafItemModel, itemModel, item, resumeAction } = props;
+
   const canEdit = resumeAction === "edit";
-  // const [editingInput, setEditingInput] = useState(canEdit);
+  const [editingInput, setEditingInput] = useState(canEdit);
+
+  const isRootItemModel = itemModel === rootItemModel;
+  const isLeafItemModel = itemModel === leafItemModel;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [inlineInsert, setInlineInsert] = useState(isRootItemModel && !isLeafItemModel);
+
   const settingsStore = useSettingsStore();
   const { showItemDescendantInternals } = settingsStore;
   const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
@@ -37,14 +46,15 @@ export default function DescendantList(props: ItemDescendantListProps) {
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);
   const descendants = store((state) => state.descendants);
+
   const reArrangeDescendants = store((state) => state.reArrangeDescendants);
   const resetDescendantsOrderValues = store((state) => state.resetDescendantsOrderValues);
   const setDescendantData = store((state) => state.setDescendantData);
   const markDescendantAsDeleted = store((state) => state.markDescendantAsDeleted);
 
-  // const descendantDraft = store((state) => state.descendantDraft);
-  // const updateDescendantDraft = store((state) => state.updateDescendantDraft);
-  // const commitDescendantDraft = store((state) => state.commitDescendantDraft);
+  const descendantDraft = store((state) => state.descendantDraft);
+  const updateDescendantDraft = store((state) => state.updateDescendantDraft);
+  const commitDescendantDraft = store((state) => state.commitDescendantDraft);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -96,7 +106,7 @@ export default function DescendantList(props: ItemDescendantListProps) {
         onDragEnd={handleDragEnd}
       >
         <ul className="flex flex-col bg-elem-light dark:bg-elem-dark-1 overflow-auto">
-          {/* {canEdit ? (
+          {canEdit && inlineInsert ? (
             <DescendantListItemInput
               itemModel={descendantModel}
               itemDraft={descendantDraft}
@@ -106,7 +116,7 @@ export default function DescendantList(props: ItemDescendantListProps) {
               setEditingInput={setEditingInput}
               canEdit={canEdit}
             />
-          ) : null} */}
+          ) : null}
           <ItemDescendantSortableWrapper items={descendants} disabled={!descendantsAreDragable}>
             {descendants.map(
               (item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>, index: number) => {

@@ -5,64 +5,22 @@
 import { ItemDescendantStoreProvider, useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { ResumeActionProvider } from "@/contexts/ResumeActionContext";
 import { StoreNameProvider, useStoreName } from "@/contexts/StoreNameContext";
-import { IdSchemaType, getItemId, idRegex } from "@/schemas/id";
+import { IdSchemaType, getItemId } from "@/schemas/id";
 import {
   ItemDescendantClientStateType,
   ItemDescendantServerStateType,
 } from "@/stores/itemDescendantStore/createItemDescendantStore";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { ItemClientStateType, ItemDataType, ItemDataUntypedType, ItemServerToClientType } from "@/types/item";
-import {
-  ItemDescendantModelNameType,
-  getDescendantModel,
-  getParentModel,
-  itemDescendantModelHierarchy,
-} from "@/types/itemDescendant";
-import { ResumeActionType, resumeActionButtonIcons, resumeActionTypes } from "@/types/resume";
-import Link from "next/link";
+import { ItemDescendantModelNameType, getDescendantModel, getParentModel } from "@/types/itemDescendant";
+import { ResumeActionType } from "@/types/resume";
 import { Dispatch, ReactNode, SetStateAction, useEffect, useState } from "react";
-import { Button } from "../ui/button";
 import Item from "./Item";
 import RestoreItemDialog from "./RestoreItemDialog";
 import Descendant from "./descendant/Descendant";
 import DescendantInput from "./descendant/DescendantInput";
 import DescendantList from "./descendant/DescendantList";
 import { ItemDescendantListSynchronization } from "./utils/ItemDescendantListSynchronization";
-
-export function getActionURL(
-  pathname: string,
-  item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>,
-  action: ResumeActionType = "edit",
-) {
-  // Regex pattern that combines item model and ID patterns
-  const itemModelRE = new RegExp(itemDescendantModelHierarchy.join("|"));
-  const idUnanchoredRE = new RegExp(idRegex.substring(1, idRegex.length - 1));
-  const resumeActionRE = new RegExp(resumeActionTypes.join("|"));
-  const combinedRE = new RegExp(`(${itemModelRE.source}|${idUnanchoredRE.source}|${resumeActionRE.source})*/*`, "g");
-
-  // Replace segments in the pathname that match either of the regexes
-  const baseURL = pathname.replace(combinedRE, "");
-
-  // Construct and return the new URL
-  return `/${baseURL}/${item.itemModel}/${item.id}/${action}`;
-}
-
-export interface ItemActionButtonProps {
-  pathname: string;
-  item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>;
-  action?: ResumeActionType;
-}
-export function ItemActionButton(props: ItemActionButtonProps) {
-  const { pathname, item, action = "view" } = props;
-  const actionURL = getActionURL(pathname, item, action);
-  const actionButtonInner = resumeActionButtonIcons[action];
-
-  return actionURL.match(/\/(item)/) ? (
-    <Link href={actionURL}>
-      <Button variant="ghost">{actionButtonInner}</Button>
-    </Link>
-  ) : null;
-}
 
 export interface ItemDescendantRenderProps {
   index: number;
@@ -99,23 +57,36 @@ function ItemDescendantListRender(props: ItemDescendantRenderProps): ReactNode {
       {item.descendantModel === leafItemModel ? (
         <DescendantList {...{ ...props, itemModel: descendantModel }} />
       ) : descendants?.filter((descendant) => !descendant.deletedAt)?.length > 0 ? (
-        <ul key={item.clientId}>
-          {descendants
-            ?.filter((descendant) => !descendant.deletedAt)
-            .map((descendant, descendantIndex) => (
-              <li key={descendant.clientId}>
-                <ItemDescendantListRender
-                  {...props}
-                  index={descendantIndex}
-                  item={descendant}
-                  itemModel={descendantModel}
-                />
-                {!editingInput || item.descendantModel === leafItemModel || !descendantDescendantModel ? null : (
-                  <DescendantInput {...{ ...props, itemModel: descendantDescendantModel }} />
-                )}
-              </li>
-            ))}
-        </ul>
+        <>
+          {!editingInput || item.descendantModel === leafItemModel || !descendantDescendantModel ? (
+            <pre>{`!editingInput=${!editingInput}\nitem.descendantModel === leafItemModel=${
+              item.descendantModel === leafItemModel
+            }\n!descendantDescendantModel=${!descendantDescendantModel}`}</pre>
+          ) : (
+            <DescendantInput {...{ ...props, itemModel: descendantModel }} />
+          )}
+          <ul key={item.clientId}>
+            {descendants
+              ?.filter((descendant) => !descendant.deletedAt)
+              .map((descendant, descendantIndex) => (
+                <li key={descendant.clientId}>
+                  <ItemDescendantListRender
+                    {...props}
+                    index={descendantIndex}
+                    item={descendant}
+                    itemModel={descendantModel}
+                  />
+                  {!editingInput || item.descendantModel === leafItemModel || !descendantDescendantModel ? (
+                    <div>{`editingInput=${editingInput} item.descendantModel === leafItemModel=${
+                      item.descendantModel === leafItemModel
+                    } !descendantDescendantModel=${!descendantDescendantModel}: Not showing <DescendantInput />`}</div>
+                  ) : (
+                    <DescendantInput {...{ ...props, itemModel: descendantDescendantModel }} />
+                  )}
+                </li>
+              ))}
+          </ul>
+        </>
       ) : null}
     </>
   );

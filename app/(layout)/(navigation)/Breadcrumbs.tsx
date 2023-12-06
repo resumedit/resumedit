@@ -5,6 +5,7 @@ import { getItemModelFromId, getPrefixFromId } from "@/schemas/id";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { ReactNode, useEffect, useState } from "react";
+import { ItemActionMenu } from "./ItemActionMenu";
 
 /**
  * Takes an URL String and removes query params and hash params
@@ -173,12 +174,13 @@ function RenderBreadcrumbs({
   inactiveItemLinkClassName = "",
   separator = undefined,
 }: BreadcrumbsProps) {
-  const router = usePathname();
+  const pathname = usePathname();
   const [breadcrumbs, setBreadcrumbs] = useState<Array<Breadcrumb> | null>(null);
+  const [itemActionMenu, setItemActionMenu] = useState<ReactNode>(<span>ItemActionMenu</span>);
 
   useEffect(() => {
-    if (router) {
-      const linkPath = router.split("/");
+    if (pathname) {
+      const linkPath = pathname.split("/");
       linkPath.shift();
 
       const pathArray = linkPath.map((path, i) => {
@@ -189,8 +191,9 @@ function RenderBreadcrumbs({
       });
 
       setBreadcrumbs(pathArray);
+      setItemActionMenu(ItemActionMenu(pathname));
     }
-  }, [router]);
+  }, [pathname]);
 
   if (!breadcrumbs) {
     return null;
@@ -222,14 +225,18 @@ function RenderBreadcrumbs({
                 className={i === breadcrumbs.length - 1 ? activeItemClassName : inactiveItemClassName}
                 style={i === breadcrumbs.length - 1 ? activeItemStyle : inactiveItemStyle}
               >
-                <Link
-                  href={breadcrumb.href}
-                  className={i === breadcrumbs.length - 1 ? activeItemLinkClassName : inactiveItemLinkClassName}
-                  style={i === breadcrumbs.length - 1 ? activeItemLinkStyle : inactiveItemLinkStyle}
-                >
-                  {!separator?.beforeInactive ? null : separator.beforeInactive}
-                  {convertBreadcrumb(breadcrumb.breadcrumb, labelsToUppercase, replaceCharacterList, transformLabel)}
-                </Link>
+                {itemActionMenu && i === breadcrumbs.length - 1 ? (
+                  itemActionMenu
+                ) : (
+                  <Link
+                    href={breadcrumb.href}
+                    className={i === breadcrumbs.length - 1 ? activeItemLinkClassName : inactiveItemLinkClassName}
+                    style={i === breadcrumbs.length - 1 ? activeItemLinkStyle : inactiveItemLinkStyle}
+                  >
+                    {!separator?.beforeInactive ? null : separator.beforeInactive}
+                    {convertBreadcrumb(breadcrumb.breadcrumb, labelsToUppercase, replaceCharacterList, transformLabel)}
+                  </Link>
+                )}
               </li>
             );
           })}
