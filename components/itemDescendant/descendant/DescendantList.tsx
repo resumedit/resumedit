@@ -2,10 +2,11 @@
 
 import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
+import { IdSchemaType } from "@/schemas/id";
 import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
 import { findItemIndexByClientId } from "@/stores/itemDescendantStore/utils/descendantOrderValues";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
-import { ItemClientStateType } from "@/types/item";
+import { ClientIdType, ItemClientStateType, ItemDataType, ItemDataUntypedType } from "@/types/item";
 import {
   DndContext,
   DragEndEvent,
@@ -26,7 +27,7 @@ import DescendantListItemInput from "./DescendantListItemInput";
 
 interface ItemDescendantListProps extends ItemDescendantRenderProps {}
 export default function DescendantList(props: ItemDescendantListProps) {
-  const { rootItemModel, leafItemModel, itemModel, item, resumeAction } = props;
+  const { ancestorClientIdChain, rootItemModel, leafItemModel, itemModel, item, resumeAction } = props;
 
   const canEdit = resumeAction === "edit";
   // const [editingInput, setEditingInput] = useState(canEdit);
@@ -52,9 +53,47 @@ export default function DescendantList(props: ItemDescendantListProps) {
   const setDescendantData = store((state) => state.setDescendantData);
   const markDescendantAsDeleted = store((state) => state.markDescendantAsDeleted);
 
-  const descendantDraft = store((state) => state.descendantDraft);
+  const setItemData = (descendantData: ItemDataUntypedType, clientId: ClientIdType): void => {
+    console.log(
+      `Descendant:setItemData(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
+        ancestorClientIdChain,
+      )}`,
+    );
+    setDescendantData(descendantData, clientId, ancestorClientIdChain);
+  };
+
+  const markItemAsDeleted = (clientId: IdSchemaType): void => {
+    console.log(
+      `Descendant:markDescendantAsDeleted(clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(
+        ancestorClientIdChain,
+      )}`,
+    );
+    markDescendantAsDeleted(clientId, ancestorClientIdChain);
+  };
+
+  const getDescendantDraft = store((state) => state.getDescendantDraft);
   const updateDescendantDraft = store((state) => state.updateDescendantDraft);
   const commitDescendantDraft = store((state) => state.commitDescendantDraft);
+
+  const itemDraft = (clientId: IdSchemaType): ItemDataType<ItemClientStateType> => {
+    console.log(
+      `DescendantInput:itemDraft(clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`,
+    );
+    return getDescendantDraft(ancestorClientIdChain);
+  };
+  const updateItemDraft = (descendantData: ItemDataUntypedType): void => {
+    console.log(
+      `DescendantInput:updateItemDraft(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
+        ancestorClientIdChain,
+      )}`,
+    );
+    updateDescendantDraft(descendantData, ancestorClientIdChain);
+  };
+
+  const commitItemDraft = (): void => {
+    console.log(`DescendantInput:commitItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
+    commitDescendantDraft(ancestorClientIdChain);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -109,9 +148,9 @@ export default function DescendantList(props: ItemDescendantListProps) {
           {canEdit && inlineInsert ? (
             <DescendantListItemInput
               itemModel={descendantModel}
-              itemDraft={descendantDraft}
-              updateItemDraft={updateDescendantDraft}
-              commitItemDraft={commitDescendantDraft}
+              itemDraft={itemDraft}
+              updateItemDraft={updateItemDraft}
+              commitItemDraft={commitItemDraft}
               // editingInput={editingInput}
               // setEditingInput={setEditingInput}
               canEdit={canEdit}
@@ -128,8 +167,8 @@ export default function DescendantList(props: ItemDescendantListProps) {
                     itemModel={descendantModel}
                     item={item as ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>}
                     resumeAction={resumeAction}
-                    setItemData={setDescendantData}
-                    markItemAsDeleted={markDescendantAsDeleted}
+                    setItemData={setItemData}
+                    markItemAsDeleted={markItemAsDeleted}
                     itemIsDragable={descendantsAreDragable}
                     canEdit={canEdit}
                   />

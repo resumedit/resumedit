@@ -4,16 +4,17 @@ import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { cn } from "@/lib/utils";
 import { DateTimeFormat, DateTimeSeparator, dateToISOLocal } from "@/lib/utils/formatDate";
-import { getItemSchema, getSchemaFields } from "@/lib/utils/itemDescendantListUtils";
+import { getItemSchema, getSchemaFields, isNumberField } from "@/lib/utils/itemDescendantListUtils";
 import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
-import { ItemClientStateType, ItemDataUntypedType, ItemDisposition } from "@/types/item";
+import { ItemClientStateType, ItemDataUntypedFieldNameType, ItemDisposition } from "@/types/item";
 import { ItemDescendantModelNameType } from "@/types/itemDescendant";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { InputProps } from "react-editext";
 import { useForm } from "react-hook-form";
 import { ItemDescendantRenderProps } from "./ItemDescendantList.client";
-import EditableFieldPersisted from "./utils/EditableFieldPersist";
+import EditableFieldPersist from "./utils/EditableFieldPersist";
 
 export interface ItemProps extends ItemDescendantRenderProps {
   rootItemModel: ItemDescendantModelNameType;
@@ -42,24 +43,91 @@ export default function Item(props: ItemProps) {
     resolver: zodResolver(itemFormSchema),
   });
 
+  // Convert array to union type
+  type ItemFormFieldKeys = (typeof itemFormFields)[number];
+
+  // Define updatedKeyValue type
+  type FormKeyValueType = {
+    key: ItemFormFieldKeys;
+    value: string | number;
+  };
+
   const settingsStore = useSettingsStore();
   const { showItemDescendantInternals } = settingsStore;
   const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-  const handleSave = (val: any, inputProps?: InputProps) => {
-    if (inputProps?.name) {
-      setItemData({ [inputProps.name]: val } as ItemDataUntypedType, item.clientId);
-    } else {
-      console.log(`Item: missing field name in handleSave(value=`, val, `, inputProps=`, inputProps, `)`);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [inputIsValid, setInputIsValid] = useState(false);
+
+  // Initialize local state for field values
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [fieldValues, setFieldValues] = useState(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    itemFormFields.reduce((acc, field) => ({ ...acc, [field]: "" }), {} as Record<string, any>),
+  );
+
+  const validate = (itemDraft: object) => {
+    const validationStatus = itemFormSchema.safeParse({ ...itemDraft });
+    return validationStatus;
+  };
+
+  function extractFieldName(input: string): ItemDataUntypedFieldNameType {
+    const parts = input.split("-");
+    return parts[parts.length - 1];
+  }
+
+  function getUpdatedKeyValueFromEvent(
+    event: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>,
+  ): FormKeyValueType | undefined {
+    if (event && event.target?.name) {
+      const updatedKeyValue = {
+        key: extractFieldName(event.target.name),
+        value: event.target.value,
+      };
+      return updatedKeyValue;
+    }
+  }
+
+  function getUpdatedKeyValueFromEdiTextField(value?: string, inputProps?: InputProps): FormKeyValueType | undefined {
+    if (value && inputProps?.name) {
+      const updatedKeyValue = {
+        key: extractFieldName(inputProps.name),
+        value,
+      };
+      return updatedKeyValue;
+    }
+  }
+
+  function handleUpdatedKeyValue(updatedKeyValue: FormKeyValueType | undefined) {
+    if (typeof updatedKeyValue === "undefined") return;
+    // Check if the field is a number and parse it
+    if (isNumberField(itemFormSchema, updatedKeyValue.key)) {
+      if (typeof updatedKeyValue.value !== "number") {
+        // Default to 0 if parsing fails
+        updatedKeyValue = { ...updatedKeyValue, value: parseFloat(updatedKeyValue.value) || 0 };
+      }
+    }
+
+    setFieldValues((prev) => ({ ...prev, ...updatedKeyValue }));
+    const validationStatus = validate(updatedKeyValue);
+    setInputIsValid(validationStatus.success);
+    return updatedKeyValue;
+  }
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => {
+    // updateItemDraft({ ...itemDraft, [fieldName]: newValue });
+    const update = handleUpdatedKeyValue(getUpdatedKeyValueFromEvent(event));
+    if (update !== undefined) {
+      // Update the Zustand store
+      setItemData({ [update.key]: update.value }, item.clientId);
     }
   };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleChange = (val: any, inputProps?: InputProps) => {
-    if (inputProps?.name) {
-      setItemData({ [inputProps.name]: val } as ItemDataUntypedType, item.clientId);
-    } else {
-      console.log(`Item: missing field name in handleSave(value=`, val, `, inputProps=`, inputProps, `)`);
+
+  const handleSave = (value?: string, inputProps?: InputProps) => {
+    const update = handleUpdatedKeyValue(getUpdatedKeyValueFromEdiTextField(value, inputProps));
+    if (update) {
+      // Update the Zustand store
+      setItemData({ [update.key]: update.value }, item.clientId);
     }
   };
 
@@ -71,7 +139,7 @@ export default function Item(props: ItemProps) {
             key={index}
             className="flex-1 text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4"
           >
-            <EditableFieldPersisted
+            <EditableFieldPersist
               key={field}
               fieldName={field}
               value={item[field as keyof ItemClientStateType] as string}

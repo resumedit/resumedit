@@ -9,7 +9,7 @@ interface EditableInputFieldProps extends EdiTextProps {
   onChange?: (event: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => void;
 }
 
-export default function EditableFieldPersisted({
+export default function EditableFieldPersist({
   fieldName,
   placeholder,
   onChange,

@@ -1,22 +1,44 @@
-// @/components/itemDescendant/ItemDescendantItemInput.tsx
+// @/components/itemDescendant/descendant/DescendantInput.tsx
 
 import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 // import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { ItemClientStateType, ItemDataType, ItemDataUntypedType } from "@/types/item";
 import { ItemDescendantRenderProps } from "../ItemDescendantList.client";
 import DescendantListItemInput from "./DescendantListItemInput";
-import { cn } from "@/lib/utils";
 
 export default function DescendantInput(props: ItemDescendantRenderProps) {
-  const { id, itemModel, resumeAction } = props;
+  const { ancestorClientIdChain, id, itemModel, resumeAction } = props;
   const canEdit = resumeAction === "edit";
   // const [editingInput, setEditingInput] = useState(canEdit);
 
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);
-  const itemDraft = store((state) => state.descendantDraft);
-  const updateItemDraft = store((state) => state.updateDescendantDraft);
-  const commitItemDraft = store((state) => state.commitDescendantDraft);
+  const getDescendantDraft = store((state) => state.getDescendantDraft);
+  const updateDescendantDraft = store((state) => state.updateDescendantDraft);
+  const commitDescendantDraft = store((state) => state.commitDescendantDraft);
+
+  const getItemDraft = (): ItemDataType<ItemClientStateType> => {
+    console.log(`DescendantInput:getItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
+    return getDescendantDraft(ancestorClientIdChain);
+  };
+
+  const itemDraft = getItemDraft();
+
+  const updateItemDraft = (descendantData: ItemDataUntypedType): void => {
+    console.log(
+      `DescendantInput:updateItemDraft(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
+        ancestorClientIdChain,
+      )}`,
+    );
+    updateDescendantDraft(descendantData, ancestorClientIdChain);
+  };
+
+  const commitItemDraft = (): void => {
+    console.log(`DescendantInput:commitItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
+    commitDescendantDraft(ancestorClientIdChain);
+  };
 
   return (
     <div key={id} id={id} className="flex gap-x-4 items-center">
@@ -26,6 +48,12 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
         })}
       >
         Add new {itemModel}
+        {ancestorClientIdChain.length > 0 ? (
+          <>
+            {" "}
+            below <pre>{`${ancestorClientIdChain.map((id) => id.substring(0, 8)).join("\n")}`}</pre>
+          </>
+        ) : null}
       </p>
       <DescendantListItemInput
         itemModel={itemModel}
