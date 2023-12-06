@@ -5,12 +5,12 @@ import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { dateToISOLocal } from "@/lib/utils/formatDate";
 import { ItemDescendantServerStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { ItemServerToClientType } from "@/types/item";
+import { ItemServerStateType } from "@/types/item";
 import { ItemDescendantModelAccessor } from "@/types/itemDescendant";
 
 interface ItemDescendantStoreStateProps {
   storeName: keyof ItemDescendantModelAccessor;
-  serverState: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>;
+  serverState: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>;
 }
 
 export default function ItemDescendantListStoreStateComponent(props: ItemDescendantStoreStateProps) {

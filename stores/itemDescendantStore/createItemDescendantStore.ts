@@ -1,5 +1,4 @@
 // @/stores/itemDescendant/createItemDescendantStore.ts
-import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { IdSchemaType, getItemId } from "@/schemas/id";
 import {
   ClientIdType,
@@ -16,7 +15,6 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { reBalanceListOrderValues, updateListOrderValues } from "./utils/descendantOrderValues";
-import { logUpdateStoreWithServerData } from "./utils/logItemDescendantStore";
 import { handleItemDescendantListFromServer } from "./utils/syncItemDescendantStore";
 
 // Type used by client to maintain client state
@@ -124,30 +122,6 @@ export type ItemDescendantHookType = <I extends ItemClientStateType, C extends I
   selector?: ItemDescendantSelectorType<I, C, T>,
 ) => T;
 
-// Mapped type to extract the keys of ItemDescendantStoreActions
-type ItemDescendantStoreActionKeys<
-  I extends ItemClientStateType,
-  C extends ItemClientStateType,
-> = keyof ItemDescendantStoreActions<I, C>;
-
-// Define a type for only the state properties of the store
-export type ItemDescendantStoreStateOnly<I extends ItemClientStateType, C extends ItemClientStateType> = Omit<
-  ItemDescendantStore<I, C>,
-  ItemDescendantStoreActionKeys<I, C>
->;
-
-// Custom hook to access only the state of the store
-export function useItemDescendantStoreState(
-  storeName: string,
-): ItemDescendantStoreStateOnly<ItemClientStateType, ItemClientStateType> {
-  const store = useItemDescendantStore(storeName);
-
-  return store((state) => {
-    // Type assertion to ensure the returned type is ItemDescendantStoreStateOnly
-    return state as ItemDescendantStoreStateOnly<ItemClientStateType, ItemClientStateType>;
-  });
-}
-
 export interface ItemDescendantStoreConfigType {
   itemModel: ItemDescendantModelNameType;
 
@@ -159,7 +133,6 @@ export interface ItemDescendantStoreConfigType {
 
   storeVersion?: number;
   storeName?: string;
-  logUpdateFromServer?: boolean;
 }
 export const storeVersion = 1;
 export const storeNameSuffix = "descendant-store.devel.resumedit.local";
@@ -169,6 +142,12 @@ export function getDescendantFromAncestorChain(
   ancestorClientIdChain: Array<ClientIdType>,
   lastModified?: Date,
 ): ItemStoreStateDescendantListType<ItemClientStateType, ItemClientStateType> {
+  console.log(
+    "getDescendantFromAncestorChain:\n",
+    `ancestorStateChain: ${ancestorStateChain.map((item) => item.clientId).join("->")}`,
+    "\n",
+    `ancestorClientIdChain: ${ancestorClientIdChain.join("->")}`,
+  );
   // Descend from the `state` all the way down to the descendant based on the `ancestorClientIdChain` array
   if (ancestorClientIdChain.length === 0) {
     if (lastModified) {
@@ -187,7 +166,11 @@ export function getDescendantFromAncestorChain(
       ancestorState.lastModified = lastModified;
       ancestorState.disposition = ItemDisposition.Modified;
     }
-    return getDescendantFromAncestorChain([...ancestorStateChain, ancestorState], ancestorClientIdChain.slice(1));
+    return getDescendantFromAncestorChain(
+      [...ancestorStateChain, ancestorState],
+      ancestorClientIdChain.slice(1),
+      lastModified,
+    );
   }
   return ancestorStateChain;
 }
@@ -199,7 +182,6 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
   id,
   itemModel,
   storeVersion,
-  logUpdateFromServer,
   ...rest
 }: ItemDescendantStoreConfigType) => {
   const storeName = rest.storeName ? rest.storeName : `${itemModel}-${storeNameSuffix}`;
@@ -220,7 +202,6 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
         descendantModel: getDescendantModel(itemModel),
         descendants: [],
         descendantDraft: {} as ItemDataType<C>,
-        logUpdateFromServer,
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         setItemData: (descendantData: ItemDataUntypedType, clientId?: ClientIdType): void => {
@@ -420,32 +401,15 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
         updateStoreWithServerData: (
           serverState: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>,
         ) => {
-          if (logUpdateFromServer) {
-            logUpdateStoreWithServerData(
-              get() as ItemDescendantStore<ItemClientStateType, ItemClientStateType>,
-              serverState,
-            );
-          }
+          // if (logUpdateFromServer) {
+          //   logUpdateStoreWithServerData(
+          //     get() as ItemDescendantStore<ItemClientStateType, ItemClientStateType>,
+          //     serverState,
+          //   );
+          // }
           set((state) => {
-            handleItemDescendantListFromServer(state, serverState, logUpdateFromServer);
-            // state.descendants = [
-            //   ...state.descendants,
-            //   ...serverState.descendants.map((descendant) => {
-            //     return {
-            //       ...descendant,
-            //       clientParentId: state.clientId,
-            //       parentId: getItemId(state.descendantModel),
-            //       disposition: ItemDisposition.Synced,
-            //     };
-            //   }),
-            // ];
+            handleItemDescendantListFromServer(state, serverState);
           });
-          if (logUpdateFromServer) {
-            logUpdateStoreWithServerData(
-              get() as ItemDescendantStore<ItemClientStateType, ItemClientStateType>,
-              serverState,
-            );
-          }
         },
       })),
       {

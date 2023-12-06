@@ -86,25 +86,6 @@ export function getModelAccessor(
   // The as PrismaModelMethodType cast is safe as long as PrismaClient's API remains consistent with PrismaModelMethodType
   return prisma[model as keyof PrismaClient] as PrismaModelMethodType;
 }
-/**
- * Generates a set of keys for parent IDs based on the model hierarchy.
- * @returns A set of strings representing parent ID keys.
- */
-function generateParentIdKeys(): Set<string> {
-  const keys = new Set<string>();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  for (const [model, { parent }] of Object.entries(itemDescendantModels)) {
-    if (parent) {
-      keys.add(`${parent}Id`);
-    }
-  }
-  return keys;
-}
-
-// List of parentId keys to be stripped from objects
-export const parentIdKeys = generateParentIdKeys();
-
-type ParentIdKey = `${keyof ItemDescendantModelAccessor}Id`;
 
 export function stripFieldsForDatabase<T extends ItemClientToServerType>(
   item: T,
@@ -130,7 +111,6 @@ const fieldsToExcludeFromCreate = [
   "descendants",
   "disposition",
   "descendantDraft",
-  "logUpdateFromServer",
 ];
 
 export function keepOnlyFieldsForCreate<T extends ItemClientToServerType>(
@@ -147,33 +127,19 @@ export function keepOnlyFieldsForCreate<T extends ItemClientToServerType>(
   // Now that we universally use the column name `parentId` the translation is no longer necessary
   // const parentModel = itemDescendantModels.find((pair) => pair.model === model)?.parent as keyof ItemDescendantModelAccessor;
   // const parentIdKeyValue = buildParentIdKeyValue(parentModel, parentId);
-  const parentIdKeyValue = { parentId };
-
-  const payload = { ...itemData, ...parentIdKeyValue };
+  // const parentIdKeyValue = { parentId };
+  // const payload = { ...itemData, ...parentIdKeyValue };
+  const payload = { ...itemData, parentId };
   return payload;
 }
 
 export function keepOnlyFieldsForUpdate<T extends ItemClientToServerType>(item: T, lastModified?: Date) {
-  const fieldsToStrip = new Set<keyof T>([...fieldsToExcludeFromCreate, ...parentIdKeys] as Array<keyof T>);
+  const fieldsToStrip = new Set<keyof T>([...fieldsToExcludeFromCreate] as Array<keyof T>);
 
   const itemData = stripFieldsForDatabase(item, fieldsToStrip, lastModified);
 
   const payload = { ...itemData };
   return payload;
-}
-
-export function buildWhereClause(parentModel: keyof ItemDescendantModelAccessor, parentId: IdSchemaType) {
-  const whereClause: Partial<Record<ParentIdKey, IdSchemaType>> = {};
-  const key = `${parentModel}Id` as ParentIdKey;
-  whereClause[key] = parentId;
-  return whereClause;
-}
-
-export function buildParentIdKeyValue(parentModel: keyof ItemDescendantModelAccessor, parentId: IdSchemaType) {
-  const parentIdKeyValue: Partial<Record<ParentIdKey, IdSchemaType>> = {};
-  const key = `${parentModel}Id` as ParentIdKey;
-  parentIdKeyValue[key] = parentId;
-  return parentIdKeyValue;
 }
 
 export function createTypesafeLocalstorage<

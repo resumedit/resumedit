@@ -3,51 +3,54 @@
 import { handleNestedItemDescendantListFromClient } from "@/actions/syncItemDescendant";
 import { toast } from "@/components/ui/use-toast";
 import { dateToISOLocal } from "@/lib/utils/formatDate";
+import { stripFields } from "@/lib/utils/misc";
 import { getItemId, isValidItemId } from "@/schemas/id";
-import {
-  ClientIdType,
-  ItemClientStateType,
-  ItemClientToServerType,
-  ItemDisposition,
-  ItemServerToClientType,
-} from "@/types/item";
-import { getDescendantModel, stripFieldsForDatabase } from "@/types/itemDescendant";
+import { ClientIdType, ItemClientStateType, ItemDisposition, ItemServerStateType } from "@/types/item";
+import { getDescendantModel } from "@/types/itemDescendant";
 import { ModificationTimestampType } from "@/types/timestamp";
 import { Draft } from "immer";
 import {
   ItemDescendantClientStateType,
   ItemDescendantServerStateType,
   ItemDescendantStore,
-  ItemDescendantStoreStateOnly,
 } from "../createItemDescendantStore";
 
-export function keepOnlyStateForServer<T extends ItemClientToServerType>(
+export function keepOnlyStateForServer<T extends ItemDescendantStore<ItemClientStateType, ItemClientStateType>>(
   rootState: T,
-  lastModified?: Date,
-): ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType> {
+) {
   // Remove all properties that are not part of the item
-  const nonItemRootStateProperties = new Set<"descendantDraft" | "logUpdateFromServer">();
-  const fieldsToStrip = new Set<keyof T>([...nonItemRootStateProperties] as Array<keyof T>);
+  const storeActions: Array<keyof T> = [
+    "setItemData",
+    "markItemAsDeleted",
+    "restoreDeletedItem",
+    "getDescendants",
+    "setDescendantData",
+    "markDescendantAsDeleted",
+    "reArrangeDescendants",
+    "resetDescendantsOrderValues",
+    "getDescendantDraft",
+    "updateDescendantDraft",
+    "commitDescendantDraft",
+    "updateStoreWithServerData",
+  ];
+  const nonItemRootStateProperties: Array<keyof T> = ["descendantDraft"];
 
-  const itemData = stripFieldsForDatabase(rootState, fieldsToStrip, lastModified);
+  // Combine both sets of keys to remove
+  const fieldsToStrip = new Set<keyof T>([...storeActions, ...nonItemRootStateProperties]);
 
-  const payload = { ...itemData };
+  const payload = stripFields(rootState, fieldsToStrip);
   return payload as ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>;
 }
 
 export async function syncItemDescendantStoreWithServer(
-  rootState: ItemDescendantStoreStateOnly<ItemClientStateType, ItemClientStateType>,
+  store: ItemDescendantStore<ItemClientStateType, ItemClientStateType>,
   updateStoreWithServerData: (
-    serverState: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>,
+    serverState: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>,
   ) => void,
-): Promise<ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType> | null> {
-  const clientModified = rootState.lastModified;
-
-  const clientToServerState = keepOnlyStateForServer<ItemClientToServerType>(rootState);
-  console.log(`ItemDescendantListSynchronization:sendItemDescendantToServer:clientToServerState:`, clientToServerState);
-
-  // const updatedItemList = await handleItemDescendantListFromClient(clientToServerState);
-  const updatedState = await handleNestedItemDescendantListFromClient(clientToServerState);
+): Promise<ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType> | null> {
+  const clientModified = store.lastModified;
+  const rootState = keepOnlyStateForServer(store);
+  const updatedState = await handleNestedItemDescendantListFromClient(rootState);
 
   if (updatedState) {
     updateStoreWithServerData(updatedState);
@@ -65,28 +68,37 @@ export async function syncItemDescendantStoreWithServer(
   return updatedState;
 }
 
-function augmentItemFromServer<SI extends ItemServerToClientType, SC extends ItemServerToClientType>(
+function augmentItemFromServer<SI extends ItemServerStateType, SC extends ItemServerStateType>(
   serverItem: ItemDescendantServerStateType<SI, SC>,
   parentClientId: ClientIdType,
 ): Draft<ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>> {
-  // Disposition property is set to `synced` on all descendants
+  // Disposition property is set to `synced` on all items
   const dispositionProperty = {
     disposition: ItemDisposition.Synced,
   };
-  const itemModel = serverItem.descendantModel!;
-  const descendantModel = itemModel ? getDescendantModel(itemModel) : null;
+  const itemModel = serverItem.itemModel!;
+  const descendantModel = serverItem.descendantModel || getDescendantModel(itemModel);
   const modelProperties = {
     itemModel,
     descendantModel,
   };
+
+  const clientId = getItemId(itemModel!);
+
+  const clientDescendants = serverItem.descendants.map(
+    (serverDescendant: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>) => {
+      const newDescendant = augmentItemFromServer(serverDescendant, clientId);
+      return newDescendant as ItemDescendantClientStateType<SI, SC>;
+    },
+  );
 
   const clientItem = {
     ...serverItem,
     ...modelProperties,
     ...dispositionProperty,
     parentClientId,
-    clientId: getItemId(serverItem.descendantModel!),
-    descendants: serverItem.descendants || [],
+    clientId,
+    descendants: clientDescendants || [],
   };
   return clientItem as Draft<ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>>;
 }
@@ -94,8 +106,8 @@ function augmentItemFromServer<SI extends ItemServerToClientType, SC extends Ite
 function mergeDescendantListFromServer<
   I extends ItemClientStateType,
   C extends ItemClientStateType,
-  SI extends ItemServerToClientType,
-  SC extends ItemServerToClientType,
+  SI extends ItemServerStateType,
+  SC extends ItemServerStateType,
 >(clientState: Draft<ItemDescendantClientStateType<I, C>>, serverState: ItemDescendantServerStateType<SI, SC>): void {
   // const itemModel = serverState.descendantModel;
   // const descendantModel = itemModel ? getDescendantModel(itemModel) : null;
@@ -228,13 +240,8 @@ function mergeDescendantListFromServer<
         // Descendant list of server initializes the one of the client
         // Before we merge this new descendant from the server, we need to
         // augment its descendant list with clientIds recursively
-        const clientDescendants = serverState.descendants.map(
-          (serverDescendant: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>) => {
-            const newDescendant = augmentItemFromServer(serverDescendant, clientState.clientId);
-            return newDescendant as ItemDescendantClientStateType<I, C>;
-          },
-        );
-        clientState.descendants = clientDescendants;
+        const augmentedServerState = augmentItemFromServer(serverState, clientState.clientId);
+        Object.assign(clientState, augmentedServerState);
       }
     }
   }
@@ -243,8 +250,8 @@ function mergeDescendantListFromServer<
 export function handleItemDescendantListFromServer<
   I extends ItemClientStateType,
   C extends ItemClientStateType,
-  SI extends ItemServerToClientType,
-  SC extends ItemServerToClientType,
+  SI extends ItemServerStateType,
+  SC extends ItemServerStateType,
 >(
   clientState: Draft<ItemDescendantStore<I, C>>,
   serverState: ItemDescendantServerStateType<SI, SC>,

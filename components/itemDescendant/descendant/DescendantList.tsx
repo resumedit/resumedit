@@ -38,7 +38,7 @@ interface ItemDescendantListProps extends ItemDescendantRenderProps {}
 export default function DescendantList(props: ItemDescendantListProps) {
   const { ancestorClientIdChain, rootItemModel, leafItemModel, itemModel, item, resumeAction } = props;
 
-  const clientId = item.clientId;
+  // const clientId = item.clientId;
 
   const canEdit = resumeAction === "edit";
   // const [editingInput, setEditingInput] = useState(canEdit);
@@ -68,27 +68,27 @@ export default function DescendantList(props: ItemDescendantListProps) {
     ItemOrderableClientStateType,
     ItemOrderableClientStateType
   > => {
-    console.log(
-      `DescendantInput:itemDraft(clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`,
-    );
+    // console.log(
+    //   `DescendantInput:itemDraft(clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`,
+    // );
     return getDescendants(ancestorClientIdChain);
   };
 
   const setItemData = (descendantData: ItemDataUntypedType, clientId: ClientIdType): void => {
-    console.log(
-      `Descendant:setItemData(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
-        ancestorClientIdChain,
-      )}`,
-    );
+    // console.log(
+    //   `Descendant:setItemData(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
+    //     ancestorClientIdChain,
+    //   )}`,
+    // );
     setDescendantData(descendantData, clientId, ancestorClientIdChain);
   };
 
   const markItemAsDeleted = (clientId: IdSchemaType): void => {
-    console.log(
-      `Descendant:markDescendantAsDeleted(clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(
-        ancestorClientIdChain,
-      )}`,
-    );
+    // console.log(
+    //   `Descendant:markDescendantAsDeleted(clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(
+    //     ancestorClientIdChain,
+    //   )}`,
+    // );
     markDescendantAsDeleted(clientId, ancestorClientIdChain);
   };
 
@@ -113,21 +113,21 @@ export default function DescendantList(props: ItemDescendantListProps) {
   const commitDescendantDraft = store((state) => state.commitDescendantDraft);
 
   const getItemDraft = (): ItemDataType<ItemClientStateType> => {
-    console.log(`DescendantInput:getItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
+    // console.log(`DescendantInput:getItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
     return getDescendantDraft(ancestorClientIdChain);
   };
 
   const updateItemDraft = (descendantData: ItemDataUntypedType): void => {
-    console.log(
-      `DescendantInput:updateItemDraft(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
-        ancestorClientIdChain,
-      )}`,
-    );
+    // console.log(
+    //   `DescendantInput:updateItemDraft(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
+    //     ancestorClientIdChain,
+    //   )}`,
+    // );
     updateDescendantDraft(descendantData, ancestorClientIdChain);
   };
 
   const commitItemDraft = (): void => {
-    console.log(`DescendantInput:commitItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
+    // console.log(`DescendantInput:commitItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
     commitDescendantDraft(ancestorClientIdChain);
   };
 

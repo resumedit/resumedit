@@ -27,8 +27,8 @@ export async function getItemLastModified(
   prismaTransaction?: PrismaClient,
 ): Promise<Date | undefined> {
   const prismaClient = prismaTransaction || prisma;
-  const prismaParentModelInstance = getModelAccessor(model, prismaClient);
-  const item = await prismaParentModelInstance.findUnique({
+  const prismaModelInstance = getModelAccessor(model, prismaClient);
+  const item = await prismaModelInstance.findUnique({
     where: { id },
     select: { lastModified: true },
   });

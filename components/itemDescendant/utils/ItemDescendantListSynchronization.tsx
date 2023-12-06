@@ -8,7 +8,6 @@ import { useStoreName } from "@/contexts/StoreNameContext";
 import { useRef } from "react";
 
 import { useSyncItemDescendantStore } from "@/hooks/useSyncItemDescendantStore";
-import { useItemDescendantStoreState } from "@/stores/itemDescendantStore/createItemDescendantStore";
 import { syncItemDescendantStoreWithServer } from "@/stores/itemDescendantStore/utils/syncItemDescendantStore";
 
 export function ItemDescendantListSynchronization() {
@@ -16,7 +15,7 @@ export function ItemDescendantListSynchronization() {
 
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);
-  const rootState = useItemDescendantStoreState(storeName);
+  const rootState = store((state) => state);
   const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
 
   useSyncItemDescendantStore();

@@ -37,8 +37,9 @@ export type ItemClientToServerType = Omit<ItemType, "id"> & {
   disposition: ItemDisposition;
 };
 
+// FIXME: Replaced by ItemServerStateType to facilitate nested sync
 // Type returned by server in response to items received from client to merge with server's state
-export type ItemServerToClientType = ItemOutputType;
+// export type ItemServerToClientType = ItemOutputType;
 
 // Type used by client to maintain client state
 export type ItemClientStateType = ItemClientToServerType & {

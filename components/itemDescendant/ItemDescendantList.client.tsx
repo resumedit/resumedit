@@ -16,7 +16,7 @@ import {
   ItemClientStateType,
   ItemDataType,
   ItemDataUntypedType,
-  ItemServerToClientType,
+  ItemServerStateType,
 } from "@/types/item";
 import { ItemDescendantModelNameType, getDescendantModel, getParentModel } from "@/types/itemDescendant";
 import { ResumeActionType } from "@/types/resume";
@@ -176,7 +176,7 @@ function ItemDescendantListState(props: ItemDescendantListStateProps) {
 }
 
 export interface ItemDescendantListContextProps {
-  serverState: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>;
+  serverState: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>;
   rootItemModel: ItemDescendantModelNameType;
   leafItemModel: ItemDescendantModelNameType;
   resumeAction: ResumeActionType;
@@ -191,14 +191,11 @@ export default function ItemDescendantListContext(props: ItemDescendantListConte
   const parentId = serverState.parentId;
   const id = serverState.id;
   const storeVersion = 1; // FIXME: add logic to determine the version from the serverUpdate
-  const logUpdateFromServer = false; //process.env.NODE_ENV === "development";
 
   return (
     <ResumeActionProvider resumeAction={resumeAction}>
       <StoreNameProvider storeName={`${itemModel}`}>
-        <ItemDescendantStoreProvider
-          configs={[{ itemModel, parentClientId, clientId, parentId, id, storeVersion, logUpdateFromServer }]}
-        >
+        <ItemDescendantStoreProvider configs={[{ itemModel, parentClientId, clientId, parentId, id, storeVersion }]}>
           <ItemDescendantListState {...props} />
         </ItemDescendantStoreProvider>
       </StoreNameProvider>

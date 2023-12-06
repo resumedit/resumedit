@@ -2,7 +2,6 @@
 
 import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
-import { useItemDescendantStoreState } from "@/stores/itemDescendantStore/createItemDescendantStore";
 import { syncItemDescendantStoreWithServer } from "@/stores/itemDescendantStore/utils/syncItemDescendantStore";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { useCallback, useEffect } from "react";
@@ -11,7 +10,7 @@ export function useSyncItemDescendantStore() {
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);
 
-  const rootState = useItemDescendantStoreState(storeName);
+  const rootState = store((state) => state);
   const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
 
   const synchronizationInterval = useSettingsStore((state) => state.synchronizationInterval);

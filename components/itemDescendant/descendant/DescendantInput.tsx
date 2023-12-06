@@ -20,29 +20,25 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
   const commitDescendantDraft = store((state) => state.commitDescendantDraft);
 
   const getItemDraft = (): ItemDataType<ItemClientStateType> => {
-    console.log(`DescendantInput:getItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
+    // console.log(`DescendantInput:getItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
     return getDescendantDraft(ancestorClientIdChain);
   };
 
   const updateItemDraft = (descendantData: ItemDataUntypedType): void => {
-    console.log(
-      `DescendantInput:updateItemDraft(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
-        ancestorClientIdChain,
-      )}`,
-    );
+    // console.log(
+    //   `DescendantInput:updateItemDraft(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
+    //     ancestorClientIdChain,
+    //   )}`,
+    // );
     updateDescendantDraft(descendantData, ancestorClientIdChain);
   };
 
   const commitItemDraft = (): void => {
-    console.log(`DescendantInput:commitItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
+    // console.log(`DescendantInput:commitItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
     commitDescendantDraft(ancestorClientIdChain);
   };
 
   const itemDraft = getItemDraft();
-
-  if (ancestorClientIdChain.length > 0) {
-    console.log(ancestorClientIdChain);
-  }
 
   return (
     <div key={item.clientId} className="flex gap-x-4 items-center">

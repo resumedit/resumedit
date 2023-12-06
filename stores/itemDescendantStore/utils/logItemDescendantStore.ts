@@ -1,9 +1,9 @@
-import { ItemClientStateType, ItemServerToClientType } from "@/types/item";
+import { ItemClientStateType, ItemServerStateType } from "@/types/item";
 import { ItemDescendantServerStateType, ItemDescendantStoreState } from "../createItemDescendantStore";
 
 export function logUpdateStoreWithServerData(
   storeState: ItemDescendantStoreState<ItemClientStateType, ItemClientStateType>,
-  serverState: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>,
+  serverState: ItemDescendantServerStateType<ItemServerStateType, ItemServerStateType>,
 ) {
   const { descendants: storeDescendants, ...storeItem } = storeState;
   const { descendants: serverDescendants, ...serverItem } = serverState;

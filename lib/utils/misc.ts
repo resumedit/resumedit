@@ -17,10 +17,7 @@ export function getElement<T>(array: T[], index: number): T | undefined {
   }
 }
 
-export function keepOnlyFields<T extends object, K extends keyof T>(
-  obj: T,
-  allowedFields: Set<K>,
-): Pick<T, K> {
+export function keepOnlyFields<T extends object, K extends keyof T>(obj: T, allowedFields: Set<K>): Pick<T, K> {
   const result: Partial<T> = {};
   allowedFields.forEach((field) => {
     if (field in obj) {
@@ -30,10 +27,7 @@ export function keepOnlyFields<T extends object, K extends keyof T>(
   return result as Pick<T, K>;
 }
 
-export function stripFields<T extends object, K extends keyof T>(
-  obj: T,
-  fieldsToRemove: Set<K>,
-): Omit<T, K> {
+export function stripFields<T extends object, K extends keyof T>(obj: T, fieldsToRemove: Set<K>): Omit<T, K> {
   const result: Partial<T> = {};
 
   for (const key in obj) {
@@ -44,3 +38,35 @@ export function stripFields<T extends object, K extends keyof T>(
 
   return result as Omit<T, K>;
 }
+
+/* FIXME: This code generated a list of parentId keys, such as `userId`, `resumeId`, etc., 
+   based on the `itemDescendantModels` map. Since meanwhile all parent id columns are 
+   called `parentId`, this code is no longer used.
+function generateParentIdKeys(): Set<string> {
+  const keys = new Set<string>();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  for (const [model, { parent }] of Object.entries(itemDescendantModels)) {
+    if (parent) {
+      keys.add(`${parent}Id`);
+    }
+  }
+  return keys;
+}
+// List of parentId keys to be stripped from objects
+export const parentIdKeys = generateParentIdKeys();
+type ParentIdKey = `${keyof ItemDescendantModelAccessor}Id`;
+
+export function buildWhereClause(parentModel: keyof ItemDescendantModelAccessor, parentId: IdSchemaType) {
+  const whereClause: Partial<Record<ParentIdKey, IdSchemaType>> = {};
+  const key = `${parentModel}Id` as ParentIdKey;
+  whereClause[key] = parentId;
+  return whereClause;
+}
+
+export function buildParentIdKeyValue(parentModel: keyof ItemDescendantModelAccessor, parentId: IdSchemaType) {
+  const parentIdKeyValue: Partial<Record<ParentIdKey, IdSchemaType>> = {};
+  const key = `${parentModel}Id` as ParentIdKey;
+  parentIdKeyValue[key] = parentId;
+  return parentIdKeyValue;
+}
+*/
