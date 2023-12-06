@@ -4,6 +4,7 @@ import { useParentItemListStore } from "@/contexts/ParentItemListStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { ItemClientStateType } from "@/types/item";
 import ParentItemListItem from "./ParentItemListItem";
+import ParentItemListItemInput from "./ParentItemListItemInput";
 import ParentItemSortableWrapper from "./utils/ParentItemSortableWrapper";
 
 const ParentItemList = () => {
@@ -33,6 +34,7 @@ const ParentItemList = () => {
       {
         <ul className="flex flex-col bg-elem-light dark:bg-elem-dark-1 overflow-auto">
           <ParentItemSortableWrapper items={items}>
+            <ParentItemListItemInput />
             {items.map((item, index) => {
               return (
                 <ParentItemListItem

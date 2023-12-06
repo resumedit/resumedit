@@ -24,7 +24,12 @@ const ParentItemListClientContext = ({ serverState }: Props) => {
   const parentModel = store((state) => state.parentModel);
   const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
 
-  useEffect(() => {}, [serverState, updateStoreWithServerData]);
+  useEffect(() => {
+    if (updateStoreWithServerData) {
+      console.log(`ParentItemListClientContext: useEffect with serverState:`, serverState);
+      updateStoreWithServerData(serverState);
+    }
+  }, [serverState, updateStoreWithServerData]);
 
   return (
     <>

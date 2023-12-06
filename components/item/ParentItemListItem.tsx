@@ -12,7 +12,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
-import EdiText, { InputProps } from "react-editext";
+import { InputProps } from "react-editext";
+import EditableField from "./utils/EditableField";
 
 interface ListItemProps {
   storeName: ParentItemListStoreNameType;
@@ -76,7 +77,7 @@ const ParentItemListItem = ({ storeName, index, item, setItemDeleted }: ListItem
               key={index}
               className="w-full text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4"
             >
-              <EdiText
+              {/* <EdiText
                 key={field}
                 type="textarea"
                 value={item[field as keyof ItemClientStateType] as string}
@@ -90,6 +91,12 @@ const ParentItemListItem = ({ storeName, index, item, setItemDeleted }: ListItem
                 submitOnEnter
                 submitOnUnfocus
                 cancelOnEscape
+              /> */}
+              <EditableField
+                key={field}
+                fieldName={field}
+                value={item[field as keyof ItemClientStateType] as string}
+                onSave={handleSave}
               />
             </div>
           ))}
