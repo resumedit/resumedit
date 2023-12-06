@@ -87,6 +87,7 @@ export type ItemDescendantServerToClientType<I, C> = ItemServerToClientType & {
 export type ItemDescendantStoreActions<I extends ItemClientStateType, C extends ItemClientStateType> = {
   setItemData: (data: ItemDataUntypedType, clientId: ClientIdType) => void;
   markItemAsDeleted: (clientId: ClientIdType) => void;
+  restoreDeletedItem: (clientId: ClientIdType) => void;
   setDescendantData: (data: ItemDataUntypedType, clientId: ClientIdType) => void;
   addDescendant: (descendantData: ItemDataType<C>) => void;
   markDescendantAsDeleted: (clientId: ClientIdType, item?: ItemDescendantClientStateType<I, C>) => void;
@@ -179,7 +180,23 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
           // NOTE: The argument `clientId` is only here to provide the same signature as for descendants
           // Update the state with the deletedAt timestamp for the item
           set((state) => {
-            state = { ...state, disposition: ItemDisposition.Modified, deletedAt: new Date() };
+            // NOTE: The below assignment with the spread operator does not work due to the use of `immer`
+            // state = { ...state, disposition: ItemDisposition.Modified, deletedAt: new Date() };
+            state.disposition = ItemDisposition.Modified;
+            state.deletedAt = new Date();
+
+            // Update the modification timestamp
+            state.lastModified = new Date();
+          });
+        },
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        restoreDeletedItem: (clientId?: ClientIdType): void => {
+          // NOTE: The argument `clientId` is only here to provide the same signature as for descendants
+          // Update the state with the deletedAt timestamp for the item
+          set((state) => {
+            state.disposition = ItemDisposition.Modified;
+            state.deletedAt = null;
 
             // Update the modification timestamp
             state.lastModified = new Date();
