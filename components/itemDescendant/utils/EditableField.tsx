@@ -11,6 +11,9 @@ interface EditableFieldProps extends EdiTextProps {
 }
 
 export const EditableFieldEdiTextProps = {
+  containerProps: {
+    className: "p-0",
+  },
   inputProps: {
     placeholder: "",
     className: "p-2 flex-1 rounded-md outline-none min-w-auto",
@@ -27,12 +30,12 @@ export const EditableFieldEdiTextProps = {
     saveButtonClassName: "invisible",
     editButtonClassName: "hidden",
     cancelButtonClassName: "hidden",
-    mainContainerClassName: "p-0",
+    // mainContainerClassName: "p-0",
     editContainerClassName: "p-0 rounded-md gap-x-2",
   },
 };
 
-const EditableField = ({ fieldName, value, onSave, ...rest }: EditableFieldProps) => {
+export default function EditableField({ fieldName, value, onSave, ...rest }: EditableFieldProps) {
   return (
     <EdiText
       type="text"
@@ -46,6 +49,4 @@ const EditableField = ({ fieldName, value, onSave, ...rest }: EditableFieldProps
       {...rest}
     />
   );
-};
-
-export default EditableField;
+}

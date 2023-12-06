@@ -9,7 +9,7 @@ interface EditableInputFieldProps extends EdiTextProps {
   onChange?: (event: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => void;
 }
 
-export default function EditableInputField({
+export default function EditableFieldPersisted({
   fieldName,
   placeholder,
   onChange,
@@ -19,7 +19,6 @@ export default function EditableInputField({
   return (
     <EdiText
       type="text"
-      className="flex-grow"
       {...EditableFieldEdiTextProps.rootProps}
       inputProps={{
         ...EditableFieldEdiTextProps.inputProps,

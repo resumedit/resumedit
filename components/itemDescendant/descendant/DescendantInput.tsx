@@ -19,9 +19,9 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
   const commitItemDraft = store((state) => state.commitDescendantDraft);
 
   return (
-    <div key={id} id={id} className="w-full flex gap-x-4 items-center">
+    <div key={id} id={id} className="flex gap-x-4 items-center">
       <p
-        className={cn("flex-shrink-0 w-48 my-2 text-right text-muted-foreground text-sm", {
+        className={cn("sm:flex-shrink-0 w-48 my-2 text-right text-muted-foreground text-sm", {
           "font-medium text-xl my-4": ["user", "resume"].includes(itemModel),
         })}
       >

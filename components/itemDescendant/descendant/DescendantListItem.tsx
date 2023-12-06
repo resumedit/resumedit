@@ -79,130 +79,129 @@ export default function DescendantListItem({
   };
 
   return item.deletedAt ? null : (
-    <li
+    <div
       key={item.clientId}
-      className="flex justify-between border-b border-shadow-light dark:border-dark-txt-1 bg-elem-light dark:bg-elem-dark-1"
+      className={cn(
+        "flex-1 flex items-center justify-between group cursor-auto rounded-md border-b border-shadow-light dark:border-dark-txt-1 bg-elem-light dark:bg-elem-dark-1",
+        {
+          "text-muted-foreground bg-blend-soft-light bg-background/50": item.disposition !== ItemDisposition.Synced,
+          "basis-1/4": showListItemInternals,
+        },
+      )}
       ref={setNodeRef}
       style={styles}
       {...attributes}
     >
-      <div
-        className={cn("flex-1 flex items-center group cursor-auto rounded-md", {
-          "text-muted-foreground bg-blend-soft-light bg-background/50": item.disposition !== ItemDisposition.Synced,
-          "basis-1/4": showListItemInternals,
-        })}
-      >
-        {canEdit && rootItemModel === "user" && item.id !== undefined ? (
-          <div className="h-full">
-            <Link
-              title={`Edit resume ${(item as unknown as ResumeItemClientStateType).name}`}
-              href={`/resume/${item.id}/edit`}
-            >
-              <Button variant={"ghost"} className="h-full">
-                {<Edit />}
-              </Button>
-            </Link>
-          </div>
-        ) : null}
-        {canEdit && itemIsDragable ? (
-          <div
-            className={cn("h-full flex items-center", {
-              "hover:cursor-grab active:cursor-grabbing": itemIsDragable,
-            })}
-            {...listeners}
+      {canEdit && rootItemModel === "user" && item.id !== undefined ? (
+        <div className="h-full">
+          <Link
+            title={`Edit resume ${(item as unknown as ResumeItemClientStateType).name}`}
+            href={`/resume/${item.id}/edit`}
           >
-            <Grip />
-          </div>
-        ) : null}
-        <div className="w-full flex-1 flex gap-x-4 gap-y-2 justify-between">
-          {itemFormFields.map((field, index) => (
-            <div
-              key={index}
-              className="w-full text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4"
-            >
-              <EditableField
-                key={field}
-                fieldName={field}
-                value={item[field as keyof ItemClientStateType] as string}
-                onSave={handleSave}
-                canEdit={canEdit}
-              />
-            </div>
-          ))}
-          {/* TODO: Handle and display errors from formState.errors */}
+            <Button variant={"ghost"} className="h-full">
+              {<Edit />}
+            </Button>
+          </Link>
         </div>
-        {showListItemInternals && (
-          <div className="basis-3/4 flex items-center gap-x-4 px-4 py-2 cursor-auto text-xs text-slate-600">
-            <p className="h-full flex items-center px-2 text-lg bg-slate-200">{index}</p>
-            <table>
-              <tbody>
-                <tr>
-                  <td className="py-0">{item.disposition}</td>
-                </tr>
-              </tbody>
-            </table>
-            <table className="w-auto">
-              <tbody>
-                <tr>
-                  <td
-                    className={cn("py-0", {
-                      "text-red-500": item.disposition !== ItemDisposition.Synced,
-                    })}
-                  >
-                    <span className="text-xs text-muted-foreground">modified</span>:&nbsp;
-                    <span className="py-0">
-                      {dateToISOLocal(item.lastModified, DateTimeFormat.MonthDayTime, DateTimeSeparator.Newline)}
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td className={"py-0"}>
-                    <span className="text-xs text-muted-foreground">created</span>:&nbsp;
-                    {dateToISOLocal(item.createdAt, DateTimeFormat.MonthDayTime, DateTimeSeparator.Newline)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <table className="w-auto">
-              <tbody>
-                <tr>
-                  <td className="py-0">
-                    <span className="text-xs text-muted-foreground">client</span>&nbsp;
-                    <code>{item.clientId?.substring(0, 8)}&hellip;</code>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-0">
-                    <span className="text-xs text-muted-foreground">server</span>&nbsp;
-                    <code>{item.id?.substring(0, 8)}&hellip;</code>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+      ) : null}
+      {canEdit && itemIsDragable ? (
+        <div
+          className={cn("h-full flex items-center", {
+            "hover:cursor-grab active:cursor-grabbing": itemIsDragable,
+          })}
+          {...listeners}
+        >
+          <Grip />
+        </div>
+      ) : null}
+      <div className="flex-1 flex flex-wrap gap-x-4 gap-y-2 justify-between">
+        {itemFormFields.map((field, index) => (
+          <div
+            key={index}
+            className="flex-1 text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4"
+          >
+            <EditableField
+              key={field}
+              fieldName={field}
+              value={item[field as keyof ItemClientStateType] as string}
+              onSave={handleSave}
+              canEdit={canEdit}
+            />
           </div>
-        )}
-        {canEdit && itemModel !== "user" ? (
-          <div className="flex items-center h-full group">
-            {/* /Delete Button */}
-            <button
-              className="h-full basis-1/12 px-4 flex place-name-center items-center text-light-txt-2 dark:text-light-txt-1 opacity-100 md:group-hover:opacity-100 transition-all duration-150"
-              title={`Delete ${itemModel}`}
-              onClick={() => markItemAsDeleted(item.clientId)}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        ) : null}
+        ))}
+        {/* TODO: Handle and display errors from formState.errors */}
       </div>
-    </li>
+      {showListItemInternals && (
+        <div className="basis-3/4 flex items-center gap-x-4 px-4 py-2 cursor-auto text-xs text-slate-600">
+          <p className="h-full flex items-center px-2 text-lg bg-slate-200">{index}</p>
+          <table>
+            <tbody>
+              <tr>
+                <td className="py-0">{item.disposition}</td>
+              </tr>
+            </tbody>
+          </table>
+          <table className="w-auto">
+            <tbody>
+              <tr>
+                <td
+                  className={cn("py-0", {
+                    "text-red-500": item.disposition !== ItemDisposition.Synced,
+                  })}
+                >
+                  <span className="text-xs text-muted-foreground">modified</span>:&nbsp;
+                  <span className="py-0">
+                    {dateToISOLocal(item.lastModified, DateTimeFormat.MonthDayTime, DateTimeSeparator.Newline)}
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td className={"py-0"}>
+                  <span className="text-xs text-muted-foreground">created</span>:&nbsp;
+                  {dateToISOLocal(item.createdAt, DateTimeFormat.MonthDayTime, DateTimeSeparator.Newline)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <table className="w-auto">
+            <tbody>
+              <tr>
+                <td className="py-0">
+                  <span className="text-xs text-muted-foreground">client</span>&nbsp;
+                  <code>{item.clientId?.substring(0, 8)}&hellip;</code>
+                </td>
+              </tr>
+              <tr>
+                <td className="py-0">
+                  <span className="text-xs text-muted-foreground">server</span>&nbsp;
+                  <code>{item.id?.substring(0, 8)}&hellip;</code>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+      {canEdit && itemModel !== "user" ? (
+        <div className="flex items-center h-full group">
+          {/* /Delete Button */}
+          <button
+            className="h-full basis-1/12 px-4 flex place-name-center items-center text-light-txt-2 dark:text-light-txt-1 opacity-100 md:group-hover:opacity-100 transition-all duration-150"
+            title={`Delete ${itemModel}`}
+            onClick={() => markItemAsDeleted(item.clientId)}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-6 h-6"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }

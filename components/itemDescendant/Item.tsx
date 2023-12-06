@@ -13,7 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { InputProps } from "react-editext";
 import { useForm } from "react-hook-form";
 import { ItemDescendantRenderProps } from "./ItemDescendantList.client";
-import EditableField from "./utils/EditableField";
+import EditableFieldPersisted from "./utils/EditableFieldPersist";
 
 export interface ItemProps extends ItemDescendantRenderProps {
   rootItemModel: ItemDescendantModelNameType;
@@ -46,8 +46,16 @@ export default function Item(props: ItemProps) {
   const { showItemDescendantInternals } = settingsStore;
   const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
   const handleSave = (val: any, inputProps?: InputProps) => {
+    if (inputProps?.name) {
+      setItemData({ [inputProps.name]: val } as ItemDataUntypedType, item.clientId);
+    } else {
+      console.log(`Item: missing field name in handleSave(value=`, val, `, inputProps=`, inputProps, `)`);
+    }
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleChange = (val: any, inputProps?: InputProps) => {
     if (inputProps?.name) {
       setItemData({ [inputProps.name]: val } as ItemDataUntypedType, item.clientId);
     } else {
@@ -56,18 +64,19 @@ export default function Item(props: ItemProps) {
   };
 
   return (
-    <div className="w-full flex-1 flex justify-between">
-      <div className="w-full flex-1 flex gap-x-4 gap-y-2 justify-between">
+    <div className="flex-1 flex justify-between">
+      <div className="flex-1 flex gap-x-4 gap-y-2 justify-between">
         {itemFormFields.map((field, index) => (
           <div
             key={index}
-            className="w-full text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4"
+            className="flex-1 text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4"
           >
-            <EditableField
+            <EditableFieldPersisted
               key={field}
               fieldName={field}
               value={item[field as keyof ItemClientStateType] as string}
               onSave={handleSave}
+              onChange={handleChange}
               canEdit={canEdit}
             />
           </div>

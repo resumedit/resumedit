@@ -123,27 +123,25 @@ export default function DescendantListItemInput({
   // };
 
   return (
-    <div className="w-full flex flex-col gap-y-2">
-      <div className="flex">
-        <div className="flex-1 flex gap-x-4 gap-y-2" /* onMouseEnter={handleFocus} onMouseLeave={handleBlur} */>
-          {itemFormFields.map((fieldName) => (
-            <EditableInputField
-              key={fieldName}
-              fieldName={`${itemModel}-${fieldName}`}
-              value={fieldValues[fieldName]}
-              placeholder={`${fieldName}`}
-              onChange={handleChange}
-              onSave={handleSave}
-              editing={editingInput}
-              canEdit={canEdit}
-              className="flex-1"
-            />
-          ))}
-        </div>
-        <Button variant="ghost" disabled={!inputIsValid} onClick={handleSubmitButton} title={`Create ${itemModel}`}>
-          {<Plus />}
-        </Button>
+    <div className="flex-grow flex">
+      <div className="flex-grow flex flex-wrap gap-x-4 gap-y-2 justify-between">
+        {itemFormFields.map((fieldName) => (
+          <EditableInputField
+            key={fieldName}
+            fieldName={`${itemModel}-${fieldName}`}
+            value={fieldValues[fieldName]}
+            placeholder={`${fieldName}`}
+            onChange={handleChange}
+            onSave={handleSave}
+            editing={editingInput}
+            canEdit={canEdit}
+            className="flex-1 flex gap-x-4 gap-y-2"
+          />
+        ))}
       </div>
+      <Button variant="ghost" disabled={!inputIsValid} onClick={handleSubmitButton} title={`Create ${itemModel}`}>
+        {<Plus />}
+      </Button>
       {showListItemInternals && (
         <div className={cn("my-2", { "bg-muted-foreground": editingInput })}>
           <span>itermDraft=</span>

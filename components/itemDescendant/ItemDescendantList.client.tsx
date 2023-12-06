@@ -58,18 +58,20 @@ function ItemDescendantListRender(props: ItemDescendantRenderProps): ReactNode {
           {descendants
             ?.filter((descendant) => !descendant.deletedAt)
             .map((descendant, descendantIndex) => (
-              <ItemDescendantListRender
-                {...props}
-                key={descendant.clientId}
-                id={descendant.clientId}
-                index={descendantIndex}
-                item={descendant}
-                itemModel={descendantModel}
-              />
+              <li key={descendant.clientId}>
+                <ItemDescendantListRender
+                  {...props}
+                  index={descendantIndex}
+                  item={descendant}
+                  itemModel={descendantModel}
+                />
+                {item.itemModel === leafItemModel ? null : (
+                  <DescendantInput {...{ ...props, itemModel: descendantModel }} />
+                )}
+              </li>
             ))}
         </ul>
       ) : null}
-      {item.itemModel === leafItemModel ? null : <DescendantInput {...{ ...props, itemModel: descendantModel }} />}
     </>
   );
 }
