@@ -4,11 +4,11 @@ import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 
 type SettingsStateType = {
-  allowDeleteAllItems: boolean;
   showParentItemListInternals: boolean;
   showParentItemIdentifiers: boolean;
   showParentItemListSynchronization: boolean;
-  impersonatingUserAuthProviderId: string | null;
+  // allowDeleteAllItems: boolean;
+  // impersonatingUserAuthProviderId: string | null;
 };
 
 type SettingsActionsType = {
@@ -19,17 +19,17 @@ type SettingsActionsType = {
 
 type SettingsStoreType = SettingsStateType & SettingsActionsType;
 
-const storeNameSuffix = `list.devel.resumedit.local`;
+const storeNameSuffix = `devel.resumedit.local`;
 const storeVersion = 1;
 
 const useSettingsStore = create(
   persist(
     immer<SettingsStoreType>((set /*, get */) => ({
-      allowDeleteAllItems: false,
       showParentItemListInternals: false,
       showParentItemIdentifiers: false,
       showParentItemListSynchronization: false,
-      impersonatingUserAuthProviderId: null,
+      // allowDeleteAllItems: false,
+      // impersonatingUserAuthProviderId: null,
 
       setSettings: (newSettings): void => {
         set((state) => {
@@ -42,15 +42,9 @@ const useSettingsStore = create(
       //     state.showParentItemListInternals = !state.showParentItemListInternals;
       //   });
       // },
-
-      // toggleAllowDeleteAllItems: (): void => {
-      //   set((state) => {
-      //     state.allowDeleteAllItems = !state.allowDeleteAllItems;
-      //   });
-      // },
     })),
     {
-      name: `settings-storage-${storeNameSuffix}`, // unique name for localStorage key
+      name: `settings.${storeNameSuffix}`, // unique name for localStorage key
       version: storeVersion,
     },
   ),

@@ -23,11 +23,16 @@ const SettingsForm = () => {
   });
 
   // Function to update the Zustand store if validation passes
-  const updateStoreIfValid = async (name: keyof SettingsFormType, value: string | boolean) => {
-    form.setValue(name, value); // Update form state
+  const updateStoreIfValid = async <T extends string | boolean>(name: keyof SettingsFormType, value: T) => {
+    if (typeof value === "boolean") {
+      form.setValue(name, value as boolean); // For boolean fields
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      form.setValue(name, value as any); // For string fields
+    }
     const isValid = await form.trigger(name);
     if (isValid) {
-      updateSettingsStore({ ...form.getValues() }); // Update Zustand store
+      updateSettingsStore({ ...form.getValues() });
     }
   };
 
