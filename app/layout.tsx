@@ -10,6 +10,8 @@ import NextTopLoader from "nextjs-toploader";
 import Breadcrumbs from "./(layout)/(navigation)/Breadcrumbs";
 import Navbar from "./(layout)/(navigation)/Navbar";
 import "./globals.css";
+// import { Suspense } from "react";
+// import { PHProvider, PostHogPageview } from "@/components/providers/PostHog";
 
 const font = Inter({ subsets: ["latin"] });
 
@@ -29,6 +31,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className={font.className}>
         <NextTopLoader showSpinner={false} />
+        {/* <Suspense>
+          <PostHogPageview />
+        </Suspense>
+        <PHProvider> */}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {/* 2023-11-19: importing radix-ui/themes leads to errors regarding `Slot` not being exportet
            <Theme accentColor="indigo" grayColor="slate" panelBackground="solid" scaling="100%" radius="medium"> */}
@@ -48,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
           {/* </Theme> */}
         </ThemeProvider>
+        {/* </PHProvider> */}
       </body>
     </html>
   );
