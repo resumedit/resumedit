@@ -1,5 +1,5 @@
 import { getCurrentUserOrNull } from "@/actions/user";
-import WelcomeMessage from "@/app/(marketing)/(sections)/WelcomeMessage";
+import WelcomeMessage from "@/app/(marketing)/(home)/WelcomeMessage";
 import { SignIn, SignedIn, SignedOut } from "@clerk/nextjs";
 
 const SignInPage = async () => {

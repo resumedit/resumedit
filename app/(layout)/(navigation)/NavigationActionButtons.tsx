@@ -1,14 +1,7 @@
 import { getCurrentUserOrNull as getCurrentUserOrNull } from "@/actions/user";
 import { ActionButton } from "@/components/custom/ActionButton";
+import SettingsSheet from "@/components/settings/SettingsSheet";
 // import StyledLink from "@/components/StyledLink";
-// import {
-//   Sheet,
-//   SheetContent,
-//   SheetDescription,
-//   SheetHeader,
-//   // SheetTitle,
-//   SheetTrigger,
-// } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { User as PrismaUser } from "@prisma/client";
@@ -16,10 +9,13 @@ import Link from "next/link";
 import { ReactNode, Suspense } from "react";
 // import { HiOutlineMenuAlt2 } from "react-icons/hi";
 
-const ActionButtons = async ({ user }: { user: PrismaUser | undefined | null }) => {
+const NavigationActionButtons = async ({ user }: { user: PrismaUser | undefined | null }) => {
   const currentUser = user === undefined ? await getCurrentUserOrNull() : user;
   return (
     <div className="flex gap-4">
+      <div className="flex flex-wrap gap-x-4 gap-y-4 items-center">
+        <SettingsSheet />
+      </div>
       <Suspense fallback={<SignupNavigationSkeleton />}>
         <SignupNavigation user={currentUser}>
           <ActionButton variant="default">Sign up</ActionButton>
@@ -52,7 +48,7 @@ const ActionButtons = async ({ user }: { user: PrismaUser | undefined | null }) 
   );
 };
 
-export default ActionButtons;
+export default NavigationActionButtons;
 
 const SignupNavigationSkeleton = async () => {
   return <Skeleton className="h-[32px] pl-8 w-[32px]" />;

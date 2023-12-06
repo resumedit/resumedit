@@ -1,13 +1,8 @@
-/** @type {import('next').NextConfig} */
+// next.config.js
+const withMDX = require("@next/mdx")();
+
 const nextConfig = {
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "simon.heimlicher.com",
-      },
-    ],
-  },
+  pageExtensions: ["js", "jsx", "mdx", "ts", "tsx"],
 };
 
-module.exports = nextConfig;
+module.exports = withMDX(nextConfig);

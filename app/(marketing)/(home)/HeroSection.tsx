@@ -1,3 +1,5 @@
+// @/app/(marketing)/(home)/HeroSection.tsx
+
 import { getCurrentUserOrNull } from "@/actions/user";
 import { User as PrismaUser } from "@prisma/client";
 import WelcomeMessage from "./WelcomeMessage";

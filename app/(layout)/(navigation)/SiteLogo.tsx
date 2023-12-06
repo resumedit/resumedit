@@ -4,7 +4,7 @@ interface LogoProps {
   width?: number;
   height?: number;
 }
-const Logo = ({ width, height }: LogoProps) => {
+const SiteLogo = ({ width, height }: LogoProps) => {
   let logoWidth = 50;
   let logoHeight = 50;
   if (width) {
@@ -22,4 +22,4 @@ const Logo = ({ width, height }: LogoProps) => {
   );
 };
 
-export default Logo;
+export default SiteLogo;

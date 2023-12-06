@@ -32,6 +32,7 @@ yarn-error.log*
 
 # Depoloyment env files (if not covered by more general rules)
 deploy/**/.env*.*
+deploy/**/env*.*
 
 
 # vercel

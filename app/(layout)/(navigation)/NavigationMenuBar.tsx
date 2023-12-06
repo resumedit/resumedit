@@ -30,7 +30,7 @@ import Link from "next/link";
 //   },
 // ];
 
-export function MenuBar() {
+export function NavigationMenuBar() {
   return (
     <NavigationMenu>
       <NavigationMenuList className="space-x-2 md:space-x-4">

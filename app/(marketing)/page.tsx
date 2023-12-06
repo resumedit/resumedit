@@ -1,4 +1,6 @@
-import HeroSection from "./(sections)/HeroSection";
+// @/app/(marketing)/page.tsx
+
+import HeroSection from "./(home)/HeroSection";
 
 // export const absolutePathName = "/";
 

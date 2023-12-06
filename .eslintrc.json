@@ -20,6 +20,12 @@
       "parserOptions": {
         "sourceType": "script"
       }
+    },
+    {
+      "files": ["next.config.js"],
+      "rules": {
+        "@typescript-eslint/no-var-requires": "off"
+      }
     }
   ],
   "parser": "@typescript-eslint/parser",

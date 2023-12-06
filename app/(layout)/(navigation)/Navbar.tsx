@@ -1,21 +1,21 @@
 import { Logo } from "@/components/custom/Logo";
 import { User as PrismaUser } from "@prisma/client";
 import Link from "next/link";
-import ActionButtons from "./action-buttons";
-import { MenuBar } from "./navigation-menu";
+import NavigationActionButtons from "./NavigationActionButtons";
+import { NavigationMenuBar } from "./NavigationMenuBar";
 import SettingsDialog from "@/components/settings/SettingsDialog";
 
 const Navbar = ({ user }: { user?: PrismaUser }) => {
   return (
     <div className="pt-8 pb-4 flex flex-wrap gap-x-4 gap-y-4 justify-between">
-      <div className="flex flex-wrap gap-x-4 gap-y-4">
+      <div className="flex flex-wrap gap-x-4 gap-y-4 items-center">
         <Link href="/">
           <Logo className="mr-8" />
         </Link>
-        <MenuBar />
+        <NavigationMenuBar />
       </div>
       <SettingsDialog />
-      <ActionButtons user={user} />
+      <NavigationActionButtons user={user} />
     </div>
   );
 };

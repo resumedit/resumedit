@@ -1,5 +1,7 @@
+// @/app/(marketing)/(home)/WelcomeMessage.tsx
+
 import { getCurrentUserOrNull } from "@/actions/user";
-import { SignupNavigation } from "@/app/(layout)/(navigation)/action-buttons";
+import { SignupNavigation } from "@/app/(layout)/(navigation)/NavigationActionButtons";
 import { siteConfig } from "@/config/site";
 import { User as PrismaUser } from "@prisma/client";
 import { ActionButton } from "@/components/custom/ActionButton";
