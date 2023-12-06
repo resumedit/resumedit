@@ -1,17 +1,23 @@
 import { z } from "zod";
 import { idSchema } from "./id";
-import { OrganizationOutputType, organizationSchema } from "./organization";
-import { ResumeOutputType, resumeSchema } from "./resume";
 
-export const userSchema = z.object({
-  id: idSchema,
-  authProviderId: z.string(),
+export const userFormSchema = z.object({
   email: z.string().email().optional(),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  organizations: z.array(organizationSchema.store).default(Array<OrganizationOutputType>),
-  resumes: z.array(resumeSchema.store).default(Array<ResumeOutputType>),
 });
 
-export type UserSchemaInput = z.input<typeof userSchema>;
-export type UserSchemaOutput = z.output<typeof userSchema>;
+export const userInternalSchema = z.object({
+  id: idSchema,
+  authProviderId: z.string(),
+});
+
+export const userSchema = {
+  form: userFormSchema,
+  display: userFormSchema,
+  internal: userInternalSchema,
+  store: userFormSchema.merge(userInternalSchema),
+};
+
+export type UserSchemaInput = z.input<typeof userSchema.store>;
+export type UserSchemaOutput = z.output<typeof userSchema.store>;

@@ -2,7 +2,7 @@
 
 "use client";
 
-import { handleNestedItemListFromClient } from "@/actions/syncNestedItemL";
+import { handleNestedItemListFromClient } from "@/actions/syncNestedItemList";
 import { Button } from "@/components/ui/button";
 import { useNestedItemStore } from "@/contexts/NestedItemStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";

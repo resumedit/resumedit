@@ -15,9 +15,9 @@ import {
   NestedItemDescendantClientStateType,
   NestedItemDescendantDataUntypedType,
   NestedItemDisposition,
-  NestedItemStoreNameType,
+  NestedItemModelNameType,
 } from "@/types/nestedItem";
-import { ResumeActionType, ResumeItemClientStateType } from "@/types/resume";
+import { ResumeItemClientStateType } from "@/types/resume";
 import { Edit, Grip } from "lucide-react";
 import Link from "next/link";
 import { InputProps } from "react-editext";
@@ -25,10 +25,10 @@ import EditableField from "../nestedItem/utils/EditableField";
 import { Button } from "../ui/button";
 
 export interface NestedItemRecursiveListItemProps {
-  resumeAction: ResumeActionType;
+  canEdit: boolean;
   itemIsDragable: boolean;
   index: number;
-  itemModel: NestedItemStoreNameType;
+  itemModel: NestedItemModelNameType;
   item: NestedItemRecursiveStoreDescendantType<
     NestedItemDescendantClientStateType,
     NestedItemDescendantClientStateType
@@ -38,7 +38,7 @@ export interface NestedItemRecursiveListItemProps {
 }
 
 export default function NestedItemRecursiveListItem({
-  resumeAction,
+  canEdit,
   itemIsDragable,
   index,
   itemModel,
@@ -54,14 +54,14 @@ export default function NestedItemRecursiveListItem({
     transition,
   };
 
-  const descendantFormSchema = getItemSchema(itemModel, "form");
-  const descendantFormFields = getSchemaFields(itemModel, "display");
+  const itemFormSchema = getItemSchema(itemModel, "form");
+  const itemFormFields = getSchemaFields(itemModel, "display");
   const {
     // register,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(descendantFormSchema),
+    resolver: zodResolver(itemFormSchema),
   });
 
   const settingsStore = useSettingsStore();
@@ -99,7 +99,7 @@ export default function NestedItemRecursiveListItem({
           },
         )}
       >
-        {resumeAction === "edit" && itemModel === "user" && item.id !== undefined ? (
+        {canEdit && itemModel === "resume" && item.id !== undefined ? (
           <div className="h-full">
             <Link
               title={`Edit resume ${(item as unknown as ResumeItemClientStateType).name}`}
@@ -111,7 +111,7 @@ export default function NestedItemRecursiveListItem({
             </Link>
           </div>
         ) : null}
-        {resumeAction === "edit" && itemIsDragable ? (
+        {canEdit && itemIsDragable ? (
           <div
             className={cn("h-full flex items-center", {
               "hover:cursor-grab active:cursor-grabbing": itemIsDragable,
@@ -122,7 +122,7 @@ export default function NestedItemRecursiveListItem({
           </div>
         ) : null}
         <div className="w-full flex-1 flex gap-y-2 justify-between">
-          {descendantFormFields.map((field, index) => (
+          {itemFormFields.map((field, index) => (
             <div
               key={index}
               className="w-full text-shadow-dark dark:text-light-txt-1 text-dark-txt-1 dark:text-light-txt-4"
@@ -132,7 +132,7 @@ export default function NestedItemRecursiveListItem({
                 fieldName={field}
                 value={item[field as keyof NestedItemDescendantClientStateType] as string}
                 onSave={handleSave}
-                canEdit={resumeAction === "edit"}
+                canEdit={canEdit}
               />
             </div>
           ))}
@@ -188,7 +188,7 @@ export default function NestedItemRecursiveListItem({
             </table>
           </div>
         )}
-        {resumeAction === "edit" ? (
+        {canEdit && itemModel !== "user" ? (
           <div className="flex items-center gap-x-4 px-4 group">
             {/* /Delete Button */}
             <button

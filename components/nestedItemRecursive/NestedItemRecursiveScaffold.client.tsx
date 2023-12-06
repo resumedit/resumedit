@@ -13,7 +13,7 @@ import { AchievementClientStateType } from "@/types/achievement";
 import {
   NestedItemListType,
   NestedItemServerStateType,
-  NestedItemStoreNameType,
+  NestedItemModelNameType,
   getDescendantModel,
 } from "@/types/nestedItem";
 import { OrganizationClientStateType } from "@/types/organization";
@@ -24,11 +24,11 @@ import { NestedItemServerComponentProps } from "../nestedItem/NestedItemList.ser
 
 interface NestedItemRecursiveScaffoldProps {
   item: NestedItemListType<NestedItemServerStateType, NestedItemServerStateType>;
-  level: NestedItemStoreNameType;
+  level: NestedItemModelNameType;
 }
 
 const NestedItemRecursiveScaffold = ({ item, level }: NestedItemRecursiveScaffoldProps) => {
-  const renderItemBasedOnLevel = (item: NestedItemServerStateType, level: NestedItemStoreNameType) => {
+  const renderItemBasedOnLevel = (item: NestedItemServerStateType, level: NestedItemModelNameType) => {
     switch (level) {
       case "resume":
         // Render resume details

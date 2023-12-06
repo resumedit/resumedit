@@ -8,9 +8,9 @@ import {
   NestedItemDisposition,
   NestedItemListType,
   NestedItemModelAccessor,
+  NestedItemModelNameType,
   NestedItemOrderableChildClientStateType,
   NestedItemServerToClientType,
-  NestedItemStoreNameType,
   getDescendantModel,
 } from "@/types/nestedItem";
 import { Draft } from "immer";
@@ -53,7 +53,7 @@ export type NestedItemRecursiveActions<C extends NestedItemDescendantClientState
   getItemModelStore: (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     store: NestedItemRecursiveStore<any, any>,
-    itemModel: NestedItemStoreNameType,
+    itemModel: NestedItemModelNameType,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) => NestedItemRecursiveStore<any, any>;
   setItemData: (data: NestedItemDescendantDataUntypedType, clientId: ClientIdType) => void;
@@ -142,7 +142,7 @@ export const createNestedItemRecursiveStore = <
         getItemModelStore: (
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           store: NestedItemRecursiveStore<any, any>,
-          itemModel: NestedItemStoreNameType,
+          itemModel: NestedItemModelNameType,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ): NestedItemRecursiveStore<any, any> => {
           // Base case: If the current state's itemModel matches the target itemModel

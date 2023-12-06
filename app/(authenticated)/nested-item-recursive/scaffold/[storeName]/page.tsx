@@ -3,11 +3,11 @@
 import { getCurrentUserIdOrNull } from "@/actions/user";
 import NestedItemRecursiveScaffoldServerComponent from "@/components/nestedItemRecursive/NestedItemRecursiveScaffold.server";
 import { Skeleton } from "@/components/ui/skeleton";
-import { NestedItemStoreNameType } from "@/types/nestedItem";
+import { NestedItemModelNameType } from "@/types/nestedItem";
 import { Suspense } from "react";
 
 export interface NestedItemPageProps {
-  params: { storeName: NestedItemStoreNameType };
+  params: { storeName: NestedItemModelNameType };
 }
 
 export default async function NestedItemRecursiveScaffoldPage({ params: { storeName } }: NestedItemPageProps) {

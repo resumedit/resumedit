@@ -15,7 +15,7 @@ import {
   NestedItemDescendantDataUntypedType,
   NestedItemClientStateType,
   NestedItemDisposition,
-  NestedItemStoreNameType,
+  NestedItemModelNameType,
 } from "@/types/nestedItem";
 import { ResumeActionType, ResumeItemClientStateType } from "@/types/resume";
 import { Edit, Grip } from "lucide-react";
@@ -25,7 +25,7 @@ import { Button } from "../ui/button";
 import EditableField from "./utils/EditableField";
 
 export interface NestedItemListItemProps {
-  storeName: NestedItemStoreNameType;
+  storeName: NestedItemModelNameType;
   resumeAction: ResumeActionType;
   descendantsAreDragable: boolean;
   index: number;

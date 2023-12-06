@@ -8,9 +8,8 @@ import {
   NestedItemDescendantClientStateType,
   NestedItemDescendantDataType,
   NestedItemDescendantDataUntypedType,
-  NestedItemStoreNameType,
+  NestedItemModelNameType,
 } from "@/types/nestedItem";
-import { ResumeActionType } from "@/types/resume";
 import { Plus } from "lucide-react";
 import { Dispatch, SetStateAction, useState } from "react";
 import { InputProps } from "react-editext";
@@ -19,25 +18,25 @@ import { Button } from "../ui/button";
 import { toast } from "../ui/use-toast";
 
 interface NestedItemRecursiveListItemInputProps {
-  resumeAction: ResumeActionType;
+  canEdit: boolean;
   editingInput: boolean;
   setEditingInput: Dispatch<SetStateAction<boolean>>;
-  itemModel: NestedItemStoreNameType;
+  itemModel: NestedItemModelNameType;
   itemDraft: NestedItemDescendantDataType<NestedItemDescendantClientStateType>;
   updateItemDraft: (itemData: NestedItemDescendantDataUntypedType) => void;
   commitItemDraft: () => void;
 }
 
 export default function NestedItemRecursiveListItemInput({
-  // resumeAction,
+  canEdit,
   editingInput /* setEditingInput, */,
   itemModel: itemModel,
   itemDraft: itemDraft,
   updateItemDraft,
   commitItemDraft,
 }: NestedItemRecursiveListItemInputProps) {
-  const descendantFormSchema = getItemSchema(itemModel, "form");
-  const descendantFormFields = getSchemaFields(itemModel, "display");
+  const itemFormSchema = getItemSchema(itemModel, "form");
+  const itemFormFields = getSchemaFields(itemModel, "display");
 
   const [inputIsValid, setInputIsValid] = useState(false);
 
@@ -48,11 +47,11 @@ export default function NestedItemRecursiveListItemInput({
   // Initialize local state for field values
   const [fieldValues, setFieldValues] = useState(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    descendantFormFields.reduce((acc, field) => ({ ...acc, [field]: "" }), {} as Record<string, any>),
+    itemFormFields.reduce((acc, field) => ({ ...acc, [field]: "" }), {} as Record<string, any>),
   );
 
-  const validate = (descendantDraft: object) => {
-    const validationStatus = descendantFormSchema.safeParse({ ...descendantDraft });
+  const validate = (itemDraft: object) => {
+    const validationStatus = itemFormSchema.safeParse({ ...itemDraft });
     return validationStatus;
   };
 
@@ -66,7 +65,7 @@ export default function NestedItemRecursiveListItemInput({
       const fieldName = extractFieldName(event.target.name);
       let newValue: string | number = event.target.value;
       // Check if the field is a number and parse it
-      if (isNumberField(descendantFormSchema, fieldName)) {
+      if (isNumberField(itemFormSchema, fieldName)) {
         newValue = parseFloat(newValue) || 0; // Default to 0 if parsing fails
       }
 
@@ -86,7 +85,7 @@ export default function NestedItemRecursiveListItemInput({
       let newValue: string | number = value;
 
       // Check if the field is a number and parse it
-      if (isNumberField(descendantFormSchema, fieldName)) {
+      if (isNumberField(itemFormSchema, fieldName)) {
         newValue = parseFloat(newValue) || 0; // Default to 0 if parsing fails
       }
 
@@ -105,15 +104,10 @@ export default function NestedItemRecursiveListItemInput({
     if (validationStatus.success) {
       commitItemDraft();
       // Reset field values after commit
-      setFieldValues(descendantFormFields.reduce((acc, field) => ({ ...acc, [field]: "" }), {}));
+      setFieldValues(itemFormFields.reduce((acc, field) => ({ ...acc, [field]: "" }), {}));
       setInputIsValid(false);
     } else {
-      console.log(
-        `handleSubmit: Validation failed. descendantDraft:`,
-        itemDraft,
-        `validationStatus:`,
-        validationStatus,
-      );
+      console.log(`handleSubmit: Validation failed. itemDraft:`, itemDraft, `validationStatus:`, validationStatus);
       toast({ title: `Validation failed`, description: JSON.stringify(validationStatus) });
     }
     return validationStatus.success;
@@ -134,10 +128,10 @@ export default function NestedItemRecursiveListItemInput({
   // };
 
   return (
-    <div className="my-2  px-4 flex flex-col gap-y-2">
+    <div className="flex flex-col gap-y-2">
       <div className="flex gap-x-2">
         <div className="flex-1 flex gap-y-2" /* onMouseEnter={handleFocus} onMouseLeave={handleBlur} */>
-          {descendantFormFields.map((fieldName) => (
+          {itemFormFields.map((fieldName) => (
             <EditableInputField
               key={fieldName}
               fieldName={`${itemModel}-${fieldName}`}
@@ -146,6 +140,7 @@ export default function NestedItemRecursiveListItemInput({
               onChange={handleChange}
               onSave={handleSave}
               editing={editingInput}
+              canEdit={canEdit}
               className="flex-1"
             />
           ))}

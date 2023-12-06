@@ -1,19 +1,22 @@
 // @/lib/utils/nestedItemListUtils.ts
 
 import { achievementSchema } from "@/schemas/achievement";
-import { itemSchema } from "@/schemas/item";
 import { organizationSchema } from "@/schemas/organization";
 import { resumeSchema } from "@/schemas/resume";
 import { roleSchema } from "@/schemas/role";
-import { NestedItemStoreNameType } from "@/types/nestedItem";
+import { userSchema } from "@/schemas/user";
+import { NestedItemModelNameType } from "@/types/nestedItem";
 import { ZodNumber, ZodObject, ZodTypeAny } from "zod";
 
 export type SchemaKindType = keyof Record<"form" | "display", ZodTypeAny>;
 
-export const getItemSchema = (storeName: NestedItemStoreNameType, schemaKind: SchemaKindType) => {
+export const getItemSchema = (storeName: NestedItemModelNameType, schemaKind: SchemaKindType) => {
   let schema: Record<SchemaKindType, ZodTypeAny>;
 
   switch (storeName) {
+    case "user":
+      schema = userSchema;
+      break;
     case "resume":
       schema = resumeSchema;
       break;
@@ -27,14 +30,14 @@ export const getItemSchema = (storeName: NestedItemStoreNameType, schemaKind: Sc
       schema = achievementSchema;
       break;
     default:
-      schema = itemSchema;
+      throw Error(`getItemSchema(storeName="${storeName}", schemaKind="${schemaKind}"): Schema not found`);
       break;
   }
 
   return schema[schemaKind];
 };
 
-export const getSchemaFields = (storeName: NestedItemStoreNameType, schemaKind: SchemaKindType): string[] => {
+export const getSchemaFields = (storeName: NestedItemModelNameType, schemaKind: SchemaKindType): string[] => {
   const schema = getItemSchema(storeName, schemaKind);
   const shape = schema._def.shape();
   return Object.keys(shape);

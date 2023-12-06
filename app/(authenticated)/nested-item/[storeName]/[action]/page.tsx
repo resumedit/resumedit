@@ -5,12 +5,12 @@
 import { getCurrentUserIdOrNull } from "@/actions/user";
 import NestedItemServerComponent from "@/components/nestedItem/NestedItemList.server";
 import { Skeleton } from "@/components/ui/skeleton";
-import { NestedItemStoreNameType } from "@/types/nestedItem";
+import { NestedItemModelNameType } from "@/types/nestedItem";
 import { ResumeActionType } from "@/types/resume";
 import { Suspense } from "react";
 
 export interface NestedItemActionPageProps {
-  params: { storeName: NestedItemStoreNameType; action: ResumeActionType };
+  params: { storeName: NestedItemModelNameType; action: ResumeActionType };
 }
 
 export default async function NestedItemActionPage({ params: { storeName, action } }: NestedItemActionPageProps) {

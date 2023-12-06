@@ -2,44 +2,66 @@
 
 "use client";
 
-import { handleNestedItemListFromClient } from "@/actions/syncNestedItemL";
+import { handleNestedItemRecursiveListFromClient } from "@/actions/syncNestedItemRecursiveList";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import { useNestedItemStore } from "@/contexts/NestedItemStoreContext";
+import { useNestedItemRecursiveStore } from "@/contexts/NestedItemRecursiveStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
-import { useSyncNestedItemList } from "@/hooks/useSyncNestedItemList";
+import { useSyncNestedItemRecursiveList } from "@/hooks/useSyncNestedItemRecursiveList";
 import { dateToISOLocal } from "@/lib/utils/formatDate";
-import { NestedItemState } from "@/stores/nestedItemStore/createNestedItemStore";
-import { NestedItemClientStateType } from "@/types/nestedItem";
+import { NestedItemRecursiveState } from "@/stores/nestedItemRecursiveStore/createNestedItemRecursiveStore";
+import { NestedItemDescendantClientStateType } from "@/types/nestedItem";
 import { useRef } from "react";
 
 export function NestedItemRecursiveListSynchronization() {
   const storeName = useStoreName();
-  const store = useNestedItemStore(storeName);
+  const store = useNestedItemRecursiveStore(storeName);
 
   const synchronizeButtonRef = useRef<HTMLButtonElement>(null);
 
   const rootState = store((state) => state);
-  const itemModel = store((state) => state.itemModel);
-  const descendants = store((state) => state.descendants);
   const updateStoreWithServerData = store((state) => state.updateStoreWithServerData);
 
   async function sendNestedItemToServer(e: React.SyntheticEvent) {
     e.preventDefault();
 
-    const clientList = { ...rootState, descendants } as NestedItemState<
-      NestedItemClientStateType,
-      NestedItemClientStateType
-    >;
-
-    if (!rootState || !descendants) {
-      throw Error(
-        `sendNestedItemToServer(): storeName=${storeName} itemModel=${itemModel}, rootState=${rootState}, descendants=${descendants})`,
-      );
+    if (!rootState) {
+      throw Error(`sendNestedItemToServer(): storeName=${storeName}, rootState=${rootState})`);
     }
 
+    // Destructure only the necessary state properties
+    const {
+      clientId,
+      id,
+      parentId,
+      createdAt,
+      lastModified,
+      deletedAt,
+      disposition,
+      itemModel,
+      descendantDraft,
+      descendants,
+    } = rootState;
+
+    // Reconstruct the client state with only the necessary properties
+    const clientState: NestedItemRecursiveState<
+      NestedItemDescendantClientStateType,
+      NestedItemDescendantClientStateType
+    > = {
+      clientId,
+      id,
+      parentId,
+      createdAt,
+      lastModified,
+      deletedAt,
+      disposition,
+      itemModel,
+      descendantDraft,
+      descendants,
+    };
+
     const clientModified = rootState.lastModified;
-    const updatedItemList = await handleNestedItemListFromClient(clientList);
+    const updatedItemList = await handleNestedItemRecursiveListFromClient(clientState);
 
     if (updatedItemList) {
       updateStoreWithServerData(updatedItemList);
@@ -49,19 +71,19 @@ export function NestedItemRecursiveListSynchronization() {
         toast({
           title: `Synchronized`,
           description: `Local: ${dateToISOLocal(new Date(clientModified))}: ${
-            clientList.descendants.length
+            clientState.descendants.length
           }\nServer: ${dateToISOLocal(serverModified)}: ${updatedItemList.descendants.length}`,
         });
       }
     }
   }
 
-  useSyncNestedItemList();
+  useSyncNestedItemRecursiveList();
 
   return !store ? null : (
     <div>
       <form
-        className="px-4 py-2 mt-8 bg-elem-light dark:bg-elem-dark-1 flex items-center gap-x-3 rounded-md"
+        className="py-2 mt-8 bg-elem-light dark:bg-elem-dark-1 flex items-center gap-x-3 rounded-md"
         name="setSyncIntervalForm"
       >
         <Button onClick={sendNestedItemToServer} ref={synchronizeButtonRef}>

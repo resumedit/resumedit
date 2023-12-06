@@ -5,10 +5,10 @@
 import { prisma } from "@/prisma/client";
 import { IdSchemaType } from "@/schemas/id";
 import { ItemServerStateType } from "@/types/item";
-import { NestedItemListType, NestedItemStoreNameType, getDescendantModel, getModelAccessor } from "@/types/nestedItem";
+import { NestedItemListType, NestedItemModelNameType, getDescendantModel, getModelAccessor } from "@/types/nestedItem";
 import { PrismaClient } from "@prisma/client";
 
-export async function getItem(model: NestedItemStoreNameType, id: IdSchemaType, prismaTransaction?: PrismaClient) {
+export async function getItem(model: NestedItemModelNameType, id: IdSchemaType, prismaTransaction?: PrismaClient) {
   const prismaClient = prismaTransaction || prisma;
   const prismaModelInstance = getModelAccessor(model, prismaClient);
   const item = await prismaModelInstance.findUnique({
@@ -18,7 +18,7 @@ export async function getItem(model: NestedItemStoreNameType, id: IdSchemaType, 
 }
 
 export async function getItemLastModified(
-  model: NestedItemStoreNameType,
+  model: NestedItemModelNameType,
   id: IdSchemaType,
   prismaTransaction?: PrismaClient,
 ) {
@@ -32,7 +32,7 @@ export async function getItemLastModified(
 }
 
 export async function getItemsByParentId(
-  model: NestedItemStoreNameType,
+  model: NestedItemModelNameType,
   parentId: IdSchemaType,
   prismaTransaction?: PrismaClient,
 ): Promise<ItemServerStateType[]> {
@@ -48,7 +48,7 @@ export async function getItemsByParentId(
 }
 
 export async function getNestedItemList(
-  itemModel: NestedItemStoreNameType,
+  itemModel: NestedItemModelNameType,
   itemId: IdSchemaType,
   prismaTransaction?: PrismaClient,
 ): Promise<NestedItemListType<ItemServerStateType, ItemServerStateType>> {
@@ -95,7 +95,7 @@ export async function getNestedItemList(
 
 // Recursive function to soft delete an item and all its descendants
 export async function softDeleteAndCascadeItem(
-  model: NestedItemStoreNameType,
+  model: NestedItemModelNameType,
   itemId: string,
   prismaTransaction?: PrismaClient,
 ): Promise<void> {

@@ -12,30 +12,36 @@ import { getItemId } from "@/schemas/id";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import {
   NestedItemListType,
+  NestedItemModelNameType,
   NestedItemServerStateType,
-  NestedItemStoreNameType,
+  getDescendantModel,
   getParentModel,
 } from "@/types/nestedItem";
 import { ResumeActionType } from "@/types/resume";
 import { ReactNode, useEffect } from "react";
-import { NestedItemRecursiveServerComponentProps } from "./NestedItemRecursive.server";
-import NestedItemRecursiveList from "./NestedItemRecursiveList";
-import NestedItemRecursiveListStoreState from "./NestedItemRecursiveListStoreState";
+import NestedItemRecursiveDescendantList from "./NestedItemRecursiveDescendantList";
+import NestedItemRecursiveItem from "./NestedItemRecursiveItem";
+import NestedItemRecursiveItemInput from "./NestedItemRecursiveItemInput";
 import { NestedItemRecursiveListSynchronization } from "./NestedItemRecursiveListSynchronization";
 
-export interface NestedItemRecursiveProps extends NestedItemRecursiveClientContextProps {}
+export interface NestedItemRecursiveRenderProps extends NestedItemRecursiveClientContextProps {}
+function NestedItemRecursiveRender(props: NestedItemRecursiveRenderProps): ReactNode {
+  const { serverState, rootItemModel, leafItemModel, resumeAction } = props;
 
-function NestedItemRecursive(props: NestedItemRecursiveProps): ReactNode {
-  const level: NestedItemStoreNameType = props.serverState.itemModel;
+  const { id, itemModel, descendants } = serverState;
+
   const settingsStore = useSettingsStore();
-  const { showNestedItemIdentifiers, showNestedItemInternals, showNestedItemSynchronization } = settingsStore;
+  const { showNestedItemIdentifiers, showNestedItemSynchronization } = settingsStore;
   const showIdentifiers = process.env.NODE_ENV === "development" && showNestedItemIdentifiers;
-  const showListItemInternals = process.env.NODE_ENV === "development" && showNestedItemInternals;
   const showSynchronization = process.env.NODE_ENV === "development" && showNestedItemSynchronization;
-  const parentModel = getParentModel(level);
+  const parentModel = getParentModel(itemModel);
+  const descendantModel = getDescendantModel(itemModel);
+  const atRootLevel = itemModel === rootItemModel;
+  const itemAtLeafLevel = itemModel === leafItemModel;
+  const descendantsAtLeafLevel = descendantModel === leafItemModel;
 
-  const renderItemBasedOnLevel = ({ serverState, resumeAction }: NestedItemRecursiveProps): ReactNode => {
-    const level: NestedItemStoreNameType = serverState.itemModel;
+  const renderItemBasedOnLevel = ({ serverState }: NestedItemRecursiveRenderProps): ReactNode => {
+    const level: NestedItemModelNameType = serverState.itemModel;
     return (
       <>
         {showIdentifiers ? (
@@ -44,31 +50,34 @@ function NestedItemRecursive(props: NestedItemRecursiveProps): ReactNode {
           </h2>
         ) : null}
         <div className="space-y-1">
-          {resumeAction === "edit" && showSynchronization ? <NestedItemRecursiveListSynchronization /> : null}
-          <NestedItemRecursiveList {...props} />
-          {showListItemInternals ? (
-            <NestedItemRecursiveListStoreState storeName={level} serverState={serverState} />
-          ) : null}
+          <NestedItemRecursiveItem {...props} />
+          {!descendantsAtLeafLevel ? null : <NestedItemRecursiveDescendantList {...props} />}
         </div>
       </>
     );
   };
 
-  return (
+  return !descendantModel ? null : (
     <div>
+      {atRootLevel && resumeAction === "edit" && showSynchronization ? (
+        <NestedItemRecursiveListSynchronization />
+      ) : null}
       {renderItemBasedOnLevel({ ...props })}
-      {props.serverState.descendants?.map((descendant) => (
-        <NestedItemRecursive key={descendant.id} {...{ ...props, serverState: descendant }} />
-      ))}
+      {itemAtLeafLevel ? null : (
+        <>
+          {descendants?.map((descendant) => (
+            <NestedItemRecursiveRender key={descendant.id} {...{ ...props, serverState: descendant }} />
+          ))}
+          <NestedItemRecursiveItemInput
+            {...{ ...props, serverState: { ...serverState, parentId: id, itemModel: descendantModel } }}
+          />
+        </>
+      )}
     </div>
   );
 }
 
-interface NestedItemRecursiveClientContextProps {
-  serverState: NestedItemListType<NestedItemServerStateType, NestedItemServerStateType>;
-  resumeAction: ResumeActionType;
-}
-
+interface NestedItemRecursiveClientContextProps extends NestedItemRecursiveClientComponentProps {}
 function NestedItemRecursiveClientContext(props: NestedItemRecursiveClientContextProps) {
   const globalStoreName = useStoreName();
 
@@ -86,20 +95,20 @@ function NestedItemRecursiveClientContext(props: NestedItemRecursiveClientContex
 
   return (
     <div className="space-y-1">
-      <NestedItemRecursive {...props} />
+      <NestedItemRecursiveRender {...props} />
     </div>
   );
 }
 
-export interface NestedItemRecursiveClientComponentProps
-  extends Omit<NestedItemRecursiveServerComponentProps, "parentId" | "storeName"> {
-  resumeAction?: ResumeActionType;
+export interface NestedItemRecursiveClientComponentProps {
   serverState: NestedItemListType<NestedItemServerStateType, NestedItemServerStateType>;
+  rootItemModel: NestedItemModelNameType;
+  leafItemModel: NestedItemModelNameType;
+  resumeAction: ResumeActionType;
 }
 
 const NestedItemRecursiveClientComponent = (props: NestedItemRecursiveClientComponentProps) => {
   const storeVersion = 1;
-  const resumeAction = props?.resumeAction ? props.resumeAction : "view";
 
   const itemModel = props.serverState.itemModel;
   const parentClientId = getItemId();
@@ -107,17 +116,13 @@ const NestedItemRecursiveClientComponent = (props: NestedItemRecursiveClientComp
   const parentId = props.serverState.parentId;
   const id = props.serverState.id;
 
-  return !parentId ? null : !id ? (
-    <span>
-      Please create a resume owned by user with <code>userId=parentId=&quot;{parentId}&quot;</code> first.
-    </span>
-  ) : (
-    <ResumeActionProvider resumeAction={resumeAction}>
+  return (
+    <ResumeActionProvider resumeAction={props.resumeAction}>
       <StoreNameProvider storeName={`${props.serverState.itemModel}`}>
         <NestedItemRecursiveStoreProvider
-          configs={[{ itemModel: itemModel, parentClientId, clientId, parentId, id, storeVersion }]}
+          configs={[{ itemModel, parentClientId, clientId, parentId, id, storeVersion }]}
         >
-          <NestedItemRecursiveClientContext {...{ ...props, resumeAction: resumeAction }} />
+          <NestedItemRecursiveClientContext {...props} />
         </NestedItemRecursiveStoreProvider>
       </StoreNameProvider>
     </ResumeActionProvider>

@@ -153,7 +153,7 @@ type PrismaModelMethodType = {
   findMany: (args: any) => Promise<any>;
 };
 
-type NestedItemModelNameType = (typeof nestedItemModelHierarchy)[number];
+export type NestedItemModelNameType = (typeof nestedItemModelHierarchy)[number];
 type PrismaModelMethods = {
   [K in NestedItemModelNameType]: PrismaModelMethodType;
 };
@@ -198,8 +198,6 @@ export type NestedItemListType<I, C> = I & {
 export const parentIdKeys = generateParentIdKeys();
 
 type ParentIdKey = `${keyof NestedItemModelAccessor}Id`;
-
-export type NestedItemStoreNameType = keyof NestedItemModelAccessor;
 
 export function stripFieldsForDatabase<T extends NestedItemClientToServerType>(
   item: T,

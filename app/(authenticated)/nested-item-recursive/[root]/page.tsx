@@ -1,20 +1,22 @@
+// @/app/(authenticated)/nestedItemRecursive/[root]/page.tsx
+
 "use server";
 
 import { getCurrentUserIdOrNull } from "@/actions/user";
 import NestedItemRecursiveServerComponent from "@/components/nestedItemRecursive/NestedItemRecursive.server";
 import { Skeleton } from "@/components/ui/skeleton";
-import { NestedItemStoreNameType } from "@/types/nestedItem";
+import { NestedItemModelNameType } from "@/types/nestedItem";
 import { Suspense } from "react";
 
 export interface NestedItemRecursivePageProps {
-  params: { storeName: NestedItemStoreNameType };
+  params: { root: NestedItemModelNameType };
 }
 
-export default async function NestedItemRecursivePage({ params: { storeName } }: NestedItemRecursivePageProps) {
+export default async function NestedItemRecursivePage({ params: { root } }: NestedItemRecursivePageProps) {
   const userId = await getCurrentUserIdOrNull();
   return !userId ? null : (
     <Suspense fallback={<NestedItemSkeleton />}>
-      <NestedItemRecursiveServerComponent storeName={storeName} parentId={userId} />
+      <NestedItemRecursiveServerComponent rootItemModel={root} parentId={userId} />
     </Suspense>
   );
 }

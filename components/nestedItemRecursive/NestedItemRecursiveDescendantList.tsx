@@ -1,4 +1,4 @@
-// @/components/nestedItemRecursive/NestedItemRecursiveList.tsx
+// @/components/nestedItemRecursive/NestedItemRecursiveDescendantList.tsx
 
 import { useNestedItemRecursiveStore } from "@/contexts/NestedItemRecursiveStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
@@ -28,23 +28,15 @@ import NestedItemRecursiveListItem from "./NestedItemRecursiveListItem";
 import NestedItemRecursiveListItemInput from "./NestedItemRecursiveListItemInput";
 
 interface NestedItemRecursiveDescendantListProps extends NestedItemRecursiveRenderProps {}
-function NestedItemRecursiveDescendantList({ serverState, resumeAction }: NestedItemRecursiveDescendantListProps) {
+export default function NestedItemRecursiveDescendantList({
+  serverState,
+  resumeAction,
+}: NestedItemRecursiveDescendantListProps) {
   const canEdit = resumeAction === "edit";
   const [editingInput, setEditingInput] = useState(canEdit);
   const settingsStore = useSettingsStore();
   const { showNestedItemInternals } = settingsStore;
   const showListItemInternals = process.env.NODE_ENV === "development" && showNestedItemInternals;
-
-  // const descendants = serverState.descendants;
-  // const markDescendantAsDeleted = () => {
-  //   console.log(`markDescendantAsDeleted`);
-  // };
-  // const reArrangeDescendants = () => {
-  //   console.log(`reArrangeDescendants`);
-  // };
-  // const resetDescendantsOrderValues = () => {
-  //   console.log(`resetDescendantsOrderValues`);
-  // };
 
   const itemModel = serverState.itemModel;
   const descendantModel = getDescendantModel(itemModel);
@@ -96,7 +88,7 @@ function NestedItemRecursiveDescendantList({ serverState, resumeAction }: Nested
 
   return (
     <>
-      {resumeAction === "edit" && showListItemInternals ? (
+      {canEdit && showListItemInternals ? (
         <button
           className="px-1 border-2 text-primary rounded-md"
           name="resetDescendantsOrderValues"
@@ -116,7 +108,7 @@ function NestedItemRecursiveDescendantList({ serverState, resumeAction }: Nested
         onDragEnd={handleDragEnd}
       >
         <ul className="flex flex-col bg-elem-light dark:bg-elem-dark-1 overflow-auto">
-          {descendantModel && resumeAction === "edit" ? (
+          {descendantModel && canEdit ? (
             <NestedItemRecursiveListItemInput
               itemModel={descendantModel}
               itemDraft={descendantDraft}
@@ -163,52 +155,5 @@ function NestedItemRecursiveDescendantList({ serverState, resumeAction }: Nested
         </ul>
       </DndContext>
     </>
-  );
-}
-
-export default function NestedItemRecursiveList(props: NestedItemRecursiveRenderProps) {
-  const { serverState, resumeAction } = props;
-  const canEdit = resumeAction === "edit";
-  // const [editingInput, setEditingInput] = useState(canEdit);
-  const storeName = useStoreName();
-  const store = useNestedItemRecursiveStore(storeName);
-  const descendants = store((state) => state.descendants);
-  const setItemData = store((state) => state.setItemData);
-  const markItemAsDeleted = store((state) => state.markItemAsDeleted);
-
-  const itemModel = serverState.itemModel;
-
-  // const descendants = serverState.descendants;
-  // const markDescendantAsDeleted = () => {
-  //   console.log(`markDescendantAsDeleted`);
-  // };
-
-  // const settingsStore = useSettingsStore();
-  // const { showNestedItemInternals } = settingsStore;
-  // const showListItemInternals = process.env.NODE_ENV === "development" && showNestedItemInternals;
-
-  return (
-    <div
-      className="bg-elem-light dark:bg-elem-dark-1 mt-5 mb-5 rounded-md shadow-2xl shadow-shadow-light
-     dark:shadow-black overflow-hidden"
-    >
-      <div>
-        <NestedItemRecursiveListItem
-          index={0}
-          itemModel={itemModel}
-          item={
-            serverState as NestedItemRecursiveStoreDescendantType<
-              NestedItemDescendantClientStateType,
-              NestedItemDescendantClientStateType
-            >
-          }
-          setItemData={setItemData}
-          markItemAsDeleted={markItemAsDeleted}
-          itemIsDragable={false}
-          canEdit={canEdit}
-        />
-      </div>
-      {descendants ? null : <NestedItemRecursiveDescendantList {...props} />}
-    </div>
   );
 }

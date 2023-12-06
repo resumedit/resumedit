@@ -1,16 +1,16 @@
-import { handleNestedItemListFromClient } from "@/actions/syncNestedItemList";
+import { handleNestedItemRecursiveListFromClient } from "@/actions/syncNestedItemRecursiveList";
 import { toast } from "@/components/ui/use-toast";
-import { useNestedItemStore } from "@/contexts/NestedItemStoreContext";
+import { useNestedItemRecursiveStore } from "@/contexts/NestedItemRecursiveStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { dateToISOLocal } from "@/lib/utils/formatDate";
-import { NestedItemState } from "@/stores/nestedItemStore/createNestedItemStore";
+import { NestedItemRecursiveState } from "@/stores/nestedItemRecursiveStore/createNestedItemRecursiveStore";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
 import { NestedItemDescendantClientStateType } from "@/types/nestedItem";
 import { useCallback, useEffect } from "react";
 
-export function useSyncNestedItemList() {
+export function useSyncNestedItemRecursiveList() {
   const storeName = useStoreName();
-  const store = useNestedItemStore(storeName);
+  const store = useNestedItemRecursiveStore(storeName);
 
   const rootState = store((state) => state);
   const descendants = store((state) => state.descendants);
@@ -20,12 +20,12 @@ export function useSyncNestedItemList() {
 
   const syncItems = useCallback(async () => {
     // Send the entire item list
-    const clientList = { ...rootState, descendants } as NestedItemState<
+    const clientList = { ...rootState, descendants } as NestedItemRecursiveState<
       NestedItemDescendantClientStateType,
       NestedItemDescendantClientStateType
     >;
     const clientModified = clientList.lastModified;
-    const updatedItemList = await handleNestedItemListFromClient(clientList);
+    const updatedItemList = await handleNestedItemRecursiveListFromClient(clientList);
 
     if (updatedItemList) {
       updateStoreWithServerData(updatedItemList);

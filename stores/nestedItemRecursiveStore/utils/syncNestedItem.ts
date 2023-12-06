@@ -10,7 +10,7 @@ import { ModificationTimestampType } from "@/types/timestamp";
 import { Draft } from "immer";
 import { NestedItemStore } from "../createNestedItemRecursiveStore";
 
-import { handleNestedItemListFromClient } from "@/actions/syncNestedItemL";
+import { handleNestedItemListFromClient } from "@/actions/syncNestedItemList";
 import { toast } from "@/components/ui/use-toast";
 import { dateToISOLocal } from "@/lib/utils/formatDate";
 import { NestedItemHookType } from "../createNestedItemRecursiveStore";
