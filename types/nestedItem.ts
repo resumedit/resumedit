@@ -122,7 +122,8 @@ export function getParentModel(model: keyof NestedItemModelAccessor): keyof Nest
   if (entry) {
     return entry.parent;
   }
-  throw new Error(`getParentModel(model=${model}): model not found`);
+  return null;
+  // throw new Error(`getParentModel(model=${model}): model not found`);
 }
 
 /**
@@ -135,7 +136,8 @@ export function getDescendantModel(model: keyof NestedItemModelAccessor): keyof 
   if (entry) {
     return entry.child;
   }
-  throw new Error(`getDescendantModel(model=${model}): model not found`);
+  return null;
+  // throw new Error(`getDescendantModel(model=${model}): model not found`);
 }
 
 // Define a type that maps model names to Prisma model method types
