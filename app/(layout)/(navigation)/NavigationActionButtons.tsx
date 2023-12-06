@@ -1,5 +1,6 @@
 import { getCurrentUserOrNull as getCurrentUserOrNull } from "@/actions/user";
 import { ActionButton } from "@/components/custom/ActionButton";
+import { DarkModeToggle } from "@/components/custom/DarkModeToggle";
 import SettingsSheet from "@/components/settings/SettingsSheet";
 // import StyledLink from "@/components/StyledLink";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +16,9 @@ const NavigationActionButtons = async ({ user }: { user: PrismaUser | undefined 
     <div className="flex gap-4">
       <div className="flex flex-wrap gap-x-4 gap-y-4 items-center">
         <SettingsSheet />
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-4 items-center">
+        <DarkModeToggle />
       </div>
       <Suspense fallback={<SignupNavigationSkeleton />}>
         <SignupNavigation user={currentUser}>
@@ -50,11 +54,11 @@ const NavigationActionButtons = async ({ user }: { user: PrismaUser | undefined 
 
 export default NavigationActionButtons;
 
-const SignupNavigationSkeleton = async () => {
+async function SignupNavigationSkeleton() {
   return <Skeleton className="h-[32px] pl-8 w-[32px]" />;
-};
+}
 
-export const SignupNavigation = async ({
+export async function SignupNavigation({
   children,
   authenticated,
   user,
@@ -62,7 +66,7 @@ export const SignupNavigation = async ({
   children: ReactNode;
   authenticated?: ReactNode;
   user: PrismaUser | undefined | null;
-}): Promise<React.ReactElement | null> => {
+}): Promise<React.ReactElement | null> {
   return user ? (
     authenticated ? (
       <Link href="/resume">{authenticated}</Link>
@@ -70,17 +74,17 @@ export const SignupNavigation = async ({
   ) : (
     <Link href="/sign-up">{children}</Link>
   );
-};
+}
 
-const UserProfileNavigationSkeleton = async () => {
+async function UserProfileNavigationSkeleton() {
   return <Skeleton className="h-[32px] pl-8 w-[32px]" />;
-};
+}
 
-export const UserProfileNavigation = async ({
+export async function UserProfileNavigation({
   user,
 }: {
   user: PrismaUser | undefined | null;
-}): Promise<React.ReactElement> => {
+}): Promise<React.ReactElement> {
   return user ? (
     <SignedIn>
       <UserButton userProfileMode="navigation" afterSignOutUrl="/" />
@@ -92,4 +96,4 @@ export const UserProfileNavigation = async ({
       </ActionButton>
     </SignedOut>
   );
-};
+}

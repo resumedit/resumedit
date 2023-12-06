@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Icons } from "@/components/custom/Icons";
 
-export function ModeToggle() {
+export function DarkModeMenu() {
   const { setTheme } = useTheme();
 
   return (

@@ -1,7 +1,7 @@
 import * as React from "react";
 
 import { Icons } from "@/components/custom/Icons";
-import { ModeToggle } from "@/components/custom/ModeToggle";
+import { DarkModeMenu } from "@/components/custom/DarkModeMenu";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +17,7 @@ export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
         )}
         <div className="flex items-center space-x-2 text-center text-sm">
           <span className="text-muted-foreground uppercase">Dark mode</span>
-          <ModeToggle />
+          <DarkModeMenu />
         </div>
       </div>
       <div className="container w-full flex items-center justify-center sm:justify-between gap-4 md:min-h-8 md:flex-row">
