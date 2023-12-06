@@ -13,7 +13,7 @@ interface ItemDescendantStoreStateProps {
   serverState: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>;
 }
 
-export default function ItemDescendantListStoreState(props: ItemDescendantStoreStateProps) {
+export default function ItemDescendantListStoreStateComponent(props: ItemDescendantStoreStateProps) {
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);
   const rootState = store((state) => state);

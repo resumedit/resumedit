@@ -16,7 +16,7 @@ export const EditableFieldEdiTextProps = {
   },
   inputProps: {
     placeholder: "",
-    className: "p-2 flex-1 rounded-md outline-none min-w-auto",
+    className: "p-2 flex-1 rounded-md outline-none min-w-auto bg-transparent",
   },
   viewProps: {
     className: "w-full h-full min-h-[2.5rem] p-2 rounded-md",

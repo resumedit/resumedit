@@ -9,8 +9,8 @@ import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { useSyncItemDescendantList } from "@/hooks/useSyncItemDescendantList";
 import { dateToISOLocal } from "@/lib/utils/formatDate";
-import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
-import { ItemClientStateType } from "@/types/item";
+import { keepOnlyStateForServer } from "@/stores/itemDescendantStore/utils/syncItemDescendant";
+import { ItemClientToServerType } from "@/types/item";
 import { useRef } from "react";
 
 export function ItemDescendantListSynchronization() {
@@ -29,38 +29,14 @@ export function ItemDescendantListSynchronization() {
       throw Error(`sendItemDescendantToServer(): storeName=${storeName}, rootState=${rootState})`);
     }
 
-    // Destructure only the necessary state properties
-    const {
-      clientId,
-      parentClientId,
-      id,
-      parentId,
-      createdAt,
-      lastModified,
-      deletedAt,
-      disposition,
-      itemModel,
-      descendantModel,
-      descendants,
-    } = rootState;
+    const clientToServerState = keepOnlyStateForServer<ItemClientToServerType>(rootState);
+    console.log(
+      `ItemDescendantListSynchronization:sendItemDescendantToServer:clientToServerState:`,
+      clientToServerState,
+    );
 
-    // Reconstruct the client state with only the necessary properties
-    const clientState: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType> = {
-      clientId,
-      parentClientId,
-      id,
-      parentId,
-      createdAt,
-      lastModified,
-      deletedAt,
-      disposition,
-      itemModel,
-      descendantModel,
-      descendants,
-    };
-
-    const clientModified = rootState.lastModified;
-    const updatedItemList = await handleItemDescendantListFromClient(clientState);
+    const clientModified = clientToServerState.lastModified;
+    const updatedItemList = await handleItemDescendantListFromClient(clientToServerState);
 
     if (updatedItemList) {
       updateStoreWithServerData(updatedItemList);
@@ -70,7 +46,7 @@ export function ItemDescendantListSynchronization() {
         toast({
           title: `Synchronized`,
           description: `Local: ${dateToISOLocal(new Date(clientModified))}: ${
-            clientState.descendants.length
+            clientToServerState.descendants.length
           }\nServer: ${dateToISOLocal(serverModified)}: ${updatedItemList.descendants.length}`,
         });
       }

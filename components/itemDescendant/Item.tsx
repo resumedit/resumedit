@@ -57,7 +57,7 @@ export default function Item(props: ItemProps) {
   const showListItemInternals = process.env.NODE_ENV === "development" && showItemDescendantInternals;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [inputIsValid, setInputIsValid] = useState(false);
+  const [inputIsValid, setInputIsValid] = useState(true);
 
   // Initialize local state for field values
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -66,8 +66,9 @@ export default function Item(props: ItemProps) {
     itemFormFields.reduce((acc, field) => ({ ...acc, [field]: "" }), {} as Record<string, any>),
   );
 
-  const validate = (itemDraft: object) => {
-    const validationStatus = itemFormSchema.safeParse({ ...itemDraft });
+  const validate = () => {
+    const validationStatus = itemFormSchema.safeParse({ ...item });
+    setInputIsValid(validationStatus.success);
     return validationStatus;
   };
 
@@ -109,8 +110,8 @@ export default function Item(props: ItemProps) {
     }
 
     setFieldValues((prev) => ({ ...prev, ...updatedKeyValue }));
-    const validationStatus = validate(updatedKeyValue);
-    setInputIsValid(validationStatus.success);
+    const validationStatus = validate();
+    console.log(validationStatus);
     return updatedKeyValue;
   }
 
@@ -133,7 +134,12 @@ export default function Item(props: ItemProps) {
 
   return (
     <div className="flex-1 flex justify-between">
-      <div className="flex-1 flex gap-x-4 gap-y-2 justify-between">
+      <div
+        className={cn("flex-1 flex gap-x-4 gap-y-2 justify-between outline outline-offset-2 ", {
+          "outline-red-500": !inputIsValid,
+          "outline-none": inputIsValid,
+        })}
+      >
         {itemFormFields.map((field, index) => (
           <div
             key={index}
@@ -142,6 +148,7 @@ export default function Item(props: ItemProps) {
             <EditableFieldPersist
               key={field}
               fieldName={field}
+              placeholder={`${field} for ${itemModel}`}
               value={item[field as keyof ItemClientStateType] as string}
               onSave={handleSave}
               onChange={handleChange}

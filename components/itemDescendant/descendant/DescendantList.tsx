@@ -3,10 +3,19 @@
 import { useItemDescendantStore } from "@/contexts/ItemDescendantStoreContext";
 import { useStoreName } from "@/contexts/StoreNameContext";
 import { IdSchemaType } from "@/schemas/id";
-import { ItemDescendantClientStateType } from "@/stores/itemDescendantStore/createItemDescendantStore";
+import {
+  ItemDescendantClientStateType,
+  ItemOrderableClientStateDescendantListType,
+} from "@/stores/itemDescendantStore/createItemDescendantStore";
 import { findItemIndexByClientId } from "@/stores/itemDescendantStore/utils/descendantOrderValues";
 import useSettingsStore from "@/stores/settings/useSettingsStore";
-import { ClientIdType, ItemClientStateType, ItemDataType, ItemDataUntypedType } from "@/types/item";
+import {
+  ClientIdType,
+  ItemClientStateType,
+  ItemDataType,
+  ItemDataUntypedType,
+  ItemOrderableClientStateType,
+} from "@/types/item";
 import {
   DndContext,
   DragEndEvent,
@@ -29,6 +38,8 @@ interface ItemDescendantListProps extends ItemDescendantRenderProps {}
 export default function DescendantList(props: ItemDescendantListProps) {
   const { ancestorClientIdChain, rootItemModel, leafItemModel, itemModel, item, resumeAction } = props;
 
+  const clientId = item.clientId;
+
   const canEdit = resumeAction === "edit";
   // const [editingInput, setEditingInput] = useState(canEdit);
 
@@ -46,12 +57,22 @@ export default function DescendantList(props: ItemDescendantListProps) {
 
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);
-  const descendants = store((state) => state.descendants);
 
+  const getDescendants = store((state) => state.getDescendants);
   const reArrangeDescendants = store((state) => state.reArrangeDescendants);
   const resetDescendantsOrderValues = store((state) => state.resetDescendantsOrderValues);
   const setDescendantData = store((state) => state.setDescendantData);
   const markDescendantAsDeleted = store((state) => state.markDescendantAsDeleted);
+
+  const getItems = (): ItemOrderableClientStateDescendantListType<
+    ItemOrderableClientStateType,
+    ItemOrderableClientStateType
+  > => {
+    console.log(
+      `DescendantInput:itemDraft(clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`,
+    );
+    return getDescendants(ancestorClientIdChain);
+  };
 
   const setItemData = (descendantData: ItemDataUntypedType, clientId: ClientIdType): void => {
     console.log(
@@ -71,16 +92,31 @@ export default function DescendantList(props: ItemDescendantListProps) {
     markDescendantAsDeleted(clientId, ancestorClientIdChain);
   };
 
+  const descendants = getItems();
+
+  // Update the state with the new array
+  const reArrangeItems = (
+    updatedItemList: ItemOrderableClientStateDescendantListType<
+      ItemOrderableClientStateType,
+      ItemOrderableClientStateType
+    >,
+  ) => {
+    reArrangeDescendants(updatedItemList, ancestorClientIdChain);
+  };
+
+  const resetItemsOrderValues = () => {
+    resetDescendantsOrderValues(ancestorClientIdChain);
+  };
+
   const getDescendantDraft = store((state) => state.getDescendantDraft);
   const updateDescendantDraft = store((state) => state.updateDescendantDraft);
   const commitDescendantDraft = store((state) => state.commitDescendantDraft);
 
-  const itemDraft = (clientId: IdSchemaType): ItemDataType<ItemClientStateType> => {
-    console.log(
-      `DescendantInput:itemDraft(clientId=${clientId}): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`,
-    );
+  const getItemDraft = (): ItemDataType<ItemClientStateType> => {
+    console.log(`DescendantInput:getItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
     return getDescendantDraft(ancestorClientIdChain);
   };
+
   const updateItemDraft = (descendantData: ItemDataUntypedType): void => {
     console.log(
       `DescendantInput:updateItemDraft(descendantData=${descendantData}): ancestorClientIdChain=${JSON.stringify(
@@ -94,6 +130,8 @@ export default function DescendantList(props: ItemDescendantListProps) {
     console.log(`DescendantInput:commitItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
     commitDescendantDraft(ancestorClientIdChain);
   };
+
+  const itemDraft = getItemDraft();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -119,7 +157,7 @@ export default function DescendantList(props: ItemDescendantListProps) {
       );
 
       // Update the state with the new array
-      reArrangeDescendants(arrayMove(updatedDescendants, activeIndex, overIndex));
+      reArrangeItems(arrayMove(updatedDescendants, activeIndex, overIndex));
     }
   };
 
@@ -131,7 +169,7 @@ export default function DescendantList(props: ItemDescendantListProps) {
           name="resetDescendantsOrderValues"
           role="button"
           onClick={() => {
-            resetDescendantsOrderValues();
+            resetItemsOrderValues();
           }}
         >
           Reset order

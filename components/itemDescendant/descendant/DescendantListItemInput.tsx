@@ -25,8 +25,8 @@ interface DescendantListItemInputProps {
 export default function DescendantListItemInput({
   canEdit,
   // editingInput /* setEditingInput, */,
-  itemModel: itemModel,
-  itemDraft: itemDraft,
+  itemModel,
+  itemDraft,
   updateItemDraft,
   commitItemDraft,
 }: DescendantListItemInputProps) {

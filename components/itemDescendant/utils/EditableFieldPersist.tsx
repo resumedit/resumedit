@@ -26,7 +26,6 @@ export default function EditableFieldPersist({
         name: fieldName,
         placeholder: placeholder || "",
         onChange: onChange,
-        className: "p-2 flex-1 rounded-md outline-none min-w-auto",
       }}
       viewProps={{ ...EditableFieldEdiTextProps.viewProps, placeholder: placeholder || "" }}
       {...rest}

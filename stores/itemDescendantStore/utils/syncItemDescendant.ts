@@ -4,8 +4,8 @@ import { handleItemDescendantListFromClient } from "@/actions/syncItemDescendant
 import { toast } from "@/components/ui/use-toast";
 import { dateToISOLocal } from "@/lib/utils/formatDate";
 import { getItemId, isValidItemId } from "@/schemas/id";
-import { ItemClientStateType, ItemDisposition, ItemServerToClientType } from "@/types/item";
-import { getDescendantModel } from "@/types/itemDescendant";
+import { ItemClientStateType, ItemClientToServerType, ItemDisposition, ItemServerToClientType } from "@/types/item";
+import { getDescendantModel, stripFieldsForDatabase } from "@/types/itemDescendant";
 import { ModificationTimestampType } from "@/types/timestamp";
 import { Draft } from "immer";
 import {
@@ -15,6 +15,29 @@ import {
   ItemDescendantServerToClientType,
   ItemDescendantStore,
 } from "../createItemDescendantStore";
+
+export function keepOnlyStateForServer<T extends ItemClientToServerType>(
+  rootState: T,
+  lastModified?: Date,
+): ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType> {
+  // Trim down store state for transmitting to server
+  // Essentially, we want to keep only the item and the descendant list
+  // First, remove all functions
+  const rootStateWithoutFunctions = JSON.parse(
+    JSON.stringify(rootState, (key, val) => (typeof val === "function" ? undefined : val)),
+  );
+
+  // Then, remove all propeties that are not part of the item
+  const nonItemRootStateProperties = new Set<
+    "parentModel" | "itemModel" | "descendantModel" | "descendantDraft" | "logUpdateFromServer"
+  >();
+  const fieldsToStrip = new Set<keyof T>([...nonItemRootStateProperties] as Array<keyof T>);
+
+  const itemData = stripFieldsForDatabase(rootStateWithoutFunctions, fieldsToStrip, lastModified);
+
+  const payload = { ...itemData };
+  return payload as ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>;
+}
 
 export async function sendItemDescendantToServer(store: ItemDescendantHookType) {
   const rootState = store((state) => state);

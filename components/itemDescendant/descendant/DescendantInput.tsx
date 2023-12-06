@@ -9,7 +9,7 @@ import { ItemDescendantRenderProps } from "../ItemDescendantList.client";
 import DescendantListItemInput from "./DescendantListItemInput";
 
 export default function DescendantInput(props: ItemDescendantRenderProps) {
-  const { ancestorClientIdChain, id, itemModel, resumeAction } = props;
+  const { ancestorClientIdChain, item, itemModel, resumeAction } = props;
   const canEdit = resumeAction === "edit";
   // const [editingInput, setEditingInput] = useState(canEdit);
 
@@ -23,8 +23,6 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
     console.log(`DescendantInput:getItemDraft(): ancestorClientIdChain=${JSON.stringify(ancestorClientIdChain)}`);
     return getDescendantDraft(ancestorClientIdChain);
   };
-
-  const itemDraft = getItemDraft();
 
   const updateItemDraft = (descendantData: ItemDataUntypedType): void => {
     console.log(
@@ -40,9 +38,10 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
     commitDescendantDraft(ancestorClientIdChain);
   };
 
+  const itemDraft = getItemDraft();
   return (
-    <div key={id} id={id} className="flex gap-x-4 items-center">
-      <p
+    <div key={item.clientId} className="flex gap-x-4 items-center">
+      <div
         className={cn("sm:flex-shrink-0 w-48 my-2 text-right text-muted-foreground text-sm", {
           "font-medium text-xl my-4": ["user", "resume"].includes(itemModel),
         })}
@@ -54,7 +53,7 @@ export default function DescendantInput(props: ItemDescendantRenderProps) {
             below <pre>{`${ancestorClientIdChain.map((id) => id.substring(0, 8)).join("\n")}`}</pre>
           </>
         ) : null}
-      </p>
+      </div>
       <DescendantListItemInput
         itemModel={itemModel}
         itemDraft={itemDraft}

@@ -31,7 +31,7 @@ import { ItemDescendantListSynchronization } from "./utils/ItemDescendantListSyn
 export interface ItemDescendantRenderProps {
   index: number;
   ancestorClientIdChain: Array<ClientIdType>;
-  id: string;
+  // id: string;
   item: ItemDescendantClientStateType<ItemClientStateType, ItemClientStateType>;
   itemModel: ItemDescendantModelNameType;
   rootItemModel: ItemDescendantModelNameType;
@@ -64,9 +64,9 @@ function ItemDescendantListRender(props: ItemDescendantRenderProps): ReactNode {
   const descendantDescendantModel = getDescendantModel(descendantModel);
 
   // Props for descendants of current item have the same ancestorClientIdChain
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const descendantProps = {
     ...props,
-    ancestorClientIdChain: ancestorClientIdChain,
     itemModel: descendantModel,
     descendantModel: descendantDescendantModel,
     parentId: item.id,
@@ -79,7 +79,7 @@ function ItemDescendantListRender(props: ItemDescendantRenderProps): ReactNode {
       {atRootLevel && editingInput ? <ItemDescendantListSynchronization /> : null}
       {atRootLevel ? <Item {...props} /> : <Descendant {...props} />}
       {item.descendantModel === leafItemModel ? (
-        <DescendantList {...props} />
+        <DescendantList {...descendantProps} />
       ) : (
         <>
           {!editingInput || item.descendantModel === leafItemModel || !descendantDescendantModel ? (
@@ -95,12 +95,10 @@ function ItemDescendantListRender(props: ItemDescendantRenderProps): ReactNode {
               .map((descendant, descendantIndex) => (
                 <li key={descendant.clientId}>
                   <ItemDescendantListRender
-                    {...{
-                      ...descendantProps,
-                      ancestorClientIdChain: [...ancestorClientIdChain, descendant.clientId],
-                    }}
+                    {...descendantProps}
                     index={descendantIndex}
                     item={descendant}
+                    ancestorClientIdChain={[...ancestorClientIdChain, descendant.clientId]}
                   />
                   {/*
                     !editingInput || item.descendantModel === leafItemModel || !descendantDescendantModel ? (
@@ -174,7 +172,7 @@ function ItemDescendantListState(props: ItemDescendantListStateProps) {
     }
   }, [serverState, isStoreInitialized, updateStoreWithServerData]);
 
-  return !isStoreInitialized ? null : <ItemDescendantListRender {...clientProps} id={clientProps.item.clientId} />;
+  return !isStoreInitialized ? null : <ItemDescendantListRender {...clientProps} />;
 }
 
 export interface ItemDescendantListContextProps {

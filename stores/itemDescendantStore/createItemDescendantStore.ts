@@ -88,6 +88,9 @@ export type ItemDescendantStoreActions<I extends ItemClientStateType, C extends 
   setItemData: (data: ItemDataUntypedType, clientId: ClientIdType) => void;
   markItemAsDeleted: (clientId: ClientIdType) => void;
   restoreDeletedItem: (clientId: ClientIdType) => void;
+  getDescendants: (
+    ancestorClientIds: Array<ClientIdType>,
+  ) => ItemClientStateDescendantListType<ItemClientStateType, ItemClientStateType>;
   setDescendantData: (
     descendantData: ItemDataUntypedType,
     clientId: ClientIdType,
@@ -95,8 +98,11 @@ export type ItemDescendantStoreActions<I extends ItemClientStateType, C extends 
   ) => void;
   // addDescendant: (descendantData: ItemDataType<C>) => void; // FIXME: Untested
   markDescendantAsDeleted: (clientId: ClientIdType, ancestorClientIds: Array<ClientIdType>) => void;
-  reArrangeDescendants: (reArrangedDescendants: ItemClientStateDescendantListType<I, C>) => void;
-  resetDescendantsOrderValues: () => void;
+  reArrangeDescendants: (
+    reArrangedDescendants: ItemClientStateDescendantListType<I, C>,
+    ancestorClientIds: Array<ClientIdType>,
+  ) => void;
+  resetDescendantsOrderValues: (ancestorClientIds: Array<ClientIdType>) => void;
   getDescendantDraft: (ancestorClientIds: Array<ClientIdType>) => ItemDataType<C>;
   updateDescendantDraft: (descendantData: ItemDataUntypedType, ancestorClientIds: Array<ClientIdType>) => void;
   commitDescendantDraft: (ancestorClientIds: Array<ClientIdType>) => void;
@@ -139,9 +145,14 @@ export const storeNameSuffix = "descendant-store.devel.resumedit.local";
 export function getDescendantFromAncestorChain(
   ancestorStateChain: ItemStoreStateDescendantListType<ItemClientStateType, ItemClientStateType>,
   ancestorClientIdChain: Array<ClientIdType>,
+  lastModified?: Date,
 ): ItemStoreStateDescendantListType<ItemClientStateType, ItemClientStateType> {
   // Descend from the `state` all the way down to the descendant based on the `ancestorClientIdChain` array
   if (ancestorClientIdChain.length === 0) {
+    if (lastModified) {
+      ancestorStateChain[0].lastModified = lastModified;
+      ancestorStateChain[0].disposition = ItemDisposition.Modified;
+    }
     return ancestorStateChain;
   }
   const ancestorClientId = ancestorClientIdChain[0];
@@ -150,6 +161,10 @@ export function getDescendantFromAncestorChain(
     (descendant) => descendant.clientId === ancestorClientId,
   ) as ItemDescendantStoreState<ItemClientStateType, ItemClientStateType>;
   if (ancestorState) {
+    if (lastModified) {
+      ancestorState.lastModified = lastModified;
+      ancestorState.disposition = ItemDisposition.Modified;
+    }
     return getDescendantFromAncestorChain([...ancestorStateChain, ancestorState], ancestorClientIdChain.slice(1));
   }
   return ancestorStateChain;
@@ -213,7 +228,6 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
             state.lastModified = new Date();
           });
         },
-
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         restoreDeletedItem: (clientId?: ClientIdType): void => {
           // NOTE: The argument `clientId` is only here to provide the same signature as for descendants
@@ -226,199 +240,42 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
             state.lastModified = new Date();
           });
         },
-
+        getDescendants: (
+          ancestorClientIds: Array<ClientIdType>,
+        ): ItemClientStateDescendantListType<ItemClientStateType, ItemClientStateType> => {
+          const ancestorStateChain = getDescendantFromAncestorChain([get()], ancestorClientIds);
+          const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
+          return ancestorState.descendants;
+        },
         setDescendantData: (
           descendantData: ItemDataUntypedType,
           clientId: ClientIdType,
           ancestorClientIds: Array<ClientIdType>,
         ): void => {
-          if (ancestorClientIds) {
-            set((state) => {
-              const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds);
-              const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
-              // Update the state with the deletedAt timestamp for the specified descendant
-              ancestorState.descendants = ancestorState.descendants.map((descendant) => {
-                if (descendant.clientId === clientId) {
-                  return {
-                    ...descendant,
-                    ...descendantData,
-                    disposition: ItemDisposition.Modified,
-                    lastModified: new Date(),
-                  };
-                }
-                return descendant;
-              });
-
-              for (const ancestorState of ancestorStateChain) {
-                // Update the modification timestamp of the ancestor
-                ancestorState.lastModified = new Date();
+          set((state) => {
+            const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds, new Date());
+            const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
+            // Update the state with the deletedAt timestamp for the specified descendant
+            ancestorState.descendants = ancestorState.descendants.map((descendant) => {
+              if (descendant.clientId === clientId) {
+                return {
+                  ...descendant,
+                  ...descendantData,
+                  disposition: ItemDisposition.Modified,
+                  lastModified: new Date(),
+                };
               }
+              return descendant;
             });
-          } else {
-            // Update the state with the new content for the specified descendant
-            set((state) => {
-              state.descendants = state.descendants.map((descendant) => {
-                if (descendant.clientId === clientId) {
-                  return {
-                    ...descendant,
-                    ...descendantData,
-                    disposition: ItemDisposition.Modified,
-                    lastModified: new Date(),
-                  };
-                }
-                return descendant;
-              });
-              // Update the modification timestamp
-              state.lastModified = new Date();
-            });
-          }
+          });
         },
         /* FIXME: Untested
         addDescendant: (descendantData: ItemDataType<C>, ancestorClientIds: Array<ClientIdType>) => {
-          if (ancestorClientIds) {
-            set((state) => {
-              const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds);
-              for (const ancestorState of ancestorStateChain) {
-                const descendantClientId = getItemId(ancestorState.descendantModel);
-                const descendantOfDescendantModel = getDescendantModel(ancestorState.descendantModel!);
-                const newItem = {
-                  itemModel: ancestorState.descendantModel,
-                  clientId: descendantClientId,
-                  parentClientId: clientId,
-                  createdAt: new Date(),
-                  lastModified: new Date(),
-                  disposition: ItemDisposition.New,
-                  ...descendantData,
-                  descendantModel: descendantOfDescendantModel,
-                  descendants: [],
-                  descendantDraft: {} as Draft<ItemDataType<C>>,
-                } as Draft<ItemDescendantStoreState<C, C>>;
-                ancestorState.descendants = ancestorState.descendants.length
-                  ? [...ancestorState.descendants, newItem]
-                  : ([newItem] as Draft<ItemDescendantStoreState<C, C>>[]);
-                // Update the modification timestamp of the ancestor
-                ancestorState.lastModified = new Date();
-              }
-            });
-          } else {
-            set((state) => {
-              const descendantOfDescendantModel = state.descendantModel
-                ? getDescendantModel(state.descendantModel)
-                : null;
-              const descendantClientId = getItemId(state.descendantModel);
-              const newItem = {
-                itemModel: state.descendantModel,
-                clientId: descendantClientId,
-                parentClientId: clientId,
-                createdAt: new Date(),
-                lastModified: new Date(),
-                disposition: ItemDisposition.New,
-                ...descendantData,
-                descendantModel: descendantOfDescendantModel,
-                descendants: [],
-                descendantDraft: {} as Draft<ItemDataType<C>>,
-              } as Draft<ItemDescendantStoreState<C, C>>;
-              state.descendants = state.descendants.length
-                ? [...state.descendants, newItem]
-                : ([newItem] as Draft<ItemDescendantStoreState<C, C>>[]);
-            });
-          }
-        },
-        */
-        markDescendantAsDeleted: (clientId: ClientIdType, ancestorClientIds: Array<ClientIdType>): void => {
-          if (!clientId) {
-            throw Error(`markDescendantAsDeleted: clientId=${clientId}`);
-          }
-          if (ancestorClientIds) {
-            set((state) => {
-              const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds);
-              const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
-              // Update the state with the deletedAt timestamp for the specified descendant
-              ancestorState.descendants = ancestorState.descendants.map((descendant) => {
-                if (descendant.clientId === clientId) {
-                  return { ...descendant, disposition: ItemDisposition.Modified, deletedAt: new Date() };
-                }
-                return descendant;
-              });
-
-              for (const ancestorState of ancestorStateChain) {
-                // Update the modification timestamp of the ancestor
-                ancestorState.lastModified = new Date();
-              }
-            });
-          } else {
-            set((state) => {
-              // Update the state with the deletedAt timestamp for the specified descendant
-              state.descendants = state.descendants.map((descendant) => {
-                if (descendant.clientId === clientId) {
-                  return { ...descendant, disposition: ItemDisposition.Modified, deletedAt: new Date() };
-                }
-                return descendant;
-              });
-              // Update the modification timestamp
-              state.lastModified = new Date();
-            });
-          }
-        },
-        reArrangeDescendants: (reArrangedDescendants: ItemClientStateDescendantListType<I, C>): void => {
           set((state) => {
-            state.descendants = updateListOrderValues(
-              reArrangedDescendants as unknown as Array<ItemOrderableClientStateType>,
-            ) as unknown as Draft<ItemOrderableStoreStateDescendantListType<I, C>>;
-            // Update the modification timestamp
-            state.lastModified = new Date();
-          });
-        },
-        resetDescendantsOrderValues: (): void => {
-          set((state) => {
-            state.descendants = reBalanceListOrderValues(
-              state.descendants as unknown as Array<ItemOrderableClientStateType>,
-              true,
-            ) as unknown as Draft<ItemOrderableStoreStateDescendantListType<I, C>>;
-            // Update the modification timestamp
-            state.lastModified = new Date();
-          });
-        },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        getDescendantDraft: (ancestorClientIds: Array<ClientIdType>): ItemDataType<any> => {
-          const ancestorStateChain = getDescendantFromAncestorChain([get()], ancestorClientIds);
-          const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
-          return ancestorState.descendantDraft;
-        },
-        updateDescendantDraft: (descendantData: ItemDataUntypedType, ancestorClientIds: Array<ClientIdType>) => {
-          if (ancestorClientIds) {
-            set((state) => {
-              const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds);
-              // Update the state with the new draft descendant data
-              ancestorStateChain[ancestorStateChain.length - 1].descendantDraft = {
-                ...(state.descendantDraft as ItemDataType<C>),
-                ...(descendantData as ItemDataType<C>),
-              } as Draft<ItemDataType<C>>;
-            });
-          } else {
-            set((state) => {
-              state.descendantDraft = {
-                ...(state.descendantDraft as ItemDataType<C>),
-                ...(descendantData as ItemDataType<C>),
-              } as Draft<ItemDataType<C>>;
-            });
-          }
-        },
-        commitDescendantDraft: (ancestorClientIds: Array<ClientIdType>) => {
-          if (ancestorClientIds) {
-            set((state) => {
-              const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds);
-              const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
-              const descendantOfDescendantModel = ancestorState.descendantModel
-                ? getDescendantModel(ancestorState.descendantModel)
-                : null;
+            const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds, new Date());
+            for (const ancestorState of ancestorStateChain) {
               const descendantClientId = getItemId(ancestorState.descendantModel);
-
-              // Create a copy of the draft
-              const descendantData = {
-                ...(ancestorState.descendantDraft as ItemDataType<C>),
-              } as ItemDataType<C>;
-              // Construct the new item
+              const descendantOfDescendantModel = getDescendantModel(ancestorState.descendantModel!);
               const newItem = {
                 itemModel: ancestorState.descendantModel,
                 clientId: descendantClientId,
@@ -431,53 +288,112 @@ export const createItemDescendantStore = <I extends ItemClientStateType, C exten
                 descendants: [],
                 descendantDraft: {} as Draft<ItemDataType<C>>,
               } as Draft<ItemDescendantStoreState<C, C>>;
-
-              // Append it to the end of the store's `descendants` array
               ancestorState.descendants = ancestorState.descendants.length
                 ? [...ancestorState.descendants, newItem]
-                : [newItem];
-
-              // Reset the draft
-              ancestorState.descendantDraft = {} as Draft<ItemDataType<C>>;
-              for (const ancestorState of ancestorStateChain) {
-                // Update the modification timestamp of the ancestor
-                ancestorState.lastModified = new Date();
+                : ([newItem] as Draft<ItemDescendantStoreState<C, C>>[]);
+              // Update the modification timestamp of the ancestor
+              ancestorState.lastModified = new Date();
+            }
+          });
+        }*/
+        markDescendantAsDeleted: (clientId: ClientIdType, ancestorClientIds: Array<ClientIdType>): void => {
+          set((state) => {
+            const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds, new Date());
+            const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
+            // Update the state with the deletedAt timestamp for the specified descendant
+            ancestorState.descendants = ancestorState.descendants.map((descendant) => {
+              if (descendant.clientId === clientId) {
+                return { ...descendant, disposition: ItemDisposition.Modified, deletedAt: new Date() };
               }
+              return descendant;
             });
-          } else {
-            set((state) => {
-              const descendantOfDescendantModel = state.descendantModel
-                ? getDescendantModel(state.descendantModel)
-                : null;
-              const descendantClientId = getItemId(state.descendantModel);
 
-              // Create a copy of the draft
-              const descendantData = {
-                ...(state.descendantDraft as ItemDataType<C>),
-              } as ItemDataType<C>;
-              // Construct the new item
-              const newItem = {
-                itemModel: state.descendantModel,
-                clientId: descendantClientId,
-                parentClientId: clientId,
-                createdAt: new Date(),
-                lastModified: new Date(),
-                disposition: ItemDisposition.New,
-                ...descendantData,
-                descendantModel: descendantOfDescendantModel,
-                descendants: [],
-                descendantDraft: {} as Draft<ItemDataType<C>>,
-              } as Draft<ItemDescendantStoreState<C, C>>;
+            for (const ancestorState of ancestorStateChain) {
+              // Update the modification timestamp of the ancestor
+              ancestorState.lastModified = new Date();
+            }
+          });
+        },
+        reArrangeDescendants: (
+          reArrangedDescendants: ItemOrderableClientStateDescendantListType<I, C>,
+          ancestorClientIds: Array<ClientIdType>,
+        ): void => {
+          set((state) => {
+            const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds, new Date());
+            const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
+            // Update the state with the re-ordered descendants
+            ancestorState.descendants = updateListOrderValues(
+              reArrangedDescendants as unknown as Array<ItemOrderableClientStateType>,
+            ) as unknown as Draft<ItemOrderableStoreStateDescendantListType<I, C>>;
+          });
+        },
+        resetDescendantsOrderValues: (ancestorClientIds: Array<ClientIdType>): void => {
+          set((state) => {
+            const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds, new Date());
+            const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
+            // Update the state with the descendants having balanced order values
+            ancestorState.descendants = reBalanceListOrderValues(
+              ancestorState.descendants as unknown as Array<ItemOrderableClientStateType>,
+              true,
+            ) as unknown as Draft<ItemOrderableStoreStateDescendantListType<I, C>>;
+          });
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        getDescendantDraft: (ancestorClientIds: Array<ClientIdType>): ItemDataType<any> => {
+          const ancestorStateChain = getDescendantFromAncestorChain([get()], ancestorClientIds);
+          const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
+          return ancestorState.descendantDraft;
+        },
+        updateDescendantDraft: (descendantData: ItemDataUntypedType, ancestorClientIds: Array<ClientIdType>) => {
+          set((state) => {
+            const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds);
+            // Update the state with the new draft descendant data
+            ancestorStateChain[ancestorStateChain.length - 1].descendantDraft = {
+              ...(state.descendantDraft as ItemDataType<C>),
+              ...(descendantData as ItemDataType<C>),
+            } as Draft<ItemDataType<C>>;
+          });
+        },
+        commitDescendantDraft: (ancestorClientIds: Array<ClientIdType>) => {
+          set((state) => {
+            const ancestorStateChain = getDescendantFromAncestorChain([state], ancestorClientIds, new Date());
+            const ancestorState = ancestorStateChain[ancestorStateChain.length - 1];
+            const descendantOfDescendantModel = ancestorState.descendantModel
+              ? getDescendantModel(ancestorState.descendantModel)
+              : null;
+            const descendantClientId = getItemId(ancestorState.descendantModel);
 
-              // Append it to the end of the store's `descendants` array
-              state.descendants = state.descendants.length ? [...state.descendants, newItem] : [newItem];
-              // Update the modification timestamp
-              state.lastModified = new Date();
+            // Create a copy of the draft
+            const descendantData = {
+              ...(ancestorState.descendantDraft as ItemDataType<C>),
+            } as ItemDataType<C>;
+            // Construct the new item
+            const newItem = {
+              itemModel: ancestorState.descendantModel,
+              clientId: descendantClientId,
+              parentClientId: ancestorState.clientId,
+              parentId: ancestorState.id,
+              createdAt: new Date(),
+              lastModified: new Date(),
+              disposition: ItemDisposition.New,
+              ...descendantData,
+              descendantModel: descendantOfDescendantModel,
+              descendants: [],
+              descendantDraft: {} as Draft<ItemDataType<C>>,
+            } as Draft<ItemDescendantStoreState<C, C>>;
 
-              // Reset the draft
-              state.descendantDraft = {} as Draft<ItemDataType<C>>;
-            });
-          }
+            // Append it to the end of the store's `descendants` array
+            ancestorState.descendants = ancestorState.descendants.length
+              ? [...ancestorState.descendants, newItem]
+              : [newItem];
+
+            // Reset the draft
+            ancestorState.descendantDraft = {} as Draft<ItemDataType<C>>;
+            for (const ancestorState of ancestorStateChain) {
+              // Update the modification timestamp of the ancestor
+              ancestorState.lastModified = new Date();
+            }
+          });
         },
         updateStoreWithServerData: (
           serverState: ItemDescendantServerStateType<ItemServerToClientType, ItemServerToClientType>,
