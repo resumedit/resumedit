@@ -16,7 +16,7 @@ export interface ItemDescendantListSynchronizationProps {
 export function ItemDescendantListSynchronization(props: ItemDescendantListSynchronizationProps) {
   const synchronizeButtonRef = useRef<HTMLButtonElement>(null);
 
-  const title = props.title || "Sync now";
+  const title = props.title ?? "Sync now";
 
   const storeName = useStoreName();
   const store = useItemDescendantStore(storeName);

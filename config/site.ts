@@ -1,10 +1,14 @@
 import { SiteConfig } from "@/types";
 
 export const siteConfig: SiteConfig = {
-  name: "ResumEdit",
-  canonicalDomainName: "resumedit.com",
-  description: "Your resume, revised",
-  url: "https://tx.shadcn.com",
+  name: `${process.env.NEXT_PUBLIC_RESUMEDIT_APP_NAME ?? "ResumEdit"}`,
+  canonicalDomainName: `${process.env.NEXT_PUBLIC_RESUMEDIT_APP_DOMAIN ?? "resumedit.com"}`,
+  description: `${process.env.NEXT_PUBLIC_RESUMEDIT_APP_DESCRIPTION ?? "Your resume, evolved"}`,
+  url: `${
+    process.env.NEXT_PUBLIC_RESUMEDIT_APP_URL ?? process.env.NEXT_PUBLIC_RESUMEDIT_APP_DOMAIN
+      ? "https://" + process.env.NEXT_PUBLIC_RESUMEDIT_APP_DOMAIN
+      : "resumedit.com"
+  }`,
   ogImage: "https://tx.shadcn.com/og.jpg",
   author: {
     name: "Simon Heimlicher",

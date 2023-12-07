@@ -1,9 +1,12 @@
 // @/app/(marketing)/(home)/WelcomeMessage.tsx
 
-import { User as PrismaUser } from "@prisma/client";
-import EnterAppButton from "./EnterAppButton";
+import { AuthenticatedContentLayoutChildrenProps } from "@/app/(authenticated)/AuthenticatedContentLayout";
+import TryAppButton from "@/components/layout/main/TryAppButton";
+import { siteConfig } from "@/config/site";
 
-export default async function WelcomeMessage({ user }: { user: PrismaUser | undefined | null }) {
+export interface WelcomeMessageProps extends AuthenticatedContentLayoutChildrenProps {}
+
+export default async function WelcomeMessage({ user }: WelcomeMessageProps) {
   return (
     <div className="mx-auto text-center">
       <div
@@ -15,7 +18,7 @@ export default async function WelcomeMessage({ user }: { user: PrismaUser | unde
         dark:to-slate-400
         md:px-20"
       >
-        Your resume, revised
+        {siteConfig.description}
       </div>
 
       <p
@@ -27,10 +30,10 @@ export default async function WelcomeMessage({ user }: { user: PrismaUser | unde
         dark:to-gray-300
         md:text-xl"
       >
-        Import your resume and revise it to get the job of your dreams!
+        Import your resume and tailor it with AI to get the job of your dreams!
       </p>
       <div className="flex justify-center gap-4 pt-10">
-        <EnterAppButton user={user}></EnterAppButton>
+        <TryAppButton user={user}></TryAppButton>
 
         {/* <button className="bg-gray-600 text-white px-10 py-4 rounded-md text-lg font-bold">
             Learn more

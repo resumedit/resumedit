@@ -12,6 +12,9 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import { appNavigation } from "@/config/appNavigation";
+import { siteConfig } from "@/config/site";
+import { siteNavigation } from "@/config/siteNavigation";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -45,15 +48,19 @@ export function NavigationMenuBar() {
                     href="/"
                   >
                     <Logo />
-                    <div className="mb-2 mt-4 text-lg font-medium">ResumEdit</div>
+                    <div className="mb-2 mt-4 text-lg font-medium">{siteConfig.name}</div>
                     <p className="text-sm leading-tight text-muted-foreground">
                       The last resume platform you will ever use.
                     </p>
                   </Link>
                 </NavigationMenuLink>
               </li>
-              <ListItem title="Introduction">Learn about the basics of ResumEdit.</ListItem>
-              <ListItem title="Demo">How to build a resume in 60 seconds with ResumEdit</ListItem>
+              <ListItem href={siteNavigation.about.href} title="About">
+                Learn about the basics of {siteConfig.name}.
+              </ListItem>
+              <ListItem href={appNavigation.tryApp.href} title="Try it yourself">
+                Experience, how you can import and tailor a resume in 60 seconds with {siteConfig.name}
+              </ListItem>
               {/* <ListItem title="Community">Join the community and get help or support.</ListItem> */}
             </ul>
           </NavigationMenuContent>

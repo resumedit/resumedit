@@ -54,3 +54,6 @@ export function stripToType<OriginalT extends object, KeyOfOriginalT extends key
 
   return result as TargetT;
 }
+export function sentenceCase(s: string): string {
+  return s.substring(0, 1).toUpperCase() + s.substring(1);
+}

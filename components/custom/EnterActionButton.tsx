@@ -1,9 +1,9 @@
 // @/app/(marketing)/(home)/EnterActionButton.tsx
 
 import { ActionButton } from "@/components/custom/ActionButton";
-import React, { ReactNode } from "react";
+import { ReactNode } from "react";
 
-export default function EnterActionButton({ children }: { children: ReactNode | ReactNode[] }) {
+export default function EnterActionButton({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <ActionButton
       variant="default"

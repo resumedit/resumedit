@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ReactNode } from "react";
-import EnterActionButton from "./(marketing)/(home)/EnterActionButton";
+import EnterActionButton from "../../components/custom/EnterActionButton";
 
 const RootNotFoundPage = ({ children }: { children?: ReactNode | ReactNode[] }) => {
   return (

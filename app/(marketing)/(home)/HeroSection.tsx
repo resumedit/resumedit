@@ -1,16 +1,13 @@
 // @/app/(marketing)/(home)/HeroSection.tsx
 
-import { getCurrentUserOrNull } from "@/actions/user";
-import { User as PrismaUser } from "@prisma/client";
+import { AuthenticatedContentLayoutChildrenProps } from "@/app/(authenticated)/AuthenticatedContentLayout";
 import WelcomeMessage from "./WelcomeMessage";
 
-const HeroSection = async ({ user }: { user?: PrismaUser }) => {
-  const currentUser = user === undefined ? await getCurrentUserOrNull() : user;
+export interface HeroSectionProps extends AuthenticatedContentLayoutChildrenProps {}
+export default async function HeroSection({ user }: HeroSectionProps) {
   return (
     <section className="from gray-00 spacey-10 bg-gradient-to-r to-gray-200 py-10 md:py-20">
-      <WelcomeMessage user={currentUser} />
+      <WelcomeMessage user={user} />
     </section>
   );
-};
-
-export default HeroSection;
+}

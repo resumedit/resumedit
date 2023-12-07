@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
+
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -9,15 +11,12 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
+import { sentenceCase } from "@/lib/utils/misc";
 import { idRegex } from "@/schemas/id";
 import { itemDescendantModelHierarchy } from "@/types/itemDescendant";
 import { ResumeActionType, resumeActionTypes } from "@/types/resume";
 import Link from "next/link";
 import React, { ReactNode } from "react";
-
-export function sentenceCase(s: string): string {
-  return s.substring(0, 1).toUpperCase() + s.substring(1);
-}
 
 // Define a type for the action URL structure
 type ActionURL = {
@@ -46,7 +45,7 @@ export function getItemActions(
 
   // Execute the regular expression
   const match = extractRegExp.exec(pathname);
-  if (!match || !match.groups) {
+  if (!match?.groups) {
     return undefined;
   }
 
@@ -64,7 +63,7 @@ export function getItemActions(
   const editActionURL = `${actionBaseURL}/edit`;
 
   // Construct the menu title unless it has been passed as an argument
-  const menuTitle = title || sentenceCase(`${itemModel} actions`);
+  const menuTitle = title ?? sentenceCase(`${itemModel} actions`);
 
   // Construct and return the object with URLs
   return {
@@ -116,7 +115,7 @@ const ItemActionMenuListItem = React.forwardRef<
     <li>
       <NavigationMenuLink asChild active={active}>
         <Link
-          href={href || "#"}
+          href={href ?? "#"}
           ref={ref}
           className={cn(
             "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
