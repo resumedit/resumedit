@@ -29,10 +29,12 @@ yarn-error.log*
 
 # local env files
 .env*.*
+*.env
 
 # Depoloyment env files (if not covered by more general rules)
-deploy/**/.env*.*
-deploy/**/env*.*
+deploy/**/.env*
+deploy/**/*.env
+deploy/**/env.*
 
 
 # vercel
