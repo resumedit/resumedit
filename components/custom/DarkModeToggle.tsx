@@ -69,7 +69,14 @@ export function DarkModeToggle() {
   }, []);
 
   return (
-    <Button variant="ghost" onClick={toggleTheme} size="sm" className="group relative h-8 w-8 px-0">
+    <Button
+      variant="ghost"
+      onClick={toggleTheme}
+      name="Dark mode toggle"
+      aria-label="Toggle between dark mode, light mode and system-defined"
+      size="sm"
+      className="group relative h-8 w-8 px-0"
+    >
       {currentTheme.icon}
       <div className="text-2xs absolute -bottom-6 hidden uppercase group-hover:block">{currentTheme.label}</div>
     </Button>

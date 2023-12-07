@@ -25,7 +25,9 @@ import AppSettingsForm from "./AppSettingsForm";
 export default function AppSettingsSheet() {
   return (
     <Sheet>
-      <SheetTrigger>{<Settings2Icon />}</SheetTrigger>
+      <SheetTrigger name="App settings toggle" aria-label="Show settings">
+        {<Settings2Icon />}
+      </SheetTrigger>
       <SheetContent>
         <SheetHeader>
           <SheetTitle>Configure {siteConfig.name}</SheetTitle>
